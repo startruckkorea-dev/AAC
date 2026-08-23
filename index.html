@@ -8,258 +8,188 @@
 <script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@3.28.0/lib/msal-browser.min.js"></script>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
 <style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100vh; }
+#login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(145deg,#0f2744 0%,#0078d4 100%)}
+.login-card{background:#fff;border-radius:20px;padding:52px 48px;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.22);max-width:400px;width:100%}
+.login-logo{width:64px;height:64px;background:linear-gradient(135deg,#0078d4,#00bcf2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.7rem;margin:0 auto 20px;box-shadow:0 8px 20px rgba(0,120,212,.3)}
+.login-title{font-size:1.2rem;font-weight:700;color:#0f2744;margin-bottom:4px}
+.login-co{font-size:.82rem;color:#94a3b8;margin-bottom:4px}
+.login-guide{font-size:.82rem;color:#94a3b8;margin-bottom:28px}
+.btn-login{background:linear-gradient(135deg,#0078d4,#005a9e);color:#fff;border:none;border-radius:10px;padding:13px 0;font-size:.92rem;font-weight:600;cursor:pointer;width:100%;font-family:inherit;transition:all .2s}
+.btn-login:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(0,120,212,.4)}
+.btn-login:disabled{background:#cbd5e0;cursor:not-allowed;transform:none;box-shadow:none}
+#login-err{color:#e53e3e;font-size:.78rem;margin-top:10px;display:none}
+.login-page-footer{position:fixed;bottom:0;left:0;right:0;padding:10px 24px;display:flex;justify-content:space-between;align-items:center;font-size:11px;color:rgba(255,255,255,.55);background:rgba(0,0,0,.18)}
+/* 본문 폭 — APS 표준 960px. ACC·GW 는 JS 로 960 을 덮어쓰지만
+   AAC 는 단독 상세 모드가 없어 CSS 에서 바로 지정한다. */
+#app { display: none; max-width: 960px; margin: 0 auto; padding: 24px 20px 48px; }
+.app-header{background:#fff;border-radius:8px;padding:18px 24px;margin-bottom:18px;display:flex;justify-content:space-between;align-items:flex-start;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.app-title{font-size:1.1rem;font-weight:700;color:#323130}
+.app-sub{font-size:.72rem;color:#605e5c;margin-top:3px}
+.btn-logout{background:#fff;border:1px solid #d2d0ce;border-radius:4px;padding:5px 14px;font-size:.78rem;cursor:pointer;color:#323130;font-family:inherit}
+.btn-logout:hover{background:#f3f2f1}
+.tabs { display: flex; gap: 2px; margin-bottom: 16px; flex-wrap: wrap; }
+.tab-btn { padding: 8px 18px; border: none; background: #fff; border-radius: 4px 4px 0 0; font-size: 14px; cursor: pointer; color: #605e5c; border-bottom: 3px solid transparent; }
+.tab-btn.active { color: #0078d4; border-bottom: 3px solid #0078d4; font-weight: 500; }
+.tab-btn:hover:not(.active) { background: #f3f2f1; }
+.card { background: #fff; border-radius: 8px; padding: 22px 24px; margin-bottom: 14px; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+.card-title { font-size: 14px; font-weight: 600; color: #323130; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid #edebe9; }
+.section-title { font-size: 13px; font-weight: 600; color: #0078d4; margin: 20px 0 8px; padding: 6px 10px; background: #f0f6ff; border-radius: 4px; border-left: 3px solid #0078d4; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 10px; }
+.form-row.three { grid-template-columns: 1fr 1fr 1fr; }
+.form-row.four { grid-template-columns: 1fr 1fr 1fr 1fr; }
+.form-row.full { grid-template-columns: 1fr; }
+.form-group { display: flex; flex-direction: column; gap: 5px; }
+.form-group label { font-size: 12px; font-weight: 500; color: #605e5c; }
+.form-group label .req { color: #a4262c; margin-left: 3px; }
+.form-group select, .form-group input, .form-group textarea {
+  border: 1px solid #d2d0ce; border-radius: 4px; padding: 7px 10px;
+  font-size: 13px; color: #323130; background: #fff; font-family: inherit;
+}
+.form-group select:focus, .form-group input:focus, .form-group textarea:focus { outline: none; border-color: #0078d4; }
+.form-group select:disabled, .form-group input:disabled { background: #f3f2f1; color: #a19f9d; }
+.form-group input[readonly] { background: #f3f2f1; color: #605e5c; }
+.form-group textarea { resize: vertical; min-height: 70px; }
+.btn { padding: 8px 18px; border-radius: 4px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; font-family: inherit; transition: all .15s; }
+.btn-primary{background:#0078d4;color:#fff;border:none;border-radius:4px;padding:8px 24px;font-size:.85rem;cursor:pointer;font-family:inherit}
+.btn-primary:hover{background:#106ebe}
+.btn-secondary{background:#fff;border:1px solid #d2d0ce;border-radius:4px;padding:8px 24px;font-size:.85rem;cursor:pointer;font-family:inherit}
+.btn-secondary:hover{background:#f3f2f1}
+.voucher-table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 900px; }
+.voucher-table th { background: #f3f2f1; padding: 9px 10px; text-align: left; border-bottom: 2px solid #edebe9; font-size: 12px; font-weight: 600; color: #605e5c; white-space: nowrap; }
+.voucher-table td { padding: 10px 10px; border-bottom: 1px solid #edebe9; vertical-align: middle; white-space: nowrap; }
+.voucher-table tr:hover td { background: #f0f6ff; cursor: pointer; }
+.list-empty { text-align: center; padding: 48px; color: #a19f9d; font-size: 14px; }
+.modal-box{background:#fff;border-radius:8px;padding:28px 32px;max-width:680px;width:95%;max-height:88vh;overflow-y:auto;position:relative}
+.modal-close{position:absolute;top:12px;right:16px;background:none;border:none;font-size:1.2rem;cursor:pointer;color:#605e5c}
+.det-row{display:flex;padding:5px 0;border-bottom:1px solid #f3f2f1;font-size:.8rem}
+.appr-item{display:flex;justify-content:space-between;align-items:flex-start;padding:9px 10px;border-bottom:1px solid #edebe9;font-size:.8rem;gap:10px}
+.appr-item:last-child{border-bottom:none}
+.status-대기{color:#7d5700;font-weight:600}
+.status-대기잠김{color:#a19f9d;font-weight:600}
+.status-승인{color:#107c10;font-weight:600}
+.status-반려{color:#a4262c;font-weight:600}
 
-/* ══════════════════════════════════════════════════════════
-   STK Approval Delegation — 시각 체계
-   글자 6단계 · 색 16종 · 모서리 2종 · 그림자 2종으로 고정한다.
-   값을 그때그때 정하지 않고 아래 변수만 쓴다.
-   ══════════════════════════════════════════════════════════ */
-:root{
-  /* 글자 — 6단계 */
-  --t-xs:11px;      /* 보조 설명 · 배지 */
-  --t-sm:12px;      /* 라벨 · 표 머리글 */
-  --t-md:13px;      /* 본문 · 입력값 */
-  --t-lg:15px;      /* 소제목 */
-  --t-xl:19px;      /* 화면 제목 */
-  --t-2xl:26px;     /* 로그인 제목 */
+/* ── AAC 전용 — ACC 의 톤(색·모서리·크기)을 그대로 따른다 ───── */
 
-  /* 색 — 16종 */
-  --ink:#1a1a1a;        /* 본문 글자 */
-  --ink-2:#5c5c5c;      /* 보조 글자 */
-  --ink-3:#8e8e8e;      /* 흐린 글자 */
-  --line:#e8e8e8;       /* 경계선 */
-  --line-2:#d4d4d4;     /* 입력란 테두리 */
-  --bg:#f7f7f8;         /* 배경 */
-  --bg-2:#fbfbfc;       /* 옅은 면 */
-  --surface:#ffffff;    /* 카드 */
-  --brand:#0f6cbd;      /* 강조 */
-  --brand-2:#0a4f8f;    /* 강조 진하게 */
-  --brand-bg:#eef5fc;   /* 강조 배경 */
-  --ok:#0f7b3f;         /* 승인 */
-  --ok-bg:#eaf6ee;
-  --warn:#8a6116;       /* 대기 · 주의 */
-  --warn-bg:#fdf6e6;
-  --bad:#b3261e;        /* 반려 · 오류 */
-  --bad-bg:#fdedec;
+/* 안내 블록 — ACC 의 .sp-note.info 와 같은 톤 */
+.aac-note{background:#f0f6ff;border:1px solid #c7e0f4;border-radius:6px;
+  padding:12px 15px;font-size:12px;color:#0b5fa5;line-height:1.75;margin-bottom:16px}
+.aac-note b{color:#004578;font-weight:600}
 
-  /* 모서리 · 그림자 — 각 2종 */
-  --r:6px;
-  --r-lg:10px;
-  --sh:0 1px 2px rgba(0,0,0,.05);
-  --sh-lg:0 8px 28px rgba(0,0,0,.14);
+/* 선택 결과 표시 — ACC 의 .appr-block 과 같은 톤 */
+.aac-box{background:#fff;border:1px solid #edebe9;border-radius:8px;padding:14px 16px}
+.aac-box .lb{font-size:11px;font-weight:600;color:#a19f9d;letter-spacing:.02em}
+.aac-box .vv{font-size:14px;font-weight:600;color:#323130;margin-top:5px;min-height:20px}
+.aac-box .mm{font-size:11.5px;color:#a19f9d;margin-top:3px}
+
+/* 기간 배지 — ACC 의 .line-step-badge 와 같은 규격 */
+.dayspan{display:inline-block;background:#0078d4;color:#fff;border-radius:10px;
+  padding:3px 12px;font-size:11px;font-weight:700;white-space:nowrap}
+
+/* 상태 메시지 — ACC 의 .sp-note 계열 */
+.msg-w{background:#fdf6e3;border:1px solid #f0d9a0;border-radius:6px;padding:9px 13px;
+  font-size:11.5px;color:#8a6116;line-height:1.6;margin-top:8px}
+.msg-e{background:#fdf2f2;border:1px solid #f0c8c8;border-radius:6px;padding:9px 13px;
+  font-size:11.5px;color:#a4262c;line-height:1.6;margin-top:8px}
+.msg-o{background:#f0f6ff;border:1px solid #c7e0f4;border-radius:6px;padding:9px 13px;
+  font-size:11.5px;color:#0b5fa5;line-height:1.6;margin-top:8px}
+
+/* 전체 시스템 — ACC 의 .appr-block.appr-fixed 톤 */
+.chk-all{display:flex;align-items:center;gap:9px;font-size:13px;font-weight:600;color:#004578;
+  cursor:pointer;padding:11px 15px;background:#f0f6ff;border:1px solid #c7e0f4;border-radius:8px}
+.chk-all input{width:15px;height:15px;margin:0;cursor:pointer;accent-color:#0078d4;flex-shrink:0}
+.chk-all .sub{font-weight:400;color:#5b8db8;font-size:11.5px;margin-left:2px}
+
+/* 시스템 격자 — 3열, 얇은 구분선 */
+.sysgrid .chk{background:#fff;padding:10px 14px;margin:0;transition:background .12s}
+.chk{display:flex;align-items:center;gap:9px;font-size:12.5px;color:#323130;
+  cursor:pointer;user-select:none;line-height:1.4}
+.chk input,.sys-chk{width:14px;height:14px;margin:0;cursor:pointer;accent-color:#0078d4;flex-shrink:0}
+.chk.dim{color:#b3b0ad;cursor:default}
+
+/* 입력란 하단 안내 — ACC 라벨과 같은 계열의 회색 */
+.fld-hint{font-size:11.5px;color:#a19f9d;margin-top:6px;line-height:1.55}
+/* 위임 표 — 누가(왼쪽) → 누구에게(오른쪽) 를 한눈에 */
+.dg-tbl{width:100%;border-collapse:collapse;margin-top:12px;
+  border:1px solid #edebe9;border-radius:8px;overflow:hidden;background:#fff}
+.dg-tbl th{background:#f7f9fb;padding:9px 12px;text-align:left;font-size:11.5px;
+  font-weight:600;color:#605e5c;border-bottom:1px solid #edebe9}
+.dg-tbl th:nth-child(3){background:#fff;border-bottom-color:#fff}
+.dg-tbl td{padding:6px 12px;border-bottom:1px solid #f5f4f3;vertical-align:middle}
+.dg-tbl tr:last-child td{border-bottom:none}
+.dg-tbl td.k{font-size:11.5px;color:#a19f9d;width:88px;white-space:nowrap}
+.dg-tbl td.arrow{text-align:center;font-size:19px;color:#0078d4;background:#fafbfc;
+  border-left:1px solid #f0eff0;border-right:1px solid #f0eff0}
+.dg-tbl select{width:100%;padding:6px 9px;border:1px solid #d2d0ce;border-radius:4px;
+  font-size:12.5px;font-family:inherit;color:#323130;background:#fff}
+.dg-tbl select:focus{outline:none;border-color:#0078d4}
+.dg-tbl select:disabled{background:#fafafa;color:#a19f9d}
+.dg-tbl tr.pick td{background:#f7f9fb}
+.dg-tbl .nm{font-size:13px;font-weight:600;color:#323130;min-height:18px}
+.dg-tbl .em{font-size:11px;color:#a19f9d;margin-top:1px}
+@media(max-width:720px){
+  .dg-tbl colgroup,.dg-tbl td.arrow{display:none}
+  .dg-tbl,.dg-tbl tbody,.dg-tbl tr,.dg-tbl td,.dg-tbl th{display:block;width:auto}
+  .dg-tbl th{border-top:1px solid #edebe9}
 }
 
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--ink);
-  font-size:var(--t-md);line-height:1.55;min-height:100vh;
-  -webkit-font-smoothing:antialiased}
+/* 대상 시스템 — 칩. 12개뿐이라 카드로 늘어놓으면 화면만 길어진다 */
+.sysgrid{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.sysgrid .chk{display:inline-flex;align-items:center;gap:6px;padding:6px 11px;margin:0;
+  border:1px solid #d2d0ce;border-radius:14px;background:#fff;font-size:12px;
+  color:#323130;cursor:pointer;transition:all .12s;white-space:nowrap}
+.sysgrid .chk:hover{border-color:#0078d4;background:#f0f6ff}
+.sysgrid .chk input{width:13px;height:13px;margin:0;accent-color:#0078d4;cursor:pointer}
+.sysgrid .chk.dim{background:#fafafa;border-color:#ececec;color:#b3b0ad;cursor:default}
+.sysgrid .chk.dim:hover{border-color:#ececec;background:#fafafa}
 
-/* ── 로그인 ─────────────────────────────────────────────── */
-#login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;
-  background:var(--bg);padding:24px}
-.login-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);
-  padding:44px 40px;text-align:center;max-width:380px;width:100%;box-shadow:var(--sh)}
-.login-logo{width:44px;height:44px;border-radius:var(--r);background:var(--brand);
-  display:flex;align-items:center;justify-content:center;margin:0 auto 20px;
-  font-size:20px;color:#fff}
-.login-title{font-size:var(--t-2xl);font-weight:600;color:var(--ink);letter-spacing:-.01em}
-.login-co{font-size:var(--t-md);color:var(--ink-2);margin-top:6px}
-.login-guide{font-size:var(--t-sm);color:var(--ink-3);margin:22px 0}
-.btn-login{width:100%;background:var(--brand);color:#fff;border:none;border-radius:var(--r);
-  padding:11px 0;font-size:var(--t-md);font-weight:600;cursor:pointer;font-family:inherit;
-  transition:background .15s}
-.btn-login:hover:not(:disabled){background:var(--brand-2)}
-.btn-login:disabled{background:var(--line-2);cursor:default}
-#login-err{display:none;color:var(--bad);font-size:var(--t-sm);margin-top:14px;line-height:1.6}
-.login-page-footer{position:fixed;bottom:0;left:0;right:0;padding:14px 24px;
-  display:flex;justify-content:space-between;font-size:var(--t-xs);color:var(--ink-3)}
+/* 신청 유형 선택 — 본인 / 대신 신청 */
+.pv-wrap{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:#edebe9;
+  border:1px solid #edebe9;border-radius:8px;overflow:hidden}
+@media(max-width:640px){.pv-wrap{grid-template-columns:1fr}}
+.pv-opt{display:flex;align-items:flex-start;gap:9px;background:#fff;padding:12px 15px;
+  cursor:pointer;font-size:12.5px;color:#323130;transition:background .12s}
+.pv-opt:hover{background:#f0f6ff}
+.pv-opt input{width:15px;height:15px;margin:1px 0 0;cursor:pointer;accent-color:#0078d4;flex-shrink:0}
+.pv-opt span{display:block;line-height:1.5}
+.pv-opt .sub{display:block;font-size:11.5px;color:#a19f9d;font-weight:400;margin-top:2px}
+.pv-opt.off{background:#fafafa;color:#b3b0ad;cursor:not-allowed}
+.pv-opt.off:hover{background:#fafafa}
+.proxy-tag{display:inline-block;background:#fdf6e3;color:#8a6116;border:1px solid #f0d9a0;
+  border-radius:10px;padding:2px 9px;font-size:11px;font-weight:600;margin-left:6px}
 
-/* ── 뼈대 ───────────────────────────────────────────────── */
-#app{display:none;max-width:960px;margin:0 auto;padding:28px 20px 56px}
-
-.app-header{display:flex;justify-content:space-between;align-items:flex-start;
-  gap:20px;padding:0 0 20px;border-bottom:1px solid var(--line);margin-bottom:20px}
-.app-title{font-size:var(--t-xl);font-weight:600;color:var(--ink);letter-spacing:-.01em}
-.app-sub{font-size:var(--t-sm);color:var(--ink-2);margin-top:3px}
-.app-meta{font-size:var(--t-xs);color:var(--ink-3);margin-top:6px}
-.hd-right{display:flex;flex-direction:column;align-items:flex-end;gap:10px;flex-shrink:0}
-.hd-user{font-size:var(--t-sm);color:var(--ink-2);white-space:nowrap}
-
-/* ── 탭 ─────────────────────────────────────────────────── */
-.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin-bottom:22px}
-.tab-btn{padding:9px 16px;border:none;background:none;font-family:inherit;
-  font-size:var(--t-md);color:var(--ink-2);cursor:pointer;position:relative;
-  border-bottom:2px solid transparent;margin-bottom:-1px;transition:color .15s}
-.tab-btn:hover:not(.active){color:var(--ink)}
-.tab-btn.active{color:var(--brand);font-weight:600;border-bottom-color:var(--brand)}
-.tab-badge{display:inline-block;background:var(--bad);color:#fff;border-radius:9px;
-  padding:0 6px;font-size:var(--t-xs);font-weight:600;margin-left:6px;line-height:16px}
-
-/* ── 카드 · 구획 ────────────────────────────────────────── */
-.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);
-  padding:24px 26px;margin-bottom:16px}
-.card-title{font-size:var(--t-lg);font-weight:600;color:var(--ink);margin-bottom:18px}
-.section-title{font-size:var(--t-sm);font-weight:600;color:var(--ink-3);
-  letter-spacing:.04em;text-transform:uppercase;
-  margin:26px 0 12px;padding-bottom:8px;border-bottom:1px solid var(--line)}
-.section-title:first-of-type{margin-top:0}
-
-/* ── 입력 ───────────────────────────────────────────────── */
-.form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:14px}
-.form-row.three{grid-template-columns:1fr 1fr 1fr}
-.form-row.full{grid-template-columns:1fr}
-@media(max-width:720px){.form-row,.form-row.three{grid-template-columns:1fr}}
-.form-group{display:flex;flex-direction:column}
-.form-group label{font-size:var(--t-sm);font-weight:500;color:var(--ink-2);margin-bottom:6px}
-.form-group label .req{color:var(--bad);margin-left:3px}
-.form-group input,.form-group select,.form-group textarea{
-  width:100%;padding:9px 11px;border:1px solid var(--line-2);border-radius:var(--r);
-  font-size:var(--t-md);font-family:inherit;color:var(--ink);background:var(--surface);
-  transition:border-color .15s,box-shadow .15s}
-.form-group input:focus,.form-group select:focus,.form-group textarea:focus{
-  outline:none;border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-bg)}
-.form-group input:disabled,.form-group select:disabled{
-  background:var(--bg-2);color:var(--ink-3);cursor:not-allowed}
-.form-group textarea{resize:vertical;min-height:76px;line-height:1.6}
-.fld-hint{font-size:var(--t-xs);color:var(--ink-3);margin-top:6px}
-
-/* ── 버튼 ───────────────────────────────────────────────── */
-.btn{padding:9px 18px;border:1px solid transparent;border-radius:var(--r);
-  font-size:var(--t-md);font-weight:500;font-family:inherit;cursor:pointer;
-  transition:background .15s,border-color .15s}
-.btn-primary{background:var(--brand);color:#fff}
-.btn-primary:hover{background:var(--brand-2)}
-.btn-secondary{background:var(--surface);color:var(--ink-2);border-color:var(--line-2)}
-.btn-secondary:hover{background:var(--bg-2);color:var(--ink)}
-.btn-danger{background:var(--bad);color:#fff}
-.btn-danger:hover{background:#921d17}
-.btn-sm{padding:6px 12px;font-size:var(--t-sm)}
-
-/* ── 안내 ───────────────────────────────────────────────── */
-.note{border-radius:var(--r);padding:13px 16px;font-size:var(--t-sm);line-height:1.7;
-  margin-bottom:18px;border:1px solid transparent}
-.note-info{background:var(--brand-bg);border-color:#cfe3f6;color:var(--brand-2)}
-.note-warn{background:var(--warn-bg);border-color:#f0dcae;color:var(--warn)}
-.note-bad{background:var(--bad-bg);border-color:#f2cac7;color:var(--bad)}
-.note-ok{background:var(--ok-bg);border-color:#c8e6d3;color:var(--ok)}
-.note b{font-weight:600}
-.msg-w{composes:note}
-.msg-w,.msg-e,.msg-o{border-radius:var(--r);padding:10px 14px;font-size:var(--t-sm);
-  line-height:1.6;margin-top:10px;border:1px solid transparent}
-.msg-w{background:var(--warn-bg);border-color:#f0dcae;color:var(--warn)}
-.msg-e{background:var(--bad-bg);border-color:#f2cac7;color:var(--bad)}
-.msg-o{background:var(--ok-bg);border-color:#c8e6d3;color:var(--ok)}
-.cfgwarn{display:none;background:var(--warn-bg);border:1px solid #f0dcae;border-radius:var(--r);
-  padding:11px 14px;font-size:var(--t-sm);color:var(--warn);margin-bottom:18px}
-
-/* ── 선택 카드 (본인 / 대신 신청) ──────────────────────── */
-.pv-wrap{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-@media(max-width:720px){.pv-wrap{grid-template-columns:1fr}}
-.pv-opt{display:flex;align-items:flex-start;gap:10px;padding:14px 16px;cursor:pointer;
-  border:1px solid var(--line-2);border-radius:var(--r);background:var(--surface);
-  font-size:var(--t-md);transition:border-color .15s,background .15s}
-.pv-opt:hover{border-color:var(--brand);background:var(--brand-bg)}
-.pv-opt:has(input:checked){border-color:var(--brand);background:var(--brand-bg)}
-.pv-opt input{width:15px;height:15px;margin:2px 0 0;accent-color:var(--brand);flex-shrink:0;cursor:pointer}
-.pv-opt span{display:block}
-.pv-opt b{font-weight:600;color:var(--ink)}
-.pv-opt .sub{display:block;font-size:var(--t-xs);color:var(--ink-3);margin-top:3px;font-weight:400}
-.pv-opt.off{background:var(--bg-2);border-color:var(--line);cursor:not-allowed}
-.pv-opt.off:hover{border-color:var(--line);background:var(--bg-2)}
-.pv-opt.off b,.pv-opt.off .sub{color:var(--ink-3)}
-
-/* ── 요약 상자 ──────────────────────────────────────────── */
-.aac-box{background:var(--bg-2);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px}
-.aac-box .lb{font-size:var(--t-xs);color:var(--ink-3);letter-spacing:.03em}
-.aac-box .vv{font-size:var(--t-lg);font-weight:600;color:var(--ink);margin-top:5px;min-height:22px}
-.aac-box .mm{font-size:var(--t-sm);color:var(--ink-3);margin-top:3px}
-.dayspan{display:inline-block;background:var(--brand-bg);color:var(--brand-2);
-  border:1px solid #cfe3f6;border-radius:var(--r);padding:6px 14px;
-  font-size:var(--t-md);font-weight:600;white-space:nowrap}
-
-/* ── 시스템 선택 ────────────────────────────────────────── */
-.sysgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:12px}
-@media(max-width:720px){.sysgrid{grid-template-columns:1fr}}
-.chk{display:flex;align-items:center;gap:9px;padding:10px 13px;cursor:pointer;
-  border:1px solid var(--line);border-radius:var(--r);background:var(--surface);
-  font-size:var(--t-md);color:var(--ink);transition:border-color .15s,background .15s}
-.chk:hover{border-color:var(--brand);background:var(--brand-bg)}
-.chk input,.sys-chk{width:14px;height:14px;margin:0;accent-color:var(--brand);flex-shrink:0;cursor:pointer}
-.chk.dim{background:var(--bg-2);border-color:var(--line);color:var(--ink-3);cursor:default}
-.chk.dim:hover{border-color:var(--line);background:var(--bg-2)}
-.chk-all{display:flex;align-items:center;gap:10px;padding:13px 16px;cursor:pointer;
-  border:1px solid var(--brand);border-radius:var(--r);background:var(--brand-bg);
-  font-size:var(--t-md);font-weight:600;color:var(--brand-2)}
-.chk-all input{width:16px;height:16px;margin:0;accent-color:var(--brand);flex-shrink:0;cursor:pointer}
-.chk-all .sub{font-weight:400;color:var(--ink-2);font-size:var(--t-sm);margin-left:4px}
-
-/* ── 도구 줄 ────────────────────────────────────────────── */
-.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
-.toolbar .sel,.toolbar .srch{padding:8px 11px;border:1px solid var(--line-2);border-radius:var(--r);
-  font-size:var(--t-md);font-family:inherit;color:var(--ink);background:var(--surface)}
-.toolbar .sel:focus,.toolbar .srch:focus{outline:none;border-color:var(--brand);
-  box-shadow:0 0 0 3px var(--brand-bg)}
-.toolbar .srch{min-width:210px}
-.toolbar .right{margin-left:auto;display:flex;align-items:center;gap:10px}
-.count{font-size:var(--t-sm);color:var(--ink-2);white-space:nowrap}
-
-/* ── 표 ─────────────────────────────────────────────────── */
-.tbl-wrap{overflow-x:auto;margin:0 -26px;padding:0 26px}
-.voucher-table{width:100%;border-collapse:collapse;font-size:var(--t-md)}
-.voucher-table th{background:none;padding:0 12px 10px;text-align:left;
-  border-bottom:1px solid var(--line);font-size:var(--t-xs);font-weight:600;
-  color:var(--ink-3);letter-spacing:.04em;text-transform:uppercase;white-space:nowrap}
-.voucher-table td{padding:13px 12px;border-bottom:1px solid var(--line);vertical-align:top}
-.voucher-table tbody tr{transition:background .12s}
-.voucher-table tbody tr[onclick]{cursor:pointer}
-.voucher-table tbody tr[onclick]:hover{background:var(--bg-2)}
-.voucher-table tbody tr:last-child td{border-bottom:none}
-.list-empty{text-align:center;padding:52px 20px;color:var(--ink-3);font-size:var(--t-md)}
-.mini{font-size:var(--t-xs);color:var(--ink-3);margin-top:3px}
-
-/* ── 배지 ───────────────────────────────────────────────── */
-.st{display:inline-block;border-radius:var(--r);padding:3px 9px;font-size:var(--t-xs);
+/* 상태 배지 — ACC 의 .badge-대기 규격 */
+.st{display:inline-block;border-radius:10px;padding:2px 9px;font-size:11px;
   font-weight:600;white-space:nowrap;border:1px solid transparent}
-.st-대기{background:var(--warn-bg);color:var(--warn);border-color:#f0dcae}
-.st-승인완료{background:var(--ok-bg);color:var(--ok);border-color:#c8e6d3}
-.st-반려{background:var(--bad-bg);color:var(--bad);border-color:#f2cac7}
-.st-철회{background:var(--bg);color:var(--ink-2);border-color:var(--line)}
-.st-만료{background:var(--bg);color:var(--ink-3);border-color:var(--line)}
-.proxy-tag{display:inline-block;background:var(--warn-bg);color:var(--warn);
-  border:1px solid #f0dcae;border-radius:var(--r);padding:2px 8px;
-  font-size:var(--t-xs);font-weight:600;margin-left:6px}
+.st-대기{background:#fff4ce;color:#7d5700;border-color:#ffe58f}
+.st-승인완료{background:#dff6dd;color:#107c10;border-color:#bfe6bd}
+.st-반려{background:#fde7e9;color:#a4262c;border-color:#f3c6ca}
+.st-철회{background:#f3f2f1;color:#605e5c;border-color:#e1dfdd}
+.st-만료{background:#f3f2f1;color:#a19f9d;border-color:#e1dfdd}
 
-/* ── 모달 ───────────────────────────────────────────────── */
-.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:900;
+/* 탭 배지 — ACC 결재함 배지와 같은 규격 */
+.tab-badge{display:inline-block;background:#a4262c;color:#fff;border-radius:9px;
+  padding:1px 7px;font-size:10px;font-weight:700;margin-left:6px;vertical-align:1px}
+
+.mini{font-size:11.5px;color:#a19f9d;margin-top:2px}
+.cfgwarn{display:none;background:#fdf6e3;border:1px solid #f0d9a0;border-radius:6px;
+  padding:10px 13px;font-size:12px;color:#8a6116;margin-bottom:16px}
+.tbl-wrap{overflow-x:auto}
+
+/* 결재 이력 — ACC 와 동일 */
+.appr-box{background:#fff;border:1px solid #edebe9;border-radius:8px;margin-top:8px;overflow:hidden}
+
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:900;
   align-items:center;justify-content:center;padding:20px}
 .modal-overlay.open{display:flex}
-.modal-box{background:var(--surface);border-radius:var(--r-lg);max-width:640px;width:100%;
-  max-height:88vh;display:flex;flex-direction:column;box-shadow:var(--sh-lg);overflow:hidden}
-.modal-hd{display:flex;justify-content:space-between;align-items:center;
-  padding:18px 24px;border-bottom:1px solid var(--line)}
-.modal-hd h3{font-size:var(--t-lg);font-weight:600;color:var(--ink)}
-.modal-close{background:none;border:none;font-size:20px;line-height:1;color:var(--ink-3);
-  cursor:pointer;padding:0 4px}
-.modal-close:hover{color:var(--ink)}
-.modal-bd{padding:22px 24px;overflow-y:auto}
 
-/* ── 상세 행 ────────────────────────────────────────────── */
-.det-row{display:flex;padding:10px 0;border-bottom:1px solid var(--line);font-size:var(--t-md)}
+.btn-danger{background:#a4262c;color:#fff}
+.btn-danger:hover{background:#8a1f24}
+.det-label{width:150px;flex-shrink:0;color:#605e5c;font-size:12px}
+.det-value{flex:1;color:#323130;font-size:13px;word-break:break-word}
 .det-row:last-child{border-bottom:none}
-.det-label{width:140px;flex-shrink:0;color:var(--ink-3);font-size:var(--t-sm)}
-.det-value{flex:1;color:var(--ink);word-break:break-word}
-
-/* ── 결재 이력 ──────────────────────────────────────────── */
-.appr-box{border:1px solid var(--line);border-radius:var(--r);margin-top:10px;overflow:hidden}
-.appr-item{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;
-  padding:13px 16px;border-bottom:1px solid var(--line);font-size:var(--t-md)}
-.appr-item:last-child{border-bottom:none}
-.status-대기{color:var(--warn);font-weight:600;font-size:var(--t-sm)}
-.status-승인{color:var(--ok);font-weight:600;font-size:var(--t-sm)}
-.status-반려{color:var(--bad);font-weight:600;font-size:var(--t-sm)}
-.status-잠김{color:var(--ink-3);font-weight:600;font-size:var(--t-sm)}
-.appr-cmt{margin-top:8px;padding:9px 12px;background:var(--bg-2);border-radius:var(--r);
-  font-size:var(--t-sm);color:var(--ink-2);line-height:1.6;white-space:pre-wrap}
 
 </style>
 </head>
@@ -273,7 +203,7 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--ink);
     <div class="login-guide">Hyosung M365 계정으로 로그인하세요</div>
     <button class="btn-login" id="btn-login" onclick="signIn()" disabled>로딩 중...</button>
     <div id="login-err"></div>
-    <div class="mini" style="margin-top:22px">&copy; Star Truck Korea &middot; AAC</div>
+    <div style="font-size:.75rem;color:#a19f9d;margin-top:24px;text-align:center">&copy; Star Truck Korea &middot; AAC</div>
   </div>
   <div class="login-page-footer">
     <span>&copy; 2026 Star Truck Korea &middot; Approval Delegation</span>
@@ -287,15 +217,19 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--ink);
     <div>
       <div class="app-title">Approval Delegation</div>
       <div class="app-sub">STK 결재 대리 지정 시스템</div>
-      <div class="app-meta" id="aac-contact">문의 stk_it@hyosung.com</div>
-    </div>
-    <div class="hd-right">
-      <span class="hd-user" id="user-name"></span>
-      <div style="display:flex;gap:8px">
-        <button class="btn btn-secondary btn-sm" onclick="signOut()">로그아웃</button>
-        <a class="btn btn-primary btn-sm" href="https://aps.startruckkorea.com/" target="_self"
-           style="text-decoration:none;display:inline-block">통합 결재함</a>
+      <div style="font-size:11px;color:#605e5c;margin-top:4px">
+        <div id="aac-contact">문의 Email: 불러오는 중...</div>
       </div>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span id="user-name" style="font-size:.8rem;color:#605e5c"></span>
+        <button class="btn-logout" onclick="signOut()">로그아웃</button>
+      </div>
+      <a href="https://aps.startruckkorea.com/" target="_self" title="STK 통합 결재함"
+         style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;background:#0078d4;color:#fff;
+                border-radius:6px;padding:7px 14px;font-size:.78rem;font-weight:600">
+        &#128202; 돌아가기</a>
     </div>
   </div>
 
@@ -312,54 +246,71 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--ink);
       <div class="card-title">대리 지정 신청</div>
       <div id="cfg-warn" class="cfgwarn">설정 파일(system_config_final.xlsx)을 불러오지 못했습니다. 관리자 정보가 비어 있을 수 있으니 IT팀에 알려주세요.</div>
 
-      <div class="note note-info">
+      <div class="aac-note">
         <b>결재 대리 지정이란</b><br>
         출장 &middot; 휴가 등으로 자리를 비우는 기간 동안, 내가 처리해야 할 결재를 다른 직원이 대신 볼 수 있도록 미리 지정하는 기능입니다.
         지정된 기간에만 적용되며, 기간이 지나면 자동으로 해제됩니다.
         <b>원래 결재자 기록은 그대로 남고</b>, 대리인이 처리한 건은 대리 처리로 표시됩니다.
       </div>
 
-      <div class="section-title">1. 위임자 (Delegator)</div>
+      <div class="section-title">1. 결재 권한 위임 (Delegation)</div>
+
       <div class="pv-wrap">
         <label class="pv-opt"><input type="radio" name="pv-mode" value="self" checked onchange="onProxyMode()">
-          <span><b>본인</b><span class="sub">내 결재를 다른 사람에게 맡깁니다</span></span></label>
+          <span><b>본인 신청</b><span class="sub">내 결재를 맡깁니다</span></span></label>
         <label class="pv-opt" id="pv-opt-other"><input type="radio" name="pv-mode" value="other" onchange="onProxyMode()">
-          <span><b>다른 사람 대신 신청</b><span class="sub">임원 등 본인이 직접 신청하기 어려운 경우</span></span></label>
+          <span><b>대신 신청</b><span class="sub">임원 등 본인 신청이 어려운 경우</span></span></label>
       </div>
       <div id="pv-locked" class="msg-w" style="display:none">
         대신 신청은 사전에 지정된 담당자만 할 수 있습니다. 필요하시면 IT팀으로 요청해 주세요.
       </div>
-      <div id="pv-pick" style="display:none">
-        <div class="form-row three" style="margin-top:12px">
-          <div class="form-group">
-            <label>부서<span class="req">*</span></label>
-            <select id="p-dept" onchange="onPDeptChange()"><option value="">부서 선택</option></select>
-          </div>
-          <div class="form-group">
-            <label>팀<span class="req">*</span></label>
-            <select id="p-team" onchange="onPTeamChange()" disabled><option value="">팀 선택</option></select>
-          </div>
-          <div class="form-group">
-            <label>위임자<span class="req">*</span></label>
-            <select id="p-person" onchange="onPPersonChange()" disabled><option value="">직원 선택</option></select>
-          </div>
-        </div>
-        <div class="aac-box">
-          <div class="lb">결재 권한을 위임하는 분</div>
-          <div class="vv" id="p-view">-</div>
-          <div class="mm" id="p-mail"></div>
-        </div>
+
+      <table class="dg-tbl">
+        <colgroup><col style="width:88px"><col><col style="width:44px"><col style="width:88px"><col></colgroup>
+        <tr>
+          <th colspan="2">위임자 &mdash; 결재를 맡기는 사람</th>
+          <th></th>
+          <th colspan="2">대리인 &mdash; 대신 처리할 사람</th>
+        </tr>
+        <tr>
+          <td class="k">부서</td>
+          <td><select id="p-dept" onchange="onPDeptChange()" disabled><option value="">본인</option></select></td>
+          <td rowspan="4" class="arrow">&#10230;</td>
+          <td class="k">부서</td>
+          <td><select id="f-dept" onchange="onDeptChange()"><option value="">부서 선택</option></select></td>
+        </tr>
+        <tr>
+          <td class="k">팀</td>
+          <td><select id="p-team" onchange="onPTeamChange()" disabled><option value="">-</option></select></td>
+          <td class="k">팀</td>
+          <td><select id="f-team" onchange="onTeamChange()" disabled><option value="">팀 선택</option></select></td>
+        </tr>
+        <tr>
+          <td class="k">이름</td>
+          <td><select id="p-person" onchange="onPPersonChange()" disabled><option value="">-</option></select></td>
+          <td class="k">이름</td>
+          <td><select id="f-person" onchange="onPersonChange()" disabled><option value="">직원 선택</option></select></td>
+        </tr>
+        <tr class="pick">
+          <td class="k">선택</td>
+          <td><div class="nm" id="p-view">본인</div><div class="em" id="p-mail"></div></td>
+          <td class="k">선택</td>
+          <td><div class="nm" id="f-deputy-view">-</div><div class="em" id="f-deputy-mail"></div></td>
+        </tr>
+      </table>
+      <div id="pv-msg"></div>
+      <div id="deputy-msg"></div>
+
+      <div id="pv-reason" style="display:none">
         <div class="form-row full" style="margin-top:12px">
           <div class="form-group">
             <label>대신 신청하는 사유<span class="req">*</span></label>
             <input type="text" id="p-reason" maxlength="200" placeholder="예) 대표이사 해외 출장으로 비서실에서 대신 신청합니다.">
-            <div class="fld-hint">누가 왜 대신 신청했는지 기록으로 남습니다. (최대 200자)</div>
           </div>
         </div>
-        <div id="pv-msg"></div>
       </div>
 
-      <div class="section-title">2. 대리 기간 (Delegation Period)</div>
+      <div class="section-title">2. 대리 기간 (Period)</div>
       <div class="form-row three">
         <div class="form-group">
           <label>시작일<span class="req">*</span></label>
@@ -371,39 +322,18 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--ink);
         </div>
         <div class="form-group">
           <label>기간</label>
-          <span class="dayspan" id="f-days">-</span>
+          <div style="padding-top:8px"><span class="dayspan" id="f-days">-</span></div>
         </div>
       </div>
       <div id="period-msg"></div>
 
-      <div class="section-title">3. 대리인 지정 (Deputy)</div>
-      <div class="form-row three">
-        <div class="form-group">
-          <label>부서<span class="req">*</span></label>
-          <select id="f-dept" onchange="onDeptChange()"><option value="">부서 선택</option></select>
-        </div>
-        <div class="form-group">
-          <label>팀<span class="req">*</span></label>
-          <select id="f-team" onchange="onTeamChange()" disabled><option value="">팀 선택</option></select>
-        </div>
-        <div class="form-group">
-          <label>직원<span class="req">*</span></label>
-          <select id="f-person" onchange="onPersonChange()" disabled><option value="">직원 선택</option></select>
-        </div>
-      </div>
-      <div class="aac-box">
-        <div class="lb">선택된 대리인</div>
-        <div class="vv" id="f-deputy-view">-</div>
-        <div class="mm" id="f-deputy-mail"></div>
-      </div>
-      <div id="deputy-msg"></div>
 
-      <div class="section-title">4. 대상 시스템 (Scope)</div>
-      <div class="fld-hint" style="margin:0 0 10px">대리 처리를 허용할 시스템을 고릅니다.</div>
-      <label class="chk-all"><input type="checkbox" id="f-all" checked onchange="onScopeAll()"> 전체 시스템<span class="sub">지금 있는 12개와 이후 추가되는 시스템까지 포함합니다</span></label>
+      <div class="section-title">3. 대상 시스템 (Scope)</div>
+      <label class="chk-all"><input type="checkbox" id="f-all" checked onchange="onScopeAll()">
+        전체 시스템<span class="sub">지금 있는 12개와 이후 추가되는 시스템까지</span></label>
       <div class="sysgrid" id="f-syslist"></div>
 
-      <div class="section-title">5. 사유 (Reason)</div>
+      <div class="section-title">4. 사유 (Reason)</div>
       <div class="form-row full">
         <div class="form-group">
           <label>대리 지정 사유<span class="req">*</span></label>
@@ -412,16 +342,15 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--ink);
         </div>
       </div>
 
-      <div class="note note-info" style="margin-top:14px">
+      <div class="aac-note" style="margin-top:14px">
         <b>승인 절차</b><br>
         1차 <b>대리인 수락</b> — 지정된 분이 직접 수락해야 효력이 생깁니다.<br>
         2차 <b>관리자 승인</b> — 기록 확인 후 최종 승인됩니다.
       </div>
 
-      <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:26px;
-                  padding-top:20px;border-top:1px solid var(--line)">
+      <div style="text-align:right;margin-top:18px">
         <button class="btn btn-secondary" onclick="resetForm()">초기화</button>
-        <button class="btn btn-primary" id="btn-submit" onclick="submitForm()">신청</button>
+        <button class="btn btn-primary" style="margin-left:6px" id="btn-submit" onclick="submitForm()">신청</button>
       </div>
     </div>
   </div>
@@ -430,10 +359,10 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--ink);
   <div id="pane-my" style="display:none">
     <div class="card">
       <div class="card-title">내 신청 내역</div>
-      <div class="toolbar">
-        <div class="right">
-          <span class="count" id="my-count"></span>
-          <button class="btn btn-secondary btn-sm" onclick="loadMy(true)">새로고침</button>
+      <div style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
+        <div style="margin-left:auto;display:flex;align-items:center;gap:10px">
+          <span id="my-count" style="font-size:.82rem;color:#605e5c;font-weight:500;white-space:nowrap"></span>
+          <button onclick="loadMy(true)" style="padding:6px 14px;background:#fff;color:#605e5c;border:1px solid #d2d0ce;border-radius:4px;font-size:.72rem;cursor:pointer;white-space:nowrap;font-family:inherit">&#128260; 새로고침</button>
         </div>
       </div>
       <div class="tbl-wrap"><table class="voucher-table">
@@ -447,10 +376,10 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--ink);
   <div id="pane-apr" style="display:none">
     <div class="card">
       <div class="card-title">결재함</div>
-      <div class="toolbar">
-        <div class="right">
-          <span class="count" id="apr-count"></span>
-          <button class="btn btn-secondary btn-sm" onclick="loadApr(true)">새로고침</button>
+      <div style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
+        <div style="margin-left:auto;display:flex;align-items:center;gap:10px">
+          <span id="apr-count" style="font-size:.82rem;color:#605e5c;font-weight:500;white-space:nowrap"></span>
+          <button onclick="loadApr(true)" style="padding:6px 14px;background:#fff;color:#605e5c;border:1px solid #d2d0ce;border-radius:4px;font-size:.72rem;cursor:pointer;white-space:nowrap;font-family:inherit">&#128260; 새로고침</button>
         </div>
       </div>
       <div class="tbl-wrap"><table class="voucher-table">
@@ -464,16 +393,17 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--ink);
   <div id="pane-admin" style="display:none">
     <div class="card">
       <div class="card-title">전체 신청 관리</div>
-      <div class="toolbar">
-        <select class="sel" id="ad-status" onchange="renderAdmin()">
+      <div style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
+        <select id="ad-status" onchange="renderAdmin()" style="border:1px solid #d2d0ce;border-radius:4px;padding:6px 10px;font-size:.72rem;font-family:inherit;background:#fff;color:#323130">
           <option value="">전체 상태</option><option>대기</option><option>승인완료</option>
           <option>반려</option><option>철회</option><option>만료</option>
         </select>
-        <input class="srch" type="text" id="ad-search" oninput="renderAdmin()" placeholder="위임자 · 대리인 · 신청번호">
-        <div class="right">
-          <span class="count" id="ad-count"></span>
-          <button class="btn btn-secondary btn-sm" onclick="loadAdmin(true)">새로고침</button>
-          <button class="btn btn-primary btn-sm" onclick="exportExcel()">Excel 내보내기</button>
+        <input type="text" id="ad-search" oninput="renderAdmin()" placeholder="위임자 · 대리인 · 신청번호"
+               style="border:1px solid #d2d0ce;border-radius:4px;padding:6px 10px;font-size:.72rem;font-family:inherit;background:#fff;color:#323130;min-width:190px">
+        <div style="margin-left:auto;display:flex;align-items:center;gap:10px">
+          <span id="ad-count" style="font-size:.82rem;color:#605e5c;font-weight:500;white-space:nowrap"></span>
+          <button onclick="loadAdmin(true)" style="padding:6px 14px;background:#fff;color:#605e5c;border:1px solid #d2d0ce;border-radius:4px;font-size:.72rem;cursor:pointer;white-space:nowrap;font-family:inherit">&#128260; 새로고침</button>
+          <button onclick="exportExcel()" style="padding:6px 14px;background:#107c10;color:#fff;border:none;border-radius:4px;font-size:.82rem;cursor:pointer;white-space:nowrap;font-family:inherit">&#128202; Excel 내보내기</button>
         </div>
       </div>
       <div class="tbl-wrap"><table class="voucher-table">
@@ -491,35 +421,39 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--ink);
     </div>
   </div>
 
-  <div style="text-align:center;padding:32px 0 8px;border-top:1px solid var(--line);margin-top:24px">
-    <div class="mini">&copy; 2026 Star Truck Korea &middot; Approval Delegation</div>
-    <div class="mini">This system is internally developed by Star Truck Korea IT Dept.</div>
+  <div style="text-align:center;padding:22px 0 10px">
+    <div style="font-size:12px;color:#605e5c">&copy; 2026 Star Truck Korea &middot; Approval Delegation</div>
+    <div style="font-size:11px;color:#a19f9d;margin-top:3px">This system is internally developed by Star Truck Korea IT Dept. Unauthorized access is strictly prohibited.</div>
   </div>
 </div>
 
 <!-- 상세 모달 -->
 <div class="modal-overlay" id="detail-modal" onclick="if(event.target===this)closeDetail()">
   <div class="modal-box">
-    <div class="modal-hd"><h3>신청 상세</h3>
-      <button class="modal-close" onclick="closeDetail()">&times;</button></div>
-    <div class="modal-bd" id="detail-body"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:15px 20px;border-bottom:1px solid #edebe9">
+      <h3 style="font-size:1rem;color:#0f2744;margin:0">신청 상세</h3>
+      <button class="modal-close" onclick="closeDetail()">&times;</button>
+    </div>
+    <div style="padding:18px 20px;overflow-y:auto;max-height:70vh" id="detail-body"></div>
   </div>
 </div>
 
 <!-- 처리 확인 모달 -->
 <div class="modal-overlay" id="confirm-modal" onclick="if(event.target===this)closeConfirm()">
   <div class="modal-box" style="max-width:460px">
-    <div class="modal-hd"><h3 id="cf-title">확인</h3>
-      <button class="modal-close" onclick="closeConfirm()">&times;</button></div>
-    <div class="modal-bd">
-      <div id="cf-msg" style="margin-bottom:14px"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:15px 20px;border-bottom:1px solid #edebe9">
+      <h3 style="font-size:1rem;color:#0f2744;margin:0" id="cf-title">확인</h3>
+      <button class="modal-close" onclick="closeConfirm()">&times;</button>
+    </div>
+    <div style="padding:18px 20px">
+      <div id="cf-msg" style="font-size:.83rem;line-height:1.65;color:#323130;margin-bottom:12px"></div>
       <div class="form-group">
         <label>의견<span class="req" id="cf-req" style="display:none">*</span></label>
         <textarea id="cf-comment" maxlength="500" rows="3" placeholder="의견을 입력하세요"></textarea>
       </div>
-      <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:18px">
+      <div style="text-align:right;margin-top:14px">
         <button class="btn btn-secondary" onclick="closeConfirm()">취소</button>
-        <button class="btn btn-primary" id="cf-ok" onclick="doConfirm()">확인</button>
+        <button class="btn btn-primary" style="margin-left:6px" id="cf-ok" onclick="doConfirm()">확인</button>
       </div>
     </div>
   </div>
@@ -811,9 +745,28 @@ function setDeputy(p) {
 /* ── 대신 신청 ──────────────────────────────────────────── */
 function onProxyMode(){
   const on = isProxyMode();
-  document.getElementById('pv-pick').style.display = on ? '' : 'none';
-  if (!on) { setDelegator(null); document.getElementById('pv-msg').innerHTML = ''; }
-  // 위임자가 바뀌면 대리인 후보도 다시 판단해야 한다 (본인 지정 차단 기준이 달라진다)
+  // 표의 왼쪽(위임자) 열만 켜고 끈다. 본인 신청이면 잠긴 채로 '본인' 을 보여준다.
+  ['p-dept','p-team','p-person'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.disabled = !on || (id !== 'p-dept' && !el.dataset.ready);
+  });
+  document.getElementById('pv-reason').style.display = on ? '' : 'none';
+  if (!on) {
+    setDelegator(null);
+    document.getElementById('pv-msg').innerHTML = '';
+    document.getElementById('p-dept').innerHTML = '<option value="">본인</option>';
+    document.getElementById('p-team').innerHTML = '<option value="">-</option>';
+    document.getElementById('p-person').innerHTML = '<option value="">-</option>';
+    document.getElementById('p-view').textContent = myInfo() ? myInfo().name : (user.name || '본인');
+    document.getElementById('p-mail').textContent = (user.email || user.username || '');
+  } else {
+    const depts = [...new Set(employeeData.map(e => e.dept).filter(Boolean))].sort();
+    document.getElementById('p-dept').innerHTML = '<option value="">부서 선택</option>' +
+      depts.map(d => '<option value="' + esc(d) + '">' + esc(d) + '</option>').join('');
+    document.getElementById('p-view').textContent = '-';
+    document.getElementById('p-mail').textContent = '';
+  }
   if (_selDeputy) setDeputy(_selDeputy);
 }
 function initProxy(){
@@ -823,18 +776,15 @@ function initProxy(){
   radio.disabled = !allowed;
   opt.classList.toggle('off', !allowed);
   document.getElementById('pv-locked').style.display = allowed ? 'none' : 'block';
-  if (!allowed) return;
-  const depts = [...new Set(employeeData.map(e => e.dept).filter(Boolean))].sort();
-  document.getElementById('p-dept').innerHTML = '<option value="">부서 선택</option>' +
-    depts.map(d => '<option value="' + esc(d) + '">' + esc(d) + '</option>').join('');
+  onProxyMode();   // 본인 신청 상태로 표 왼쪽을 채운다
 }
 function onPDeptChange(){
   const dept = document.getElementById('p-dept').value;
   const t = document.getElementById('p-team'), p = document.getElementById('p-person');
   const teams = [...new Set(employeeData.filter(e => e.dept === dept).map(e => e.team).filter(Boolean))].sort();
   t.innerHTML = '<option value="">팀 선택</option>' + teams.map(x => '<option value="' + esc(x) + '">' + esc(x) + '</option>').join('');
-  t.disabled = !dept;
-  p.innerHTML = '<option value="">직원 선택</option>'; p.disabled = true;
+  t.disabled = !dept; t.dataset.ready = dept ? '1' : '';
+  p.innerHTML = '<option value="">직원 선택</option>'; p.disabled = true; p.dataset.ready = '';
   setDelegator(null);
 }
 function onPTeamChange(){
@@ -843,7 +793,7 @@ function onPTeamChange(){
   const list = employeeData.filter(e => e.dept === dept && e.team === team).sort((a,b) => a.name.localeCompare(b.name));
   p.innerHTML = '<option value="">직원 선택</option>' +
     list.map(x => '<option value="' + esc(x.email) + '">' + esc(x.name) + '</option>').join('');
-  p.disabled = !team;
+  p.disabled = !team; p.dataset.ready = team ? '1' : '';
   setDelegator(null);
 }
 function onPPersonChange(){
@@ -859,8 +809,8 @@ function setDelegator(p){
     // 본인을 위임자로 고르면 대신 신청이 아니다
     msg.innerHTML = '<div class="msg-w">본인이 위임자라면 위쪽에서 「본인」을 선택해 주세요.</div>';
   } else {
-    msg.innerHTML = '<div class="msg-o">' + esc(p.name) + ' 님의 결재를 다른 분에게 맡기는 신청입니다. '
-      + '신청자로는 ' + esc(p.name) + ' 님이 기록되고, 대신 신청한 사람으로 본인이 함께 남습니다.</div>';
+    msg.innerHTML = '<div class="msg-o">' + esc(p.name) + ' 님을 대신해 신청합니다. '
+      + '기록에는 위임자와 대신 신청한 사람이 함께 남습니다.</div>';
   }
   if (_selDeputy) setDeputy(_selDeputy);
 }
@@ -934,8 +884,8 @@ function resetForm() {
   document.getElementById('f-all').checked = true; onScopeAll();
   const sf = document.querySelector('input[name="pv-mode"][value="self"]');
   if (sf) { sf.checked = true; onProxyMode(); }
-  document.getElementById('p-dept').value = ''; onPDeptChange();
   document.getElementById('p-reason').value = '';
+  onProxyMode();
   document.getElementById('f-days').textContent = '-';
   document.getElementById('period-msg').innerHTML = '';
   document.getElementById('deputy-msg').innerHTML = '';
@@ -1286,7 +1236,7 @@ async function openDetail(id) {
           '<b>' + esc(af.ApprovalOrder || '') + '차 · ' + esc(af.ApproverRole || '') + '</b>' +
           '<br><span class="mini">' + esc(af.ApproverName || '') + ' · ' + esc(af.ApproverEmail || '') + '</span>' +
           (af.ApprovalDate ? '<br><span class="mini">' + fmtDate(af.ApprovalDate) + '</span>' : '') +
-          (af.Comment ? '<div class="appr-cmt">' + safeText(af.Comment) + '</div>' : '') +
+          (af.Comment ? '<br><span style="font-size:.72rem;background:#fff;border:1px solid #edebe9;border-radius:4px;padding:2px 6px;display:inline-block;margin-top:3px">&#128172; ' + safeText(af.Comment) + '</span>' : '') +
           '</div><span class="' + apprClass(af.Status) + '">' + esc(af.Status || '') + '</span></div>';
       }).join('') : '<div class="list-empty">결재 이력이 없습니다.</div>') + '</div>';
 
