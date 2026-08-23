@@ -111,11 +111,21 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
 
 /* 입력란 하단 안내 — ACC 라벨과 같은 계열의 회색 */
 .fld-hint{font-size:11.5px;color:#a19f9d;margin-top:6px;line-height:1.55}
-/* ── 본인/대신 — 작은 세그먼트 ─────────────────────────── */
-.seg{display:inline-flex;border:1px solid #d2d0ce;border-radius:6px;overflow:hidden;background:#fff}
+/* ── 라벨 + 입력 한 줄 ─────────────────────────────────── */
+.row-lbl{display:flex;align-items:center;gap:14px;padding:7px 0;flex-wrap:wrap}
+.row-lbl .rl{width:96px;flex-shrink:0;font-size:12px;font-weight:500;color:#605e5c}
+.row-lbl .rl i{color:#a4262c;font-style:normal;margin-left:2px}
+.row-lbl input.wide{flex:1;min-width:280px;padding:7px 10px;border:1px solid #d2d0ce;
+  border-radius:4px;font-size:12.5px;font-family:inherit;color:#323130}
+.row-lbl input.wide:focus{outline:none;border-color:#0078d4}
+@media(max-width:640px){.row-lbl{align-items:flex-start;flex-direction:column;gap:6px}
+  .row-lbl .rl{width:auto}}
+
+/* 본인/대신 — 작은 세그먼트 */
+.seg{display:inline-flex;border:1px solid #d2d0ce;border-radius:5px;overflow:hidden;background:#fff}
 .seg-i{position:relative;cursor:pointer}
 .seg-i input{position:absolute;opacity:0;width:0;height:0}
-.seg-i span{display:block;padding:6px 16px;font-size:12.5px;color:#605e5c;
+.seg-i span{display:block;padding:5px 15px;font-size:12px;color:#605e5c;
   border-right:1px solid #edebe9;transition:all .12s;white-space:nowrap}
 .seg-i:last-child span{border-right:none}
 .seg-i:hover span{background:#f7f9fb}
@@ -124,36 +134,42 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
 .seg-i.off span{color:#c8c6c4;background:#fafafa}
 .seg-i.off:hover span{background:#fafafa}
 
-/* ── 위임 — 좌우 2단 ──────────────────────────────────── */
-.dg{display:grid;grid-template-columns:1fr 40px 1fr;gap:0;margin-top:12px;
-  border:1px solid #edebe9;border-radius:8px;overflow:hidden;background:#fff}
-.dg-col{min-width:0}
-.dg-hd{background:#f7f9fb;padding:8px 14px;font-size:12px;font-weight:600;color:#323130;
-  border-bottom:1px solid #edebe9}
-.dg-hd span{font-weight:400;color:#a19f9d;font-size:11px;margin-left:6px}
-.dg-bd{padding:12px 14px}
-.dg-sel{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
-.dg-sel select{width:100%;min-width:0;padding:6px 8px;border:1px solid #d2d0ce;border-radius:4px;
-  font-size:12px;font-family:inherit;color:#323130;background:#fff}
-.dg-sel select:focus{outline:none;border-color:#0078d4}
-.dg-sel select:disabled{background:#fafafa;color:#a19f9d}
-.dg-nm{font-size:13.5px;font-weight:600;color:#323130;margin-top:10px;min-height:19px}
-.dg-em{font-size:11px;color:#a19f9d;margin-top:1px;min-height:14px}
-.dg-arrow{display:flex;align-items:center;justify-content:center;font-size:17px;color:#0078d4;
-  background:#fafbfc;border-left:1px solid #f0eff0;border-right:1px solid #f0eff0}
-@media(max-width:720px){
-  .dg{grid-template-columns:1fr}
-  .dg-arrow{padding:6px 0;transform:rotate(90deg)}
-}
+/* 부서 → 팀 → 이름 3단 선택 + 결과 */
+.pick{display:flex;align-items:center;gap:6px;flex-wrap:wrap;flex:1;min-width:0}
+.pick select{width:132px;padding:6px 9px;border:1px solid #d2d0ce;border-radius:4px;
+  font-size:12.5px;font-family:inherit;color:#323130;background:#fff}
+.pick select:focus{outline:none;border-color:#0078d4}
+.pick select:disabled{background:#fafafa;color:#a19f9d}
+.pk{font-size:12.5px;color:#a19f9d;margin-left:2px}
+.pk.on{color:#323130;font-weight:600}
+.pk .e{color:#a19f9d;font-weight:400;margin-left:5px;font-size:11.5px}
 
-/* ── 기간 — 한 줄 ─────────────────────────────────────── */
-.pr{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.pr input{width:150px;padding:7px 10px;border:1px solid #d2d0ce;border-radius:4px;
-  font-size:13px;font-family:inherit;color:#323130}
+/* 기간 */
+.pr{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.pr input[type=date]{width:150px}
+.pr input[type=time]{width:104px}
+.pr input{padding:6px 9px;border:1px solid #d2d0ce;border-radius:4px;
+  font-size:12.5px;font-family:inherit;color:#323130}
 .pr input:focus{outline:none;border-color:#0078d4}
-.pr-t{color:#a19f9d;font-size:13px}
-.pr-d{background:#f0f6ff;border:1px solid #c7e0f4;border-radius:12px;padding:4px 12px;
-  font-size:12px;font-weight:600;color:#0b5fa5;white-space:nowrap}
+.pr-d{background:#f0f6ff;border:1px solid #c7e0f4;border-radius:11px;padding:3px 11px;
+  font-size:11.5px;font-weight:600;color:#0b5fa5;white-space:nowrap;margin-left:2px}
+
+/* 대상 시스템 — 3열 격자 (한 줄 나열은 눈이 따라가기 어렵다) */
+.sysgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:8px 0 0 110px}
+@media(max-width:860px){.sysgrid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:640px){.sysgrid{grid-template-columns:1fr;margin-left:0}}
+.sysgrid .chk{display:flex;align-items:center;gap:7px;padding:7px 11px;margin:0;
+  border:1px solid #e1dfdd;border-radius:5px;background:#fff;font-size:12px;
+  color:#323130;cursor:pointer;transition:all .12s}
+.sysgrid .chk:hover{border-color:#0078d4;background:#f7fbff}
+.sysgrid .chk input{width:13px;height:13px;margin:0;accent-color:#0078d4;flex-shrink:0;cursor:pointer}
+.sysgrid .chk.dim{background:#fafafa;border-color:#ececec;color:#b3b0ad;cursor:default}
+.sysgrid .chk.dim:hover{border-color:#ececec;background:#fafafa}
+.chk-all{display:inline-flex;align-items:center;gap:8px;padding:6px 13px;cursor:pointer;
+  border:1px solid #c7e0f4;border-radius:5px;background:#f0f6ff;
+  font-size:12.5px;font-weight:600;color:#0b5fa5}
+.chk-all input{width:14px;height:14px;margin:0;accent-color:#0078d4;cursor:pointer}
+.chk-all .sub{font-weight:400;color:#5b8db8;font-size:11.5px;margin-left:3px}
 
 /* ── 결재 라인 미리보기 (GW 방식) ─────────────────────── */
 .lp{background:#f0f6ff;border:1px solid #c7e0f4;border-radius:6px;padding:11px 14px;font-size:12.5px}
@@ -266,63 +282,75 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
 
       <div class="section-title">1. 위임 (Delegation)</div>
 
-      <div class="seg">
-        <label class="seg-i"><input type="radio" name="pv-mode" value="self" checked onchange="onProxyMode()"><span>본인 신청</span></label>
-        <label class="seg-i" id="pv-opt-other"><input type="radio" name="pv-mode" value="other" onchange="onProxyMode()"><span>대신 신청</span></label>
+      <div class="row-lbl">
+        <span class="rl">신청 유형</span>
+        <div class="seg">
+          <label class="seg-i"><input type="radio" name="pv-mode" value="self" checked onchange="onProxyMode()"><span>본인 신청</span></label>
+          <label class="seg-i" id="pv-opt-other"><input type="radio" name="pv-mode" value="other" onchange="onProxyMode()"><span>대신 신청</span></label>
+        </div>
       </div>
       <div id="pv-locked" class="msg-w" style="display:none">
         대신 신청은 사전에 지정된 담당자만 할 수 있습니다. 필요하시면 IT팀으로 요청해 주세요.
       </div>
 
-      <div class="dg">
-        <div class="dg-col">
-          <div class="dg-hd">위임자<span>결재를 맡기는 사람</span></div>
-          <div class="dg-bd">
-            <div class="dg-sel">
-              <select id="p-dept" onchange="onPDeptChange()" disabled><option value="">본인</option></select>
-              <select id="p-team" onchange="onPTeamChange()" disabled><option value="">-</option></select>
-              <select id="p-person" onchange="onPPersonChange()" disabled><option value="">-</option></select>
-            </div>
-            <div class="dg-nm" id="p-view">-</div>
-            <div class="dg-em" id="p-mail"></div>
-          </div>
-        </div>
-        <div class="dg-arrow">&#10230;</div>
-        <div class="dg-col">
-          <div class="dg-hd">대리인<span>대신 처리할 사람</span></div>
-          <div class="dg-bd">
-            <div class="dg-sel">
-              <select id="f-dept" onchange="onDeptChange()"><option value="">부서</option></select>
-              <select id="f-team" onchange="onTeamChange()" disabled><option value="">팀</option></select>
-              <select id="f-person" onchange="onPersonChange()" disabled><option value="">이름</option></select>
-            </div>
-            <div class="dg-nm" id="f-deputy-view">-</div>
-            <div class="dg-em" id="f-deputy-mail"></div>
-          </div>
+      <div class="row-lbl" id="pv-row" style="display:none">
+        <span class="rl">위임자</span>
+        <div class="pick">
+          <select id="p-dept" onchange="onPDeptChange()"><option value="">부서</option></select>
+          <select id="p-team" onchange="onPTeamChange()" disabled><option value="">팀</option></select>
+          <select id="p-person" onchange="onPPersonChange()" disabled><option value="">이름</option></select>
+          <span class="pk" id="p-view"></span>
         </div>
       </div>
+      <div class="row-lbl" id="pv-self">
+        <span class="rl">위임자</span>
+        <div class="pick"><span class="pk on" id="p-view-self">-</span></div>
+      </div>
+
+      <div class="row-lbl">
+        <span class="rl">대리인<i>*</i></span>
+        <div class="pick">
+          <select id="f-dept" onchange="onDeptChange()"><option value="">부서</option></select>
+          <select id="f-team" onchange="onTeamChange()" disabled><option value="">팀</option></select>
+          <select id="f-person" onchange="onPersonChange()" disabled><option value="">이름</option></select>
+          <span class="pk" id="f-deputy-view"></span>
+        </div>
+      </div>
+      <span id="p-mail" style="display:none"></span>
+      <span id="f-deputy-mail" style="display:none"></span>
       <div id="pv-msg"></div>
       <div id="deputy-msg"></div>
 
-      <div id="pv-reason" style="display:none;margin-top:10px">
-        <div class="form-group">
-          <label>대신 신청하는 사유<span class="req">*</span></label>
-          <input type="text" id="p-reason" maxlength="200" placeholder="예) 대표이사 해외 출장으로 비서실에서 대신 신청합니다.">
-        </div>
+      <div class="row-lbl" id="pv-reason" style="display:none">
+        <span class="rl">대신 신청 사유<i>*</i></span>
+        <input type="text" id="p-reason" maxlength="200" class="wide"
+               placeholder="예) 대표이사 해외 출장으로 비서실에서 대신 신청합니다.">
       </div>
 
       <div class="section-title">2. 대리 기간 (Period)</div>
-      <div class="pr">
-        <input type="date" id="f-start" onchange="onPeriodChange()">
-        <span class="pr-t">~</span>
-        <input type="date" id="f-end" onchange="onPeriodChange()">
-        <span class="pr-d" id="f-days">-</span>
+      <div class="row-lbl">
+        <span class="rl">시작<i>*</i></span>
+        <div class="pr">
+          <input type="date" id="f-start" onchange="onPeriodChange()">
+          <input type="time" id="f-start-t" value="00:00" step="1800" onchange="onPeriodChange()">
+        </div>
+      </div>
+      <div class="row-lbl">
+        <span class="rl">종료<i>*</i></span>
+        <div class="pr">
+          <input type="date" id="f-end" onchange="onPeriodChange()">
+          <input type="time" id="f-end-t" value="23:59" step="1800" onchange="onPeriodChange()">
+          <span class="pr-d" id="f-days">-</span>
+        </div>
       </div>
       <div id="period-msg"></div>
 
       <div class="section-title">3. 대상 시스템 (Scope)</div>
-      <label class="chk-all"><input type="checkbox" id="f-all" checked onchange="onScopeAll()">
-        전체 시스템<span class="sub">지금 있는 12개와 이후 추가되는 시스템까지</span></label>
+      <div class="row-lbl">
+        <span class="rl">범위</span>
+        <label class="chk-all"><input type="checkbox" id="f-all" checked onchange="onScopeAll()">
+          전체 시스템<span class="sub">이후 추가되는 시스템까지</span></label>
+      </div>
       <div class="sysgrid" id="f-syslist"></div>
 
       <div class="section-title">4. 사유 (Reason)</div>
@@ -530,7 +558,12 @@ function fmtDate(v) {
   const k = new Date(d.getTime() + 9 * 3600 * 1000);
   return k.toISOString().slice(0, 10) + ' ' + k.toISOString().slice(11, 16);
 }
-function fmtDay(v) { return v ? String(v).slice(0, 10) : '-'; }
+// 날짜만 저장된 옛 값도 그대로 보여준다
+function fmtDay(v) {
+  const t = String(v || '').trim();
+  if (!t) return '-';
+  return t.length <= 10 ? t : t.slice(0, 16);
+}
 function stClass(s) {
   const t = String(s || '').trim();
   if (t === '대기') return 'st-대기';
@@ -750,8 +783,9 @@ function onPersonChange() {
 }
 function setDeputy(p) {
   _selDeputy = p;
-  document.getElementById('f-deputy-view').textContent = p ? p.name : '-';
-  document.getElementById('f-deputy-mail').textContent = p ? p.email + '  ·  ' + p.dept + (p.team ? ' / ' + p.team : '') : '';
+  const v = document.getElementById('f-deputy-view');
+  v.className = 'pk' + (p ? ' on' : '');
+  v.innerHTML = p ? esc(p.name) + '<span class="e">' + esc(p.email) + '</span>' : '';
   const msg = document.getElementById('deputy-msg');
   if (!p) { msg.innerHTML = ''; return; }
   // 위임자 본인을 대리인으로 지정하면 의미가 없다
@@ -768,27 +802,26 @@ function setDeputy(p) {
 /* ── 대신 신청 ──────────────────────────────────────────── */
 function onProxyMode(){
   const on = isProxyMode();
-  // 표의 왼쪽(위임자) 열만 켜고 끈다. 본인 신청이면 잠긴 채로 '본인' 을 보여준다.
-  ['p-dept','p-team','p-person'].forEach(id => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.disabled = !on || (id !== 'p-dept' && !el.dataset.ready);
-  });
+  // 본인 신청이면 위임자 선택 줄을 통째로 감추고, 내 이름만 한 줄로 보여준다.
+  document.getElementById('pv-row').style.display  = on ? '' : 'none';
+  document.getElementById('pv-self').style.display = on ? 'none' : '';
   document.getElementById('pv-reason').style.display = on ? '' : 'none';
   if (!on) {
     setDelegator(null);
     document.getElementById('pv-msg').innerHTML = '';
-    document.getElementById('p-dept').innerHTML = '<option value="">본인</option>';
-    document.getElementById('p-team').innerHTML = '<option value="">-</option>';
-    document.getElementById('p-person').innerHTML = '<option value="">-</option>';
-    document.getElementById('p-view').textContent = myInfo() ? myInfo().name : (user.name || '본인');
-    document.getElementById('p-mail').textContent = (user.email || user.username || '');
+    const me = myInfo();
+    const em = (user.email || user.username || '');
+    document.getElementById('p-view-self').innerHTML =
+      esc(me ? me.name : (user.name || em)) + '<span class="e">' + esc(em) + '</span>';
   } else {
     const depts = [...new Set(employeeData.map(e => e.dept).filter(Boolean))].sort();
-    document.getElementById('p-dept').innerHTML = '<option value="">부서 선택</option>' +
+    document.getElementById('p-dept').innerHTML = '<option value="">부서</option>' +
       depts.map(d => '<option value="' + esc(d) + '">' + esc(d) + '</option>').join('');
-    document.getElementById('p-view').textContent = '-';
-    document.getElementById('p-mail').textContent = '';
+    document.getElementById('p-team').innerHTML = '<option value="">팀</option>';
+    document.getElementById('p-person').innerHTML = '<option value="">이름</option>';
+    document.getElementById('p-team').disabled = true;
+    document.getElementById('p-person').disabled = true;
+    document.getElementById('p-view').textContent = '';
   }
   if (_selDeputy) setDeputy(_selDeputy);
   renderApprPreview();
@@ -825,8 +858,9 @@ function onPPersonChange(){
 }
 function setDelegator(p){
   _selDelegator = p;
-  document.getElementById('p-view').textContent = p ? p.name : '-';
-  document.getElementById('p-mail').textContent = p ? p.email + '  ·  ' + p.dept + (p.team ? ' / ' + p.team : '') : '';
+  const v = document.getElementById('p-view');
+  v.className = 'pk' + (p ? ' on' : '');
+  v.innerHTML = p ? esc(p.name) + '<span class="e">' + esc(p.email) + '</span>' : '';
   const msg = document.getElementById('pv-msg');
   if (!p) { msg.innerHTML = ''; if (_selDeputy) setDeputy(_selDeputy); return; }
   if (isMe(p.email)) {
@@ -849,19 +883,35 @@ function delegator(){
 }
 
 /* ── 기간 ───────────────────────────────────────────────── */
+// 날짜 + 시간을 하나의 문자열로. 저장·비교 모두 이 값을 쓴다.
+function periodStart(){
+  const d = document.getElementById('f-start').value;
+  const t = document.getElementById('f-start-t').value || '00:00';
+  return d ? d + ' ' + t : '';
+}
+function periodEnd(){
+  const d = document.getElementById('f-end').value;
+  const t = document.getElementById('f-end-t').value || '23:59';
+  return d ? d + ' ' + t : '';
+}
 function onPeriodChange() {
-  const s = document.getElementById('f-start').value, e = document.getElementById('f-end').value;
+  const s = periodStart(), e = periodEnd();
   const box = document.getElementById('f-days'), msg = document.getElementById('period-msg');
   msg.innerHTML = '';
   if (!s || !e) { box.textContent = '-'; return; }
-  const ds = new Date(s + 'T00:00:00'), de = new Date(e + 'T00:00:00');
-  if (de < ds) { box.textContent = '-'; msg.innerHTML = '<div class="msg-e">종료일이 시작일보다 빠릅니다.</div>'; return; }
-  const days = Math.round((de - ds) / 86400000) + 1;
-  box.textContent = days + '일';
-  const today = kstToday();
-  if (e < today) msg.innerHTML = '<div class="msg-e">이미 지난 기간입니다. 종료일을 오늘 이후로 지정해 주세요.</div>';
-  else if (days > 90) msg.innerHTML = '<div class="msg-w">90일을 넘는 장기 지정입니다. 필요한 기간만 지정하는 것을 권장합니다.</div>';
-  else if (s < today) msg.innerHTML = '<div class="msg-w">시작일이 오늘보다 이전입니다. 승인 시점부터 효력이 생깁니다.</div>';
+  const ds = new Date(s.replace(' ', 'T') + ':00'), de = new Date(e.replace(' ', 'T') + ':00');
+  if (isNaN(ds) || isNaN(de)) { box.textContent = '-'; return; }
+  if (de <= ds) { box.textContent = '-'; msg.innerHTML = '<div class="msg-e">종료가 시작보다 빠르거나 같습니다.</div>'; return; }
+  // 하루를 넘지 않으면 시간으로, 넘으면 일수로 보여준다
+  const mins = Math.round((de - ds) / 60000);
+  const _h = Math.floor(mins / 60), _m = mins % 60;
+  box.textContent = mins < 60 ? mins + '분'
+    : mins < 1440 ? (_h + '시간' + (_m ? ' ' + _m + '분' : ''))
+    : (Math.floor(mins / 1440) + '일' + (mins % 1440 ? ' ' + Math.floor((mins % 1440) / 60) + '시간' : ''));
+  const now = kstNow().toISOString().slice(0, 16).replace('T', ' ');
+  if (e < now) msg.innerHTML = '<div class="msg-e">이미 지난 기간입니다. 종료를 지금 이후로 지정해 주세요.</div>';
+  else if (mins > 90 * 1440) msg.innerHTML = '<div class="msg-w">90일을 넘는 장기 지정입니다. 필요한 기간만 지정하는 것을 권장합니다.</div>';
+  else if (s < now) msg.innerHTML = '<div class="msg-w">시작이 현재보다 이전입니다. 승인 시점부터 효력이 생깁니다.</div>';
 }
 
 /* ── 대상 시스템 ────────────────────────────────────────── */
@@ -938,6 +988,8 @@ function switchTab(t) {
 }
 function resetForm() {
   ['f-start', 'f-end', 'f-reason'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  document.getElementById('f-start-t').value = '00:00';
+  document.getElementById('f-end-t').value = '23:59';
   document.getElementById('f-dept').value = '';
   onDeptChange();
   document.getElementById('f-all').checked = true; onScopeAll();
@@ -953,8 +1005,8 @@ function resetForm() {
 /* ── 신청 ───────────────────────────────────────────────── */
 async function submitForm() {
   const btn = document.getElementById('btn-submit');
-  const start = document.getElementById('f-start').value;
-  const end   = document.getElementById('f-end').value;
+  const start = periodStart();
+  const end   = periodEnd();
   const reason = document.getElementById('f-reason').value.trim();
   const scope = getScope();
 
@@ -971,8 +1023,9 @@ async function submitForm() {
   const dg = delegator();
 
   if (!start || !end)  { alert('대리 기간을 입력하세요.'); return; }
-  if (end < start)     { alert('종료일이 시작일보다 빠릅니다.'); return; }
-  if (end < kstToday()){ alert('이미 지난 기간입니다. 종료일을 오늘 이후로 지정해 주세요.'); return; }
+  if (end <= start)    { alert('종료가 시작보다 빠르거나 같습니다.'); return; }
+  if (end < kstNow().toISOString().slice(0,16).replace('T',' ')) {
+    alert('이미 지난 기간입니다. 종료를 지금 이후로 지정해 주세요.'); return; }
   if (!_selDeputy)     { alert('대리인을 선택하세요.'); return; }
   if ((_selDeputy.email || '').trim().toLowerCase() === (dg.email || '').trim().toLowerCase()) {
     alert(dg.name + ' 님 본인을 대리인으로 지정할 수 없습니다.'); return;
@@ -989,7 +1042,9 @@ async function submitForm() {
       const f = r.fields;
       if ((f.RequesterEmail || '').trim().toLowerCase() !== (dg.email || '').trim().toLowerCase()) return false;
       if (!['대기', '승인완료'].includes((f.Status || '').trim())) return false;
-      return !(f.EndDate < start || f.StartDate > end);
+      const fe = String(f.EndDate || ''), fs2 = String(f.StartDate || '');
+      return !((fe.length <= 10 ? fe + ' 23:59' : fe) < start
+            || (fs2.length <= 10 ? fs2 + ' 00:00' : fs2) > end);
     });
     if (dup) {
       alert('같은 기간에 이미 신청한 건이 있습니다.\n\n' + (dup.fields.Title || '') +
@@ -1125,7 +1180,9 @@ async function fetchAprs() {
 // 기간이 지난 승인 건은 화면에서 만료로 보여준다. 저장값은 건드리지 않는다.
 function effStatus(f) {
   const s = (f.Status || '').trim();
-  if (s === '승인완료' && f.EndDate && String(f.EndDate).slice(0, 10) < kstToday()) return '만료';
+  const now = kstNow().toISOString().slice(0, 16).replace('T', ' ');
+  const en = String(f.EndDate || '').trim();
+  if (s === '승인완료' && en && (en.length <= 10 ? en + ' 23:59' : en) < now) return '만료';
   return s;
 }
 // 대신 신청인지 — 신청 화면에서 누른 사람과 위임자가 다르면 대신 신청이다
@@ -1136,8 +1193,11 @@ function isProxyReq(f) {
 }
 function isActive(f) {
   if ((f.Status || '').trim() !== '승인완료') return false;
-  const t = kstToday();
-  return String(f.StartDate || '').slice(0, 10) <= t && t <= String(f.EndDate || '').slice(0, 10);
+  // 시간까지 비교한다. 날짜만 보면 오전에 끝나는 지정이 하루 종일 유효해진다.
+  const now = kstNow().toISOString().slice(0, 16).replace('T', ' ');
+  const st = String(f.StartDate || '').trim(), en = String(f.EndDate || '').trim();
+  if (!st || !en) return false;
+  return st <= now && now <= (en.length <= 10 ? en + ' 23:59' : en);
 }
 
 async function loadMy(force) {
@@ -1475,6 +1535,8 @@ async function boot(account) {
     // 기본 기간 — 오늘부터
     document.getElementById('f-start').value = kstToday();
     document.getElementById('f-end').value = kstToday();
+    document.getElementById('f-start-t').value = '00:00';
+    document.getElementById('f-end-t').value = '23:59';
     onPeriodChange();
 
     await loadMy();
