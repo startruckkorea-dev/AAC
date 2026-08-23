@@ -20,7 +20,9 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
 .btn-login:disabled{background:#cbd5e0;cursor:not-allowed;transform:none;box-shadow:none}
 #login-err{color:#e53e3e;font-size:.78rem;margin-top:10px;display:none}
 .login-page-footer{position:fixed;bottom:0;left:0;right:0;padding:10px 24px;display:flex;justify-content:space-between;align-items:center;font-size:11px;color:rgba(255,255,255,.55);background:rgba(0,0,0,.18)}
-#app { display: none; max-width: 1280px; margin: 0 auto; padding: 24px 20px 48px; }
+/* 본문 폭 — APS 표준 960px. ACC·GW 는 JS 로 960 을 덮어쓰지만
+   AAC 는 단독 상세 모드가 없어 CSS 에서 바로 지정한다. */
+#app { display: none; max-width: 960px; margin: 0 auto; padding: 24px 20px 48px; }
 .app-header{background:#fff;border-radius:8px;padding:18px 24px;margin-bottom:18px;display:flex;justify-content:space-between;align-items:flex-start;box-shadow:0 1px 4px rgba(0,0,0,.08)}
 .app-title{font-size:1.1rem;font-weight:700;color:#323130}
 .app-sub{font-size:.72rem;color:#605e5c;margin-top:3px}
@@ -100,9 +102,9 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
 .chk-all .sub{font-weight:400;color:#5b8db8;font-size:11.5px;margin-left:2px}
 
 /* 시스템 격자 — 3열, 얇은 구분선 */
-.sysgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;margin-top:10px;
+.sysgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;margin-top:10px;
   border:1px solid #edebe9;border-radius:8px;overflow:hidden;background:#edebe9}
-@media(max-width:900px){.sysgrid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:640px){.sysgrid{grid-template-columns:1fr}}
 .sysgrid .chk{background:#fff;padding:10px 14px;margin:0;transition:background .12s}
 .sysgrid .chk:hover{background:#f0f6ff}
 .sysgrid .chk.dim{background:#fafafa}
