@@ -67,8 +67,6 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
 .status-대기잠김{color:#a19f9d;font-weight:600}
 .status-승인{color:#107c10;font-weight:600}
 .status-반려{color:#a4262c;font-weight:600}
-.pt-hint{margin-top:6px;background:#fff;border:1px solid #ececec;border-radius:6px;overflow:hidden}
-.pt-hint>div{display:grid;grid-template-columns:114px 1fr;align-items:center;gap:12px;padding:5px 14px;font-size:.71rem;line-height:1.5;border-top:1px solid #f5f5f5}
 
 /* ── AAC 전용 — ACC 체계 위에 최소한만 얹는다 ───────────── */
 .aac-note{background:#f8f9fb;border-left:3px solid #0078d4;border-radius:0 4px 4px 0;
@@ -86,10 +84,22 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
   font-size:.75rem;color:#a4262c;line-height:1.6;margin-top:8px}
 .msg-o{background:#f1f8f4;border:1px solid #c9e4d3;border-radius:6px;padding:9px 12px;
   font-size:.75rem;color:#0e7a3c;line-height:1.6;margin-top:8px}
-.sysgrid{display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:8px}
-.chk{display:inline-flex;align-items:center;gap:6px;font-size:.8rem;color:#323130;cursor:pointer}
-.chk input{width:auto;margin:0;cursor:pointer}
-.sys-chk{width:auto;margin:0;cursor:pointer}
+/* 시스템 선택 — 3열 격자. flex + inline-flex 조합은 줄바꿈이 붙어 보인다 */
+.sysgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;margin-top:10px;
+  border:1px solid #ececec;border-radius:6px;overflow:hidden;background:#ececec}
+@media(max-width:900px){.sysgrid{grid-template-columns:repeat(2,1fr)}}
+.sysgrid .chk{background:#fff;padding:9px 12px;margin:0}
+.chk{display:flex;align-items:center;gap:8px;font-size:12.5px;color:#323130;cursor:pointer;
+  user-select:none;line-height:1.4}
+.chk input{width:14px;height:14px;margin:0;cursor:pointer;accent-color:#0078d4;flex-shrink:0}
+.chk.dim{color:#a19f9d}
+.sys-chk{width:14px;height:14px;margin:0;cursor:pointer;accent-color:#0078d4;flex-shrink:0}
+/* 전체 시스템 — 격자 위에 따로 둔다 */
+.chk-all{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:#323130;
+  cursor:pointer;padding:9px 12px;background:#f0f6ff;border:1px solid #cfe3f7;border-radius:6px}
+.chk-all input{width:15px;height:15px;margin:0;cursor:pointer;accent-color:#0078d4}
+/* 입력란 하단 안내 — ACC 와 같은 작은 회색 글씨 */
+.fld-hint{font-size:11.5px;color:#a19f9d;margin-top:5px;line-height:1.5}
 .st{display:inline-block;padding:3px 10px;border-radius:10px;font-size:.72rem;font-weight:600;white-space:nowrap}
 .st-대기{background:#fff4ce;color:#7d5700}
 .st-승인완료{background:#dff6dd;color:#107c10}
@@ -215,8 +225,8 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
       <div id="deputy-msg"></div>
 
       <div class="section-title">3. 대상 시스템 (Scope)</div>
-      <div class="pt-hint" style="margin-bottom:6px">대리 처리를 허용할 시스템을 고릅니다. 전체를 선택하면 이후 새로 생기는 시스템에도 자동으로 적용됩니다.</div>
-      <label class="chk"><input type="checkbox" id="f-all" checked onchange="onScopeAll()"> <b>전체 시스템</b></label>
+      <div class="fld-hint" style="margin:0 0 10px">대리 처리를 허용할 시스템을 고릅니다.</div>
+      <label class="chk-all"><input type="checkbox" id="f-all" checked onchange="onScopeAll()"> 전체 시스템 &mdash; 지금 있는 12개와 이후 추가되는 시스템까지</label>
       <div class="sysgrid" id="f-syslist"></div>
 
       <div class="section-title">4. 사유 (Reason)</div>
@@ -224,7 +234,7 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
         <div class="form-group">
           <label>대리 지정 사유<span class="req">*</span></label>
           <textarea id="f-reason" maxlength="500" rows="3" placeholder="예) 2026-09-01 ~ 09-05 독일 본사 출장으로 결재 처리가 어렵습니다."></textarea>
-          <div class="pt-hint">최대 500자 &middot; 결재자와 감사 기록에 그대로 남습니다.</div>
+          <div class="fld-hint">입력한 사유는 결재자 화면과 감사 기록에 그대로 남습니다. (최대 500자)</div>
         </div>
       </div>
 
@@ -292,7 +302,7 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
     </div>
     <div class="card">
       <div class="card-title">현재 유효한 대리 지정</div>
-      <div class="pt-hint" style="margin-bottom:10px">오늘 날짜 기준으로 효력이 있는 건입니다.</div>
+      <div class="fld-hint" style="margin:0 0 10px">오늘 날짜 기준으로 효력이 있는 건입니다.</div>
       <div class="tbl-wrap"><table class="voucher-table">
         <thead><tr><th>신청번호</th><th>원래 결재자</th><th>대리인</th><th>기간</th><th>대상 시스템</th></tr></thead>
         <tbody id="ad-active"><tr><td colspan="5" class="list-empty">-</td></tr></tbody>
@@ -620,12 +630,16 @@ function onPeriodChange() {
 /* ── 대상 시스템 ────────────────────────────────────────── */
 function renderSystems() {
   document.getElementById('f-syslist').innerHTML = SYSTEMS.map(s =>
-    '<label class="chk"><input type="checkbox" class="sys-chk" value="' + esc(s.key) + '" disabled onchange="onScopeOne()"> ' + esc(s.label) + '</label>'
+    '<label class="chk dim"><input type="checkbox" class="sys-chk" value="' + esc(s.key) + '" disabled onchange="onScopeOne()"> ' + esc(s.label) + '</label>'
   ).join('');
 }
 function onScopeAll() {
+  // 전체를 켜면 개별 선택을 잠근다. 잠긴 항목은 흐리게 보여 상태를 알 수 있게 한다.
   const all = document.getElementById('f-all').checked;
-  document.querySelectorAll('.sys-chk').forEach(c => { c.disabled = all; if (all) c.checked = false; });
+  document.querySelectorAll('.sys-chk').forEach(c => {
+    c.disabled = all; if (all) c.checked = false;
+    c.closest('.chk').classList.toggle('dim', all);
+  });
 }
 function onScopeOne() { /* 개별 선택 시 별도 처리 없음 — 제출 시 검증 */ }
 function getScope() {
