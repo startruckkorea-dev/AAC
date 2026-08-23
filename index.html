@@ -747,6 +747,27 @@ function headOf(person, submitter) {
   return submitter ? { ...submitter, _src: '신청자' } : null;
 }
 
+// 위임자·대리인 양쪽 부서장을 결재선에 넣을 형태로 만든다.
+// 이미 결재선에 있는 사람(위임자·대리인·앞 단계 부서장)과 겹치면 그 단계는 건너뛴다.
+function buildHeads(dg, dep, submitter) {
+  const out = [];
+  const taken = [(dg?.email || '').toLowerCase(), (dep?.email || '').toLowerCase()].filter(Boolean);
+  const add = (person, role, label) => {
+    const h = headOf(person, submitter);
+    if (!h || !h.email) { out.push({ skip: label + '의 부서장을 찾지 못해 해당 승인 단계가 생략되었습니다.' }); return; }
+    const low = h.email.toLowerCase();
+    if (taken.includes(low)) {
+      out.push({ skip: label + '의 부서장(' + h.name + ')이 이미 결재선에 있어 중복 단계가 생략되었습니다.' });
+      return;
+    }
+    taken.push(low);
+    out.push({ role, p: h });
+  };
+  add(dg,  '위임자 부서장', '위임자');
+  add(dep, '대리인 부서장', '대리인');
+  return out;
+}
+
 function myInfo() {
   const me = (user?.email || user?.username || '').trim().toLowerCase();
   return employeeData.find(e => e.email.trim().toLowerCase() === me) || null;
@@ -794,8 +815,7 @@ function setDeputy(p) {
     msg.innerHTML = '<div class="msg-e">' + esc(d.name) + ' 님 본인을 대리인으로 지정할 수 없습니다.</div>';
     _selDeputy = null; return;
   }
-  msg.innerHTML = '<div class="msg-o">' + esc(p.name) + ' 님이 수락하면 지정한 기간 동안 '
-    + esc(d.name) + ' 님의 결재를 대신 처리할 수 있습니다.</div>';
+  msg.innerHTML = '';
   renderApprPreview();
 }
 
@@ -861,15 +881,10 @@ function setDelegator(p){
   const v = document.getElementById('p-view');
   v.className = 'pk' + (p ? ' on' : '');
   v.innerHTML = p ? esc(p.name) + '<span class="e">' + esc(p.email) + '</span>' : '';
+  // 정상 선택은 따로 알리지 않는다. 아래 결재 라인 미리보기가 결과를 그대로 보여준다.
   const msg = document.getElementById('pv-msg');
-  if (!p) { msg.innerHTML = ''; if (_selDeputy) setDeputy(_selDeputy); return; }
-  if (isMe(p.email)) {
-    // 본인을 위임자로 고르면 대신 신청이 아니다
-    msg.innerHTML = '<div class="msg-w">본인이 위임자라면 위쪽에서 「본인」을 선택해 주세요.</div>';
-  } else {
-    msg.innerHTML = '<div class="msg-o">' + esc(p.name) + ' 님을 대신해 신청합니다. '
-      + '기록에는 위임자와 대신 신청한 사람이 함께 남습니다.</div>';
-  }
+  msg.innerHTML = (p && isMe(p.email))
+    ? '<div class="msg-w">본인이 위임자라면 신청 유형에서 「본인 신청」을 선택해 주세요.</div>' : '';
   if (_selDeputy) setDeputy(_selDeputy);
   renderApprPreview();
 }
@@ -956,23 +971,17 @@ function renderApprPreview() {
   const line = [];
   if (proxy) line.push({ role: '위임자 확인', p: dg });
   line.push({ role: '대리인 수락', p: _selDeputy });
-  const head = headOf(dg, { name: me ? me.name : (user.name || meEmail), email: meEmail });
-  const lowDep = (_selDeputy.email || '').toLowerCase(), lowDg = (dg.email || '').toLowerCase();
-  let note = '';
-  if (head && head.email && head.email.toLowerCase() !== lowDep && head.email.toLowerCase() !== lowDg) {
-    line.push({ role: '부서장 승인', p: head, src: head._src });
-  } else if (head) {
-    note = '부서장(' + esc(head.name) + ')이 위임자 또는 대리인과 같아 이 단계는 생략됩니다.';
-  } else {
-    note = '부서장을 찾지 못했습니다. employee_search 의 Boss 열을 확인해 주세요.';
-  }
+  const notes = [];
+  buildHeads(dg, _selDeputy, { name: me ? me.name : (user.name || meEmail), email: meEmail })
+    .forEach(x => { if (x.skip) notes.push(x.skip); else line.push({ role: x.role, p: x.p, src: x.p._src }); });
   box.innerHTML = line.map((x, i) =>
     '<div class="lp-r"><span class="lp-n">' + (i + 1) + '</span>' +
     '<span class="lp-role">' + esc(x.role) + '</span>' +
     '<span class="lp-who">' + esc(x.p.name || '-') +
     '<span class="e">' + esc(x.p.email || '') + '</span>' +
     (x.src && x.src !== '부서장' ? '<span class="e">(' + esc(x.src) + ')</span>' : '') +
-    '</span></div>').join('') + (note ? '<div class="lp-note">' + note + '</div>' : '');
+    '</span></div>').join('')
+    + (notes.length ? '<div class="lp-note">' + notes.map(esc).join('<br>') + '</div>' : '');
 }
 
 /* ── 화면 전환 ──────────────────────────────────────────── */
@@ -1104,19 +1113,17 @@ async function submitForm() {
     const line = [];
     if (proxy) line.push({ order: 1, role: '위임자 확인', name: dg.name, email: dg.email });
     line.push({ order: line.length + 1, role: '대리인 수락', name: _selDeputy.name, email: _selDeputy.email });
-    // 2차 부서장 승인 — 위임자의 부서장이 확인한다.
-    // 겹치면(부서장이 위임자 본인이거나 대리인이면) 그 단계는 의미가 없으므로 생략하고 기록한다.
-    const _lowDep = _selDeputy.email.trim().toLowerCase();
-    const _lowDg  = (dg.email || '').trim().toLowerCase();
-    const head = headOf(dg, { name: (me ? me.name : (user.name || meEmail)), email: meEmail });
-    const _lowHd = (head?.email || '').trim().toLowerCase();
-    if (head && _lowHd && _lowHd !== _lowDep && _lowHd !== _lowDg) {
-      line.push({ order: line.length + 1, role: '부서장 승인', name: head.name, email: head.email });
-    } else if (head) {
-      console.warn('[AAC] 부서장이 위임자 또는 대리인과 같아 부서장 승인을 생략합니다.');
-      selfNote = '부서장이 위임자 또는 대리인과 같아 부서장 승인 단계가 생략되었습니다.';
-    } else {
-      selfNote = '부서장을 찾지 못해 부서장 승인 단계가 생략되었습니다. (employee_search 확인 필요)';
+    // 부서장 승인 — 양쪽 부서장이 모두 확인한다.
+    // 권한을 넘기는 쪽(위임자)과 받는 쪽(대리인) 모두 조직에서 알고 있어야 하기 때문이다.
+    const _sub = { name: (me ? me.name : (user.name || meEmail)), email: meEmail };
+    const _skips = [];
+    buildHeads(dg, _selDeputy, _sub).forEach(x => {
+      if (x.skip) { _skips.push(x.skip); return; }
+      line.push({ order: line.length + 1, role: x.role, name: x.p.name, email: x.p.email });
+    });
+    if (_skips.length) {
+      console.warn('[AAC] 생략된 단계:', _skips.join(' / '));
+      selfNote = _skips.join(' ');
     }
     for (const a of line) {
       await api('/sites/' + siteId + '/lists/' + LIST_APR + '/items', 'POST', {
