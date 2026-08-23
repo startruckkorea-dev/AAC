@@ -111,52 +111,63 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
 
 /* 입력란 하단 안내 — ACC 라벨과 같은 계열의 회색 */
 .fld-hint{font-size:11.5px;color:#a19f9d;margin-top:6px;line-height:1.55}
-/* 위임 표 — 누가(왼쪽) → 누구에게(오른쪽) 를 한눈에 */
-.dg-tbl{width:100%;border-collapse:collapse;margin-top:12px;
+/* ── 본인/대신 — 작은 세그먼트 ─────────────────────────── */
+.seg{display:inline-flex;border:1px solid #d2d0ce;border-radius:6px;overflow:hidden;background:#fff}
+.seg-i{position:relative;cursor:pointer}
+.seg-i input{position:absolute;opacity:0;width:0;height:0}
+.seg-i span{display:block;padding:6px 16px;font-size:12.5px;color:#605e5c;
+  border-right:1px solid #edebe9;transition:all .12s;white-space:nowrap}
+.seg-i:last-child span{border-right:none}
+.seg-i:hover span{background:#f7f9fb}
+.seg-i input:checked+span{background:#0078d4;color:#fff;font-weight:600}
+.seg-i.off{cursor:not-allowed}
+.seg-i.off span{color:#c8c6c4;background:#fafafa}
+.seg-i.off:hover span{background:#fafafa}
+
+/* ── 위임 — 좌우 2단 ──────────────────────────────────── */
+.dg{display:grid;grid-template-columns:1fr 40px 1fr;gap:0;margin-top:12px;
   border:1px solid #edebe9;border-radius:8px;overflow:hidden;background:#fff}
-.dg-tbl th{background:#f7f9fb;padding:9px 12px;text-align:left;font-size:11.5px;
-  font-weight:600;color:#605e5c;border-bottom:1px solid #edebe9}
-.dg-tbl th:nth-child(3){background:#fff;border-bottom-color:#fff}
-.dg-tbl td{padding:6px 12px;border-bottom:1px solid #f5f4f3;vertical-align:middle}
-.dg-tbl tr:last-child td{border-bottom:none}
-.dg-tbl td.k{font-size:11.5px;color:#a19f9d;width:88px;white-space:nowrap}
-.dg-tbl td.arrow{text-align:center;font-size:19px;color:#0078d4;background:#fafbfc;
-  border-left:1px solid #f0eff0;border-right:1px solid #f0eff0}
-.dg-tbl select{width:100%;padding:6px 9px;border:1px solid #d2d0ce;border-radius:4px;
-  font-size:12.5px;font-family:inherit;color:#323130;background:#fff}
-.dg-tbl select:focus{outline:none;border-color:#0078d4}
-.dg-tbl select:disabled{background:#fafafa;color:#a19f9d}
-.dg-tbl tr.pick td{background:#f7f9fb}
-.dg-tbl .nm{font-size:13px;font-weight:600;color:#323130;min-height:18px}
-.dg-tbl .em{font-size:11px;color:#a19f9d;margin-top:1px}
+.dg-col{min-width:0}
+.dg-hd{background:#f7f9fb;padding:8px 14px;font-size:12px;font-weight:600;color:#323130;
+  border-bottom:1px solid #edebe9}
+.dg-hd span{font-weight:400;color:#a19f9d;font-size:11px;margin-left:6px}
+.dg-bd{padding:12px 14px}
+.dg-sel{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+.dg-sel select{width:100%;min-width:0;padding:6px 8px;border:1px solid #d2d0ce;border-radius:4px;
+  font-size:12px;font-family:inherit;color:#323130;background:#fff}
+.dg-sel select:focus{outline:none;border-color:#0078d4}
+.dg-sel select:disabled{background:#fafafa;color:#a19f9d}
+.dg-nm{font-size:13.5px;font-weight:600;color:#323130;margin-top:10px;min-height:19px}
+.dg-em{font-size:11px;color:#a19f9d;margin-top:1px;min-height:14px}
+.dg-arrow{display:flex;align-items:center;justify-content:center;font-size:17px;color:#0078d4;
+  background:#fafbfc;border-left:1px solid #f0eff0;border-right:1px solid #f0eff0}
 @media(max-width:720px){
-  .dg-tbl colgroup,.dg-tbl td.arrow{display:none}
-  .dg-tbl,.dg-tbl tbody,.dg-tbl tr,.dg-tbl td,.dg-tbl th{display:block;width:auto}
-  .dg-tbl th{border-top:1px solid #edebe9}
+  .dg{grid-template-columns:1fr}
+  .dg-arrow{padding:6px 0;transform:rotate(90deg)}
 }
 
-/* 대상 시스템 — 칩. 12개뿐이라 카드로 늘어놓으면 화면만 길어진다 */
-.sysgrid{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
-.sysgrid .chk{display:inline-flex;align-items:center;gap:6px;padding:6px 11px;margin:0;
-  border:1px solid #d2d0ce;border-radius:14px;background:#fff;font-size:12px;
-  color:#323130;cursor:pointer;transition:all .12s;white-space:nowrap}
-.sysgrid .chk:hover{border-color:#0078d4;background:#f0f6ff}
-.sysgrid .chk input{width:13px;height:13px;margin:0;accent-color:#0078d4;cursor:pointer}
-.sysgrid .chk.dim{background:#fafafa;border-color:#ececec;color:#b3b0ad;cursor:default}
-.sysgrid .chk.dim:hover{border-color:#ececec;background:#fafafa}
+/* ── 기간 — 한 줄 ─────────────────────────────────────── */
+.pr{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pr input{width:150px;padding:7px 10px;border:1px solid #d2d0ce;border-radius:4px;
+  font-size:13px;font-family:inherit;color:#323130}
+.pr input:focus{outline:none;border-color:#0078d4}
+.pr-t{color:#a19f9d;font-size:13px}
+.pr-d{background:#f0f6ff;border:1px solid #c7e0f4;border-radius:12px;padding:4px 12px;
+  font-size:12px;font-weight:600;color:#0b5fa5;white-space:nowrap}
 
-/* 신청 유형 선택 — 본인 / 대신 신청 */
-.pv-wrap{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:#edebe9;
-  border:1px solid #edebe9;border-radius:8px;overflow:hidden}
-@media(max-width:640px){.pv-wrap{grid-template-columns:1fr}}
-.pv-opt{display:flex;align-items:flex-start;gap:9px;background:#fff;padding:12px 15px;
-  cursor:pointer;font-size:12.5px;color:#323130;transition:background .12s}
-.pv-opt:hover{background:#f0f6ff}
-.pv-opt input{width:15px;height:15px;margin:1px 0 0;cursor:pointer;accent-color:#0078d4;flex-shrink:0}
-.pv-opt span{display:block;line-height:1.5}
-.pv-opt .sub{display:block;font-size:11.5px;color:#a19f9d;font-weight:400;margin-top:2px}
-.pv-opt.off{background:#fafafa;color:#b3b0ad;cursor:not-allowed}
-.pv-opt.off:hover{background:#fafafa}
+/* ── 결재 라인 미리보기 (GW 방식) ─────────────────────── */
+.lp{background:#f0f6ff;border:1px solid #c7e0f4;border-radius:6px;padding:11px 14px;font-size:12.5px}
+.lp-t{font-weight:600;color:#0078d4;margin-bottom:8px;font-size:12px}
+.lp-empty{color:#8aa8c4;font-size:12px}
+.lp-r{display:flex;align-items:center;gap:9px;padding:5px 0}
+.lp-n{width:19px;height:19px;border-radius:50%;background:#0078d4;color:#fff;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}
+.lp-role{color:#0b5fa5;font-weight:600;min-width:88px}
+.lp-who{color:#323130}
+.lp-who .e{color:#8aa8c4;font-size:11px;margin-left:5px}
+.lp-note{color:#8a6116;background:#fdf6e3;border:1px solid #f0d9a0;border-radius:4px;
+  padding:6px 10px;margin-top:8px;font-size:11.5px;line-height:1.55}
+
 .proxy-tag{display:inline-block;background:#fdf6e3;color:#8a6116;border:1px solid #f0d9a0;
   border-radius:10px;padding:2px 9px;font-size:11px;font-weight:600;margin-left:6px}
 
@@ -253,80 +264,61 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
         <b>원래 결재자 기록은 그대로 남고</b>, 대리인이 처리한 건은 대리 처리로 표시됩니다.
       </div>
 
-      <div class="section-title">1. 결재 권한 위임 (Delegation)</div>
+      <div class="section-title">1. 위임 (Delegation)</div>
 
-      <div class="pv-wrap">
-        <label class="pv-opt"><input type="radio" name="pv-mode" value="self" checked onchange="onProxyMode()">
-          <span><b>본인 신청</b><span class="sub">내 결재를 맡깁니다</span></span></label>
-        <label class="pv-opt" id="pv-opt-other"><input type="radio" name="pv-mode" value="other" onchange="onProxyMode()">
-          <span><b>대신 신청</b><span class="sub">임원 등 본인 신청이 어려운 경우</span></span></label>
+      <div class="seg">
+        <label class="seg-i"><input type="radio" name="pv-mode" value="self" checked onchange="onProxyMode()"><span>본인 신청</span></label>
+        <label class="seg-i" id="pv-opt-other"><input type="radio" name="pv-mode" value="other" onchange="onProxyMode()"><span>대신 신청</span></label>
       </div>
       <div id="pv-locked" class="msg-w" style="display:none">
         대신 신청은 사전에 지정된 담당자만 할 수 있습니다. 필요하시면 IT팀으로 요청해 주세요.
       </div>
 
-      <table class="dg-tbl">
-        <colgroup><col style="width:88px"><col><col style="width:44px"><col style="width:88px"><col></colgroup>
-        <tr>
-          <th colspan="2">위임자 &mdash; 결재를 맡기는 사람</th>
-          <th></th>
-          <th colspan="2">대리인 &mdash; 대신 처리할 사람</th>
-        </tr>
-        <tr>
-          <td class="k">부서</td>
-          <td><select id="p-dept" onchange="onPDeptChange()" disabled><option value="">본인</option></select></td>
-          <td rowspan="4" class="arrow">&#10230;</td>
-          <td class="k">부서</td>
-          <td><select id="f-dept" onchange="onDeptChange()"><option value="">부서 선택</option></select></td>
-        </tr>
-        <tr>
-          <td class="k">팀</td>
-          <td><select id="p-team" onchange="onPTeamChange()" disabled><option value="">-</option></select></td>
-          <td class="k">팀</td>
-          <td><select id="f-team" onchange="onTeamChange()" disabled><option value="">팀 선택</option></select></td>
-        </tr>
-        <tr>
-          <td class="k">이름</td>
-          <td><select id="p-person" onchange="onPPersonChange()" disabled><option value="">-</option></select></td>
-          <td class="k">이름</td>
-          <td><select id="f-person" onchange="onPersonChange()" disabled><option value="">직원 선택</option></select></td>
-        </tr>
-        <tr class="pick">
-          <td class="k">선택</td>
-          <td><div class="nm" id="p-view">본인</div><div class="em" id="p-mail"></div></td>
-          <td class="k">선택</td>
-          <td><div class="nm" id="f-deputy-view">-</div><div class="em" id="f-deputy-mail"></div></td>
-        </tr>
-      </table>
+      <div class="dg">
+        <div class="dg-col">
+          <div class="dg-hd">위임자<span>결재를 맡기는 사람</span></div>
+          <div class="dg-bd">
+            <div class="dg-sel">
+              <select id="p-dept" onchange="onPDeptChange()" disabled><option value="">본인</option></select>
+              <select id="p-team" onchange="onPTeamChange()" disabled><option value="">-</option></select>
+              <select id="p-person" onchange="onPPersonChange()" disabled><option value="">-</option></select>
+            </div>
+            <div class="dg-nm" id="p-view">-</div>
+            <div class="dg-em" id="p-mail"></div>
+          </div>
+        </div>
+        <div class="dg-arrow">&#10230;</div>
+        <div class="dg-col">
+          <div class="dg-hd">대리인<span>대신 처리할 사람</span></div>
+          <div class="dg-bd">
+            <div class="dg-sel">
+              <select id="f-dept" onchange="onDeptChange()"><option value="">부서</option></select>
+              <select id="f-team" onchange="onTeamChange()" disabled><option value="">팀</option></select>
+              <select id="f-person" onchange="onPersonChange()" disabled><option value="">이름</option></select>
+            </div>
+            <div class="dg-nm" id="f-deputy-view">-</div>
+            <div class="dg-em" id="f-deputy-mail"></div>
+          </div>
+        </div>
+      </div>
       <div id="pv-msg"></div>
       <div id="deputy-msg"></div>
 
-      <div id="pv-reason" style="display:none">
-        <div class="form-row full" style="margin-top:12px">
-          <div class="form-group">
-            <label>대신 신청하는 사유<span class="req">*</span></label>
-            <input type="text" id="p-reason" maxlength="200" placeholder="예) 대표이사 해외 출장으로 비서실에서 대신 신청합니다.">
-          </div>
+      <div id="pv-reason" style="display:none;margin-top:10px">
+        <div class="form-group">
+          <label>대신 신청하는 사유<span class="req">*</span></label>
+          <input type="text" id="p-reason" maxlength="200" placeholder="예) 대표이사 해외 출장으로 비서실에서 대신 신청합니다.">
         </div>
       </div>
 
       <div class="section-title">2. 대리 기간 (Period)</div>
-      <div class="form-row three">
-        <div class="form-group">
-          <label>시작일<span class="req">*</span></label>
-          <input type="date" id="f-start" onchange="onPeriodChange()">
-        </div>
-        <div class="form-group">
-          <label>종료일<span class="req">*</span></label>
-          <input type="date" id="f-end" onchange="onPeriodChange()">
-        </div>
-        <div class="form-group">
-          <label>기간</label>
-          <div style="padding-top:8px"><span class="dayspan" id="f-days">-</span></div>
-        </div>
+      <div class="pr">
+        <input type="date" id="f-start" onchange="onPeriodChange()">
+        <span class="pr-t">~</span>
+        <input type="date" id="f-end" onchange="onPeriodChange()">
+        <span class="pr-d" id="f-days">-</span>
       </div>
       <div id="period-msg"></div>
-
 
       <div class="section-title">3. 대상 시스템 (Scope)</div>
       <label class="chk-all"><input type="checkbox" id="f-all" checked onchange="onScopeAll()">
@@ -342,10 +334,10 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
         </div>
       </div>
 
-      <div class="aac-note" style="margin-top:14px">
-        <b>승인 절차</b><br>
-        1차 <b>대리인 수락</b> — 지정된 분이 직접 수락해야 효력이 생깁니다.<br>
-        2차 <b>관리자 승인</b> — 기록 확인 후 최종 승인됩니다.
+      <div class="section-title">5. 결재자 지정 (Approvers)</div>
+      <div class="lp" id="appr-preview">
+        <div class="lp-t">결재 라인 &mdash; 위임자와 대리인에 따라 자동 구성됩니다</div>
+        <div id="appr-preview-body"><div class="lp-empty">위임자와 대리인을 선택하면 결재 라인이 표시됩니다.</div></div>
       </div>
 
       <div style="text-align:right;margin-top:18px">
@@ -682,7 +674,11 @@ async function loadEmployees() {
       dept: (r['Department'] || '').toString().trim(),
       team: (r['Team'] || '').toString().trim(),
       name: (r['EngName'] || '').toString().trim(),
-      email: (r['EMail'] || r['email'] || '').toString().trim()
+      email: (r['EMail'] || r['email'] || '').toString().trim(),
+      // G열 Boss = 직속 상사, H열 Boss of Boss = 부서장
+      // 값이 '-' 이면 그 위가 없다는 뜻이다 (대표이사)
+      boss:  (r['Boss'] || '').toString().trim(),
+      boss2: (r['Boss of Boss'] || '').toString().trim()
     })).filter(r => r.email && r.name);
     initDept();
     console.log('[Employee] 로드', employeeData.length, '명');
@@ -692,6 +688,32 @@ async function loadEmployees() {
     if (el) el.innerHTML = '<div class="msg-e">직원 목록(employee_search.xlsx)을 불러오지 못했습니다. IT팀에 알려주세요.<br>' + esc(e.message) + '</div>';
   }
 }
+// 이름으로 직원을 찾는다. employee_search 의 Boss 열이 이메일이 아니라 이름이라 필요하다.
+function empByName(n) {
+  const t = (n || '').trim();
+  if (!t || t === '-') return null;
+  const low = t.toLowerCase();
+  return employeeData.find(e => e.name.trim().toLowerCase() === low) || null;
+}
+// 위임자의 부서장을 정한다.
+//   ① Boss of Boss(H) → ② '-' 면 Boss(G) → ③ 둘 다 '-' 면 대표이사이므로 신청자에게 맡긴다
+function headOf(person, submitter) {
+  if (!person) return null;
+  const rec = empByName(person.name) || person;
+  const h = (rec.boss2 || '').trim();
+  if (h && h !== '-') {
+    const e = empByName(h);
+    if (e) return { ...e, _src: '부서장' };
+  }
+  const g = (rec.boss || '').trim();
+  if (g && g !== '-') {
+    const e = empByName(g);
+    if (e) return { ...e, _src: '상위 결재자' };
+  }
+  // 대표이사 — 위에 결재자가 없다. 신청한 사람이 확인한다.
+  return submitter ? { ...submitter, _src: '신청자' } : null;
+}
+
 function myInfo() {
   const me = (user?.email || user?.username || '').trim().toLowerCase();
   return employeeData.find(e => e.email.trim().toLowerCase() === me) || null;
@@ -740,6 +762,7 @@ function setDeputy(p) {
   }
   msg.innerHTML = '<div class="msg-o">' + esc(p.name) + ' 님이 수락하면 지정한 기간 동안 '
     + esc(d.name) + ' 님의 결재를 대신 처리할 수 있습니다.</div>';
+  renderApprPreview();
 }
 
 /* ── 대신 신청 ──────────────────────────────────────────── */
@@ -768,6 +791,7 @@ function onProxyMode(){
     document.getElementById('p-mail').textContent = '';
   }
   if (_selDeputy) setDeputy(_selDeputy);
+  renderApprPreview();
 }
 function initProxy(){
   const allowed = canProxy();
@@ -813,6 +837,7 @@ function setDelegator(p){
       + '기록에는 위임자와 대신 신청한 사람이 함께 남습니다.</div>';
   }
   if (_selDeputy) setDeputy(_selDeputy);
+  renderApprPreview();
 }
 // 이번 신청에서 결재 권한을 넘기는 사람 (본인 또는 위임자)
 function delegator(){
@@ -864,6 +889,40 @@ function scopeLabel(v) {
   if (!s || s === 'ALL') return '전체 시스템';
   const keys = s.split(',').map(x => x.trim()).filter(Boolean);
   return keys.map(k => (SYSTEMS.find(x => x.key === k) || {}).label || k).join(' · ');
+}
+
+// 결재 라인 미리보기 — 지금 고른 값으로 어떤 결재선이 만들어지는지 보여준다
+function renderApprPreview() {
+  const box = document.getElementById('appr-preview-body');
+  if (!box) return;
+  const proxy = isProxyMode();
+  const dg = delegator();
+  const meEmail = (user?.email || user?.username || '').trim();
+  const me = myInfo();
+  if (!_selDeputy || (proxy && !_selDelegator)) {
+    box.innerHTML = '<div class="lp-empty">위임자와 대리인을 선택하면 결재 라인이 표시됩니다.</div>';
+    return;
+  }
+  const line = [];
+  if (proxy) line.push({ role: '위임자 확인', p: dg });
+  line.push({ role: '대리인 수락', p: _selDeputy });
+  const head = headOf(dg, { name: me ? me.name : (user.name || meEmail), email: meEmail });
+  const lowDep = (_selDeputy.email || '').toLowerCase(), lowDg = (dg.email || '').toLowerCase();
+  let note = '';
+  if (head && head.email && head.email.toLowerCase() !== lowDep && head.email.toLowerCase() !== lowDg) {
+    line.push({ role: '부서장 승인', p: head, src: head._src });
+  } else if (head) {
+    note = '부서장(' + esc(head.name) + ')이 위임자 또는 대리인과 같아 이 단계는 생략됩니다.';
+  } else {
+    note = '부서장을 찾지 못했습니다. employee_search 의 Boss 열을 확인해 주세요.';
+  }
+  box.innerHTML = line.map((x, i) =>
+    '<div class="lp-r"><span class="lp-n">' + (i + 1) + '</span>' +
+    '<span class="lp-role">' + esc(x.role) + '</span>' +
+    '<span class="lp-who">' + esc(x.p.name || '-') +
+    '<span class="e">' + esc(x.p.email || '') + '</span>' +
+    (x.src && x.src !== '부서장' ? '<span class="e">(' + esc(x.src) + ')</span>' : '') +
+    '</span></div>').join('') + (note ? '<div class="lp-note">' + note + '</div>' : '');
 }
 
 /* ── 화면 전환 ──────────────────────────────────────────── */
@@ -990,22 +1049,19 @@ async function submitForm() {
     const line = [];
     if (proxy) line.push({ order: 1, role: '위임자 확인', name: dg.name, email: dg.email });
     line.push({ order: line.length + 1, role: '대리인 수락', name: _selDeputy.name, email: _selDeputy.email });
-    // 2차 관리자 — 신청자·대리인과 겹치지 않는 사람을 고른다.
-    // 겹치면 자기 신청을 자기가 최종 승인하거나, 수락과 승인을 같은 사람이 연달아 처리해
-    // 2단계로 나눈 의미가 사라진다.
-    const _lowMe  = meEmail.trim().toLowerCase();
+    // 2차 부서장 승인 — 위임자의 부서장이 확인한다.
+    // 겹치면(부서장이 위임자 본인이거나 대리인이면) 그 단계는 의미가 없으므로 생략하고 기록한다.
     const _lowDep = _selDeputy.email.trim().toLowerCase();
-    const _lowDg = (dg.email || '').trim().toLowerCase();
-    const adm = adminEmails.find(a => a !== _lowMe && a !== _lowDep && a !== _lowDg);
-    if (adm) {
-      const ai = employeeData.find(e => e.email.trim().toLowerCase() === adm);
-      line.push({ order: line.length + 1, role: '관리자 승인',
-                  name: ai ? ai.name : ((_sysConfig?.AAC_ADMIN_1?.name || _sysConfig?.ADMIN_SP_1?.name) || '관리자'),
-                  email: adm });
-    } else if (adminEmails.length) {
-      // 쓸 수 있는 관리자가 모두 당사자인 경우. 1단계로 진행하되 기록에 남긴다.
-      console.warn('[AAC] 신청자·대리인 외 관리자가 없어 관리자 승인 단계를 생략합니다.');
-      selfNote = '신청자 또는 대리인이 유일한 관리자여서 관리자 승인 단계가 생략되었습니다.';
+    const _lowDg  = (dg.email || '').trim().toLowerCase();
+    const head = headOf(dg, { name: (me ? me.name : (user.name || meEmail)), email: meEmail });
+    const _lowHd = (head?.email || '').trim().toLowerCase();
+    if (head && _lowHd && _lowHd !== _lowDep && _lowHd !== _lowDg) {
+      line.push({ order: line.length + 1, role: '부서장 승인', name: head.name, email: head.email });
+    } else if (head) {
+      console.warn('[AAC] 부서장이 위임자 또는 대리인과 같아 부서장 승인을 생략합니다.');
+      selfNote = '부서장이 위임자 또는 대리인과 같아 부서장 승인 단계가 생략되었습니다.';
+    } else {
+      selfNote = '부서장을 찾지 못해 부서장 승인 단계가 생략되었습니다. (employee_search 확인 필요)';
     }
     for (const a of line) {
       await api('/sites/' + siteId + '/lists/' + LIST_APR + '/items', 'POST', {
