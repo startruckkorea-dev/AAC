@@ -68,59 +68,82 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
 .status-승인{color:#107c10;font-weight:600}
 .status-반려{color:#a4262c;font-weight:600}
 
-/* ── AAC 전용 — ACC 체계 위에 최소한만 얹는다 ───────────── */
-.aac-note{background:#f8f9fb;border-left:3px solid #0078d4;border-radius:0 4px 4px 0;
-  padding:11px 14px;font-size:.76rem;color:#605e5c;line-height:1.7;margin-bottom:16px}
-.aac-note b{color:#323130}
-.aac-box{background:#fafafa;border:1px solid #edebe9;border-radius:6px;padding:12px 14px}
-.aac-box .lb{font-size:.72rem;color:#605e5c}
-.aac-box .vv{font-size:.85rem;font-weight:600;color:#323130;margin-top:4px;min-height:20px}
-.aac-box .mm{font-size:.72rem;color:#a19f9d;margin-top:2px}
-.dayspan{display:inline-block;background:#eaf3fd;border:1px solid #b6d7f2;border-radius:9px;
-  padding:3px 11px;font-size:.74rem;font-weight:700;color:#0b5fa5;white-space:nowrap}
-.msg-w{background:#fdf6e3;border:1px solid #f0d9a0;border-radius:6px;padding:9px 12px;
-  font-size:.75rem;color:#8a6116;line-height:1.6;margin-top:8px}
-.msg-e{background:#fdf2f2;border:1px solid #f0c8c8;border-radius:6px;padding:9px 12px;
-  font-size:.75rem;color:#a4262c;line-height:1.6;margin-top:8px}
-.msg-o{background:#f1f8f4;border:1px solid #c9e4d3;border-radius:6px;padding:9px 12px;
-  font-size:.75rem;color:#0e7a3c;line-height:1.6;margin-top:8px}
-/* 시스템 선택 — 3열 격자. flex + inline-flex 조합은 줄바꿈이 붙어 보인다 */
-.sysgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;margin-top:10px;
-  border:1px solid #ececec;border-radius:6px;overflow:hidden;background:#ececec}
+/* ── AAC 전용 — ACC 의 톤(색·모서리·크기)을 그대로 따른다 ───── */
+
+/* 안내 블록 — ACC 의 .sp-note.info 와 같은 톤 */
+.aac-note{background:#f0f6ff;border:1px solid #c7e0f4;border-radius:6px;
+  padding:12px 15px;font-size:12px;color:#0b5fa5;line-height:1.75;margin-bottom:16px}
+.aac-note b{color:#004578;font-weight:600}
+
+/* 선택 결과 표시 — ACC 의 .appr-block 과 같은 톤 */
+.aac-box{background:#fff;border:1px solid #edebe9;border-radius:8px;padding:14px 16px}
+.aac-box .lb{font-size:11px;font-weight:600;color:#a19f9d;letter-spacing:.02em}
+.aac-box .vv{font-size:14px;font-weight:600;color:#323130;margin-top:5px;min-height:20px}
+.aac-box .mm{font-size:11.5px;color:#a19f9d;margin-top:3px}
+
+/* 기간 배지 — ACC 의 .line-step-badge 와 같은 규격 */
+.dayspan{display:inline-block;background:#0078d4;color:#fff;border-radius:10px;
+  padding:3px 12px;font-size:11px;font-weight:700;white-space:nowrap}
+
+/* 상태 메시지 — ACC 의 .sp-note 계열 */
+.msg-w{background:#fdf6e3;border:1px solid #f0d9a0;border-radius:6px;padding:9px 13px;
+  font-size:11.5px;color:#8a6116;line-height:1.6;margin-top:8px}
+.msg-e{background:#fdf2f2;border:1px solid #f0c8c8;border-radius:6px;padding:9px 13px;
+  font-size:11.5px;color:#a4262c;line-height:1.6;margin-top:8px}
+.msg-o{background:#f0f6ff;border:1px solid #c7e0f4;border-radius:6px;padding:9px 13px;
+  font-size:11.5px;color:#0b5fa5;line-height:1.6;margin-top:8px}
+
+/* 전체 시스템 — ACC 의 .appr-block.appr-fixed 톤 */
+.chk-all{display:flex;align-items:center;gap:9px;font-size:13px;font-weight:600;color:#004578;
+  cursor:pointer;padding:11px 15px;background:#f0f6ff;border:1px solid #c7e0f4;border-radius:8px}
+.chk-all input{width:15px;height:15px;margin:0;cursor:pointer;accent-color:#0078d4;flex-shrink:0}
+.chk-all .sub{font-weight:400;color:#5b8db8;font-size:11.5px;margin-left:2px}
+
+/* 시스템 격자 — 3열, 얇은 구분선 */
+.sysgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;margin-top:10px;
+  border:1px solid #edebe9;border-radius:8px;overflow:hidden;background:#edebe9}
 @media(max-width:900px){.sysgrid{grid-template-columns:repeat(2,1fr)}}
-.sysgrid .chk{background:#fff;padding:9px 12px;margin:0}
-.chk{display:flex;align-items:center;gap:8px;font-size:12.5px;color:#323130;cursor:pointer;
-  user-select:none;line-height:1.4}
-.chk input{width:14px;height:14px;margin:0;cursor:pointer;accent-color:#0078d4;flex-shrink:0}
-.chk.dim{color:#a19f9d}
-.sys-chk{width:14px;height:14px;margin:0;cursor:pointer;accent-color:#0078d4;flex-shrink:0}
-/* 전체 시스템 — 격자 위에 따로 둔다 */
-.chk-all{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:#323130;
-  cursor:pointer;padding:9px 12px;background:#f0f6ff;border:1px solid #cfe3f7;border-radius:6px}
-.chk-all input{width:15px;height:15px;margin:0;cursor:pointer;accent-color:#0078d4}
-/* 입력란 하단 안내 — ACC 와 같은 작은 회색 글씨 */
-.fld-hint{font-size:11.5px;color:#a19f9d;margin-top:5px;line-height:1.5}
-.st{display:inline-block;padding:3px 10px;border-radius:10px;font-size:.72rem;font-weight:600;white-space:nowrap}
-.st-대기{background:#fff4ce;color:#7d5700}
-.st-승인완료{background:#dff6dd;color:#107c10}
-.st-반려{background:#fde7e9;color:#a4262c}
-.st-철회{background:#f3f2f1;color:#605e5c}
-.st-만료{background:#f3f2f1;color:#8a8886}
+.sysgrid .chk{background:#fff;padding:10px 14px;margin:0;transition:background .12s}
+.sysgrid .chk:hover{background:#f0f6ff}
+.sysgrid .chk.dim{background:#fafafa}
+.sysgrid .chk.dim:hover{background:#fafafa}
+.chk{display:flex;align-items:center;gap:9px;font-size:12.5px;color:#323130;
+  cursor:pointer;user-select:none;line-height:1.4}
+.chk input,.sys-chk{width:14px;height:14px;margin:0;cursor:pointer;accent-color:#0078d4;flex-shrink:0}
+.chk.dim{color:#b3b0ad;cursor:default}
+
+/* 입력란 하단 안내 — ACC 라벨과 같은 계열의 회색 */
+.fld-hint{font-size:11.5px;color:#a19f9d;margin-top:6px;line-height:1.55}
+
+/* 상태 배지 — ACC 의 .badge-대기 규격 */
+.st{display:inline-block;border-radius:10px;padding:2px 9px;font-size:11px;
+  font-weight:600;white-space:nowrap;border:1px solid transparent}
+.st-대기{background:#fff4ce;color:#7d5700;border-color:#ffe58f}
+.st-승인완료{background:#dff6dd;color:#107c10;border-color:#bfe6bd}
+.st-반려{background:#fde7e9;color:#a4262c;border-color:#f3c6ca}
+.st-철회{background:#f3f2f1;color:#605e5c;border-color:#e1dfdd}
+.st-만료{background:#f3f2f1;color:#a19f9d;border-color:#e1dfdd}
+
+/* 탭 배지 — ACC 결재함 배지와 같은 규격 */
 .tab-badge{display:inline-block;background:#a4262c;color:#fff;border-radius:9px;
-  padding:1px 7px;font-size:.68rem;font-weight:700;margin-left:5px}
-.mini{font-size:.72rem;color:#a19f9d}
-.cfgwarn{display:none;background:#fff4ce;border:1px solid #f0d9a0;border-radius:6px;
-  padding:9px 12px;font-size:.76rem;color:#7d5700;margin-bottom:14px}
+  padding:1px 7px;font-size:10px;font-weight:700;margin-left:6px;vertical-align:1px}
+
+.mini{font-size:11.5px;color:#a19f9d;margin-top:2px}
+.cfgwarn{display:none;background:#fdf6e3;border:1px solid #f0d9a0;border-radius:6px;
+  padding:10px 13px;font-size:12px;color:#8a6116;margin-bottom:16px}
 .tbl-wrap{overflow-x:auto}
-.appr-box{background:#f9f9f9;border:1px solid #edebe9;border-radius:6px;margin-top:6px}
+
+/* 결재 이력 — ACC 와 동일 */
+.appr-box{background:#fff;border:1px solid #edebe9;border-radius:8px;margin-top:8px;overflow:hidden}
+
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:900;
   align-items:center;justify-content:center;padding:20px}
 .modal-overlay.open{display:flex}
 
 .btn-danger{background:#a4262c;color:#fff}
 .btn-danger:hover{background:#8a1f24}
-.det-label{width:150px;flex-shrink:0;color:#605e5c;font-size:.76rem}
-.det-value{flex:1;color:#323130;word-break:break-word}
+.det-label{width:150px;flex-shrink:0;color:#605e5c;font-size:12px}
+.det-value{flex:1;color:#323130;font-size:13px;word-break:break-word}
 .det-row:last-child{border-bottom:none}
 
 </style>
@@ -226,7 +249,7 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
 
       <div class="section-title">3. 대상 시스템 (Scope)</div>
       <div class="fld-hint" style="margin:0 0 10px">대리 처리를 허용할 시스템을 고릅니다.</div>
-      <label class="chk-all"><input type="checkbox" id="f-all" checked onchange="onScopeAll()"> 전체 시스템 &mdash; 지금 있는 12개와 이후 추가되는 시스템까지</label>
+      <label class="chk-all"><input type="checkbox" id="f-all" checked onchange="onScopeAll()"> 전체 시스템<span class="sub">지금 있는 12개와 이후 추가되는 시스템까지 포함합니다</span></label>
       <div class="sysgrid" id="f-syslist"></div>
 
       <div class="section-title">4. 사유 (Reason)</div>
