@@ -723,6 +723,7 @@ async function submitForm() {
     const meEmail = (user.email || user.username || '').trim();
 
     // ① 신청서 생성 — Title 은 임시값으로 만들고 ID 를 받은 뒤 확정한다
+    let selfNote = '';
     const created = await api('/sites/' + siteId + '/lists/' + LIST_REQ + '/items', 'POST', {
       fields: {
         Title: 'AAC-tmp',
@@ -748,10 +749,21 @@ async function submitForm() {
     const line = [
       { order: 1, role: '대리인 수락', name: _selDeputy.name, email: _selDeputy.email },
     ];
-    const adm = adminEmails[0];
+    // 2차 관리자 — 신청자·대리인과 겹치지 않는 사람을 고른다.
+    // 겹치면 자기 신청을 자기가 최종 승인하거나, 수락과 승인을 같은 사람이 연달아 처리해
+    // 2단계로 나눈 의미가 사라진다.
+    const _lowMe  = meEmail.trim().toLowerCase();
+    const _lowDep = _selDeputy.email.trim().toLowerCase();
+    const adm = adminEmails.find(a => a !== _lowMe && a !== _lowDep);
     if (adm) {
       const ai = employeeData.find(e => e.email.trim().toLowerCase() === adm);
-      line.push({ order: 2, role: '관리자 승인', name: ai ? ai.name : (_sysConfig?.ADMIN_SP_1?.name || '관리자'), email: adm });
+      line.push({ order: 2, role: '관리자 승인',
+                  name: ai ? ai.name : ((_sysConfig?.AAC_ADMIN_1?.name || _sysConfig?.ADMIN_SP_1?.name) || '관리자'),
+                  email: adm });
+    } else if (adminEmails.length) {
+      // 쓸 수 있는 관리자가 모두 당사자인 경우. 1단계로 진행하되 기록에 남긴다.
+      console.warn('[AAC] 신청자·대리인 외 관리자가 없어 관리자 승인 단계를 생략합니다.');
+      selfNote = '신청자 또는 대리인이 유일한 관리자여서 관리자 승인 단계가 생략되었습니다.';
     }
     for (const a of line) {
       await api('/sites/' + siteId + '/lists/' + LIST_APR + '/items', 'POST', {
@@ -782,7 +794,15 @@ async function submitForm() {
       alert('신청은 접수되었으나 결재선이 예상보다 많이 생성되었습니다 (' + cnt + '건).\nIT팀에 ' + title + ' 을 알려주세요.');
     }
 
-    alert('신청이 접수되었습니다.\n\n' + title + '\n\n' + _selDeputy.name + ' 님의 수락을 기다립니다.');
+    if (selfNote) {
+      // 결재 단계가 줄어든 이유를 신청서에 남긴다. 나중에 왜 1단계인지 알 수 없으면 곤란하다.
+      try {
+        await api('/sites/' + siteId + '/lists/' + LIST_REQ + '/items/' + reqId, 'PATCH',
+          { fields: { ClosedComment: '[자동 기록] ' + selfNote } });
+      } catch (e) { console.warn('[AAC] 생략 사유 기록 실패:', e.message); }
+    }
+    alert('신청이 접수되었습니다.\n\n' + title + '\n\n' + _selDeputy.name + ' 님의 수락을 기다립니다.'
+          + (selfNote ? '\n\n※ ' + selfNote : ''));
     resetForm();
     myData = []; switchTab('my');
   } catch (e) {
