@@ -117,6 +117,20 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
 
 /* 입력란 하단 안내 — ACC 라벨과 같은 계열의 회색 */
 .fld-hint{font-size:11.5px;color:#a19f9d;margin-top:6px;line-height:1.55}
+/* 신청 유형 선택 — 본인 / 대신 신청 */
+.pv-wrap{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:#edebe9;
+  border:1px solid #edebe9;border-radius:8px;overflow:hidden}
+@media(max-width:640px){.pv-wrap{grid-template-columns:1fr}}
+.pv-opt{display:flex;align-items:flex-start;gap:9px;background:#fff;padding:12px 15px;
+  cursor:pointer;font-size:12.5px;color:#323130;transition:background .12s}
+.pv-opt:hover{background:#f0f6ff}
+.pv-opt input{width:15px;height:15px;margin:1px 0 0;cursor:pointer;accent-color:#0078d4;flex-shrink:0}
+.pv-opt span{display:block;line-height:1.5}
+.pv-opt .sub{display:block;font-size:11.5px;color:#a19f9d;font-weight:400;margin-top:2px}
+.pv-opt.off{background:#fafafa;color:#b3b0ad;cursor:not-allowed}
+.pv-opt.off:hover{background:#fafafa}
+.proxy-tag{display:inline-block;background:#fdf6e3;color:#8a6116;border:1px solid #f0d9a0;
+  border-radius:10px;padding:2px 9px;font-size:11px;font-weight:600;margin-left:6px}
 
 /* 상태 배지 — ACC 의 .badge-대기 규격 */
 .st{display:inline-block;border-radius:10px;padding:2px 9px;font-size:11px;
@@ -211,7 +225,47 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
         <b>원래 결재자 기록은 그대로 남고</b>, 대리인이 처리한 건은 대리 처리로 표시됩니다.
       </div>
 
-      <div class="section-title">1. 대리 기간 (Delegation Period)</div>
+      <div class="section-title">1. 위임자 (Delegator)</div>
+      <div class="pv-wrap">
+        <label class="pv-opt"><input type="radio" name="pv-mode" value="self" checked onchange="onProxyMode()">
+          <span><b>본인</b><span class="sub">내 결재를 다른 사람에게 맡깁니다</span></span></label>
+        <label class="pv-opt" id="pv-opt-other"><input type="radio" name="pv-mode" value="other" onchange="onProxyMode()">
+          <span><b>다른 사람 대신 신청</b><span class="sub">임원 등 본인이 직접 신청하기 어려운 경우</span></span></label>
+      </div>
+      <div id="pv-locked" class="msg-w" style="display:none">
+        대신 신청은 사전에 지정된 담당자만 할 수 있습니다. 필요하시면 IT팀으로 요청해 주세요.
+      </div>
+      <div id="pv-pick" style="display:none">
+        <div class="form-row three" style="margin-top:12px">
+          <div class="form-group">
+            <label>부서<span class="req">*</span></label>
+            <select id="p-dept" onchange="onPDeptChange()"><option value="">부서 선택</option></select>
+          </div>
+          <div class="form-group">
+            <label>팀<span class="req">*</span></label>
+            <select id="p-team" onchange="onPTeamChange()" disabled><option value="">팀 선택</option></select>
+          </div>
+          <div class="form-group">
+            <label>위임자<span class="req">*</span></label>
+            <select id="p-person" onchange="onPPersonChange()" disabled><option value="">직원 선택</option></select>
+          </div>
+        </div>
+        <div class="aac-box">
+          <div class="lb">결재 권한을 위임하는 분</div>
+          <div class="vv" id="p-view">-</div>
+          <div class="mm" id="p-mail"></div>
+        </div>
+        <div class="form-row full" style="margin-top:12px">
+          <div class="form-group">
+            <label>대신 신청하는 사유<span class="req">*</span></label>
+            <input type="text" id="p-reason" maxlength="200" placeholder="예) 대표이사 해외 출장으로 비서실에서 대신 신청합니다.">
+            <div class="fld-hint">누가 왜 대신 신청했는지 기록으로 남습니다. (최대 200자)</div>
+          </div>
+        </div>
+        <div id="pv-msg"></div>
+      </div>
+
+      <div class="section-title">2. 대리 기간 (Delegation Period)</div>
       <div class="form-row three">
         <div class="form-group">
           <label>시작일<span class="req">*</span></label>
@@ -228,7 +282,7 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
       </div>
       <div id="period-msg"></div>
 
-      <div class="section-title">2. 대리인 지정 (Deputy)</div>
+      <div class="section-title">3. 대리인 지정 (Deputy)</div>
       <div class="form-row three">
         <div class="form-group">
           <label>부서<span class="req">*</span></label>
@@ -250,12 +304,12 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
       </div>
       <div id="deputy-msg"></div>
 
-      <div class="section-title">3. 대상 시스템 (Scope)</div>
+      <div class="section-title">4. 대상 시스템 (Scope)</div>
       <div class="fld-hint" style="margin:0 0 10px">대리 처리를 허용할 시스템을 고릅니다.</div>
       <label class="chk-all"><input type="checkbox" id="f-all" checked onchange="onScopeAll()"> 전체 시스템<span class="sub">지금 있는 12개와 이후 추가되는 시스템까지 포함합니다</span></label>
       <div class="sysgrid" id="f-syslist"></div>
 
-      <div class="section-title">4. 사유 (Reason)</div>
+      <div class="section-title">5. 사유 (Reason)</div>
       <div class="form-row full">
         <div class="form-group">
           <label>대리 지정 사유<span class="req">*</span></label>
@@ -426,6 +480,8 @@ let user = null, siteId = null, _docDriveId = null, _sysConfig = null;
 let employeeData = [], adminEmails = [], contactEmail = 'stk_it@hyosung.com';
 let myData = [], aprData = [], adminData = [];
 let _selDeputy = null, _curDetail = null, _cfAction = null;
+let _selDelegator = null;      // 대신 신청 시 결재 권한을 위임하는 사람
+let proxyEmails = [];          // 대신 신청이 허용된 담당자 (설정 파일)
 let _loadSeq = { my: 0, apr: 0, admin: 0 };   // 탭마다 따로 — 하나를 공유하면 서로 취소된다
 
 /* ── 공통 헬퍼 ──────────────────────────────────────────── */
@@ -471,6 +527,15 @@ function apprClass(s) {
 }
 function isMe(e)  { return (e || '').trim().toLowerCase() === (user?.email || user?.username || '').trim().toLowerCase(); }
 function isAdmin(){ return adminEmails.includes((user?.email || user?.username || '').trim().toLowerCase()); }
+// 대신 신청 가능 여부 — 관리자 또는 설정 파일에 등록된 담당자
+function canProxy(){
+  const me = (user?.email || user?.username || '').trim().toLowerCase();
+  return isAdmin() || proxyEmails.includes(me);
+}
+function isProxyMode(){
+  const el = document.querySelector('input[name="pv-mode"]:checked');
+  return !!el && el.value === 'other';
+}
 function loading(el, msg) {
   const t = document.getElementById(el);
   if (t) t.innerHTML = '<tr><td colspan="9" class="list-empty">' + esc(msg || '불러오는 중...') + '</td></tr>';
@@ -557,6 +622,13 @@ async function loadSystemConfig() {
       if (e && e.includes('@') && !adminEmails.includes(e)) adminEmails.push(e);
     });
     contactEmail = (cfg['AAC_CONTACT']?.email || cfg['CONTACT_EMAIL']?.email || contactEmail).trim();
+    // 대신 신청 담당자 — 비서실 등. 등록되지 않으면 관리자만 대신 신청할 수 있다.
+    // 남의 결재 권한을 위임하는 일이라 아무나 할 수 있게 두면 통제가 무너진다.
+    for (let i = 1; i <= 10; i++) {
+      const e = (cfg['AAC_PROXY_' + i]?.email || '').trim().toLowerCase();
+      if (e && e.includes('@') && !proxyEmails.includes(e)) proxyEmails.push(e);
+    }
+    console.log('[Config] 대신 신청 담당자', proxyEmails.length, '명');
     console.log('[Config] 로드', Object.keys(cfg).length, '건 · 관리자', adminEmails.length, '명');
     return cfg;
   } catch (e) {
@@ -629,12 +701,79 @@ function setDeputy(p) {
   document.getElementById('f-deputy-mail').textContent = p ? p.email + '  ·  ' + p.dept + (p.team ? ' / ' + p.team : '') : '';
   const msg = document.getElementById('deputy-msg');
   if (!p) { msg.innerHTML = ''; return; }
-  // 자기 자신을 대리인으로 지정하면 의미가 없다
-  if (isMe(p.email)) {
-    msg.innerHTML = '<div class="msg-e">본인을 대리인으로 지정할 수 없습니다.</div>';
+  // 위임자 본인을 대리인으로 지정하면 의미가 없다
+  const d = delegator();
+  if ((p.email || '').trim().toLowerCase() === (d.email || '').trim().toLowerCase()) {
+    msg.innerHTML = '<div class="msg-e">' + esc(d.name) + ' 님 본인을 대리인으로 지정할 수 없습니다.</div>';
     _selDeputy = null; return;
   }
-  msg.innerHTML = '<div class="msg-o">' + esc(p.name) + ' 님이 수락하면 지정한 기간 동안 대리 결재가 가능합니다.</div>';
+  msg.innerHTML = '<div class="msg-o">' + esc(p.name) + ' 님이 수락하면 지정한 기간 동안 '
+    + esc(d.name) + ' 님의 결재를 대신 처리할 수 있습니다.</div>';
+}
+
+/* ── 대신 신청 ──────────────────────────────────────────── */
+function onProxyMode(){
+  const on = isProxyMode();
+  document.getElementById('pv-pick').style.display = on ? '' : 'none';
+  if (!on) { setDelegator(null); document.getElementById('pv-msg').innerHTML = ''; }
+  // 위임자가 바뀌면 대리인 후보도 다시 판단해야 한다 (본인 지정 차단 기준이 달라진다)
+  if (_selDeputy) setDeputy(_selDeputy);
+}
+function initProxy(){
+  const allowed = canProxy();
+  const opt = document.getElementById('pv-opt-other');
+  const radio = opt.querySelector('input');
+  radio.disabled = !allowed;
+  opt.classList.toggle('off', !allowed);
+  document.getElementById('pv-locked').style.display = allowed ? 'none' : 'block';
+  if (!allowed) return;
+  const depts = [...new Set(employeeData.map(e => e.dept).filter(Boolean))].sort();
+  document.getElementById('p-dept').innerHTML = '<option value="">부서 선택</option>' +
+    depts.map(d => '<option value="' + esc(d) + '">' + esc(d) + '</option>').join('');
+}
+function onPDeptChange(){
+  const dept = document.getElementById('p-dept').value;
+  const t = document.getElementById('p-team'), p = document.getElementById('p-person');
+  const teams = [...new Set(employeeData.filter(e => e.dept === dept).map(e => e.team).filter(Boolean))].sort();
+  t.innerHTML = '<option value="">팀 선택</option>' + teams.map(x => '<option value="' + esc(x) + '">' + esc(x) + '</option>').join('');
+  t.disabled = !dept;
+  p.innerHTML = '<option value="">직원 선택</option>'; p.disabled = true;
+  setDelegator(null);
+}
+function onPTeamChange(){
+  const dept = document.getElementById('p-dept').value, team = document.getElementById('p-team').value;
+  const p = document.getElementById('p-person');
+  const list = employeeData.filter(e => e.dept === dept && e.team === team).sort((a,b) => a.name.localeCompare(b.name));
+  p.innerHTML = '<option value="">직원 선택</option>' +
+    list.map(x => '<option value="' + esc(x.email) + '">' + esc(x.name) + '</option>').join('');
+  p.disabled = !team;
+  setDelegator(null);
+}
+function onPPersonChange(){
+  setDelegator(employeeData.find(e => e.email === document.getElementById('p-person').value) || null);
+}
+function setDelegator(p){
+  _selDelegator = p;
+  document.getElementById('p-view').textContent = p ? p.name : '-';
+  document.getElementById('p-mail').textContent = p ? p.email + '  ·  ' + p.dept + (p.team ? ' / ' + p.team : '') : '';
+  const msg = document.getElementById('pv-msg');
+  if (!p) { msg.innerHTML = ''; if (_selDeputy) setDeputy(_selDeputy); return; }
+  if (isMe(p.email)) {
+    // 본인을 위임자로 고르면 대신 신청이 아니다
+    msg.innerHTML = '<div class="msg-w">본인이 위임자라면 위쪽에서 「본인」을 선택해 주세요.</div>';
+  } else {
+    msg.innerHTML = '<div class="msg-o">' + esc(p.name) + ' 님의 결재를 다른 분에게 맡기는 신청입니다. '
+      + '신청자로는 ' + esc(p.name) + ' 님이 기록되고, 대신 신청한 사람으로 본인이 함께 남습니다.</div>';
+  }
+  if (_selDeputy) setDeputy(_selDeputy);
+}
+// 이번 신청에서 결재 권한을 넘기는 사람 (본인 또는 위임자)
+function delegator(){
+  if (isProxyMode() && _selDelegator) return _selDelegator;
+  const me = myInfo();
+  const email = (user.email || user.username || '').trim();
+  return { name: me ? me.name : (user.name || email), email,
+           dept: me ? me.dept : '', team: me ? me.team : '' };
 }
 
 /* ── 기간 ───────────────────────────────────────────────── */
@@ -696,6 +835,10 @@ function resetForm() {
   document.getElementById('f-dept').value = '';
   onDeptChange();
   document.getElementById('f-all').checked = true; onScopeAll();
+  const sf = document.querySelector('input[name="pv-mode"][value="self"]');
+  if (sf) { sf.checked = true; onProxyMode(); }
+  document.getElementById('p-dept').value = ''; onPDeptChange();
+  document.getElementById('p-reason').value = '';
   document.getElementById('f-days').textContent = '-';
   document.getElementById('period-msg').innerHTML = '';
   document.getElementById('deputy-msg').innerHTML = '';
@@ -709,19 +852,36 @@ async function submitForm() {
   const reason = document.getElementById('f-reason').value.trim();
   const scope = getScope();
 
+  // 대신 신청이면 위임자와 사유를 먼저 확인한다
+  const proxy = isProxyMode();
+  const pReason = (document.getElementById('p-reason').value || '').trim();
+  if (proxy) {
+    if (!canProxy())      { alert('대신 신청 권한이 없습니다.'); return; }
+    if (!_selDelegator)   { alert('위임자를 선택하세요.'); return; }
+    if (isMe(_selDelegator.email)) { alert('본인이 위임자라면 「본인」을 선택해 주세요.'); return; }
+    if (!pReason)         { alert('대신 신청하는 사유를 입력하세요.'); return; }
+    if (pReason.length > 200) { alert('대신 신청 사유는 200자를 넘을 수 없습니다.'); return; }
+  }
+  const dg = delegator();
+
   if (!start || !end)  { alert('대리 기간을 입력하세요.'); return; }
   if (end < start)     { alert('종료일이 시작일보다 빠릅니다.'); return; }
   if (end < kstToday()){ alert('이미 지난 기간입니다. 종료일을 오늘 이후로 지정해 주세요.'); return; }
   if (!_selDeputy)     { alert('대리인을 선택하세요.'); return; }
-  if (isMe(_selDeputy.email)) { alert('본인을 대리인으로 지정할 수 없습니다.'); return; }
+  if ((_selDeputy.email || '').trim().toLowerCase() === (dg.email || '').trim().toLowerCase()) {
+    alert(dg.name + ' 님 본인을 대리인으로 지정할 수 없습니다.'); return;
+  }
   if (!scope)          { alert('대상 시스템을 하나 이상 선택하거나 전체를 선택하세요.'); return; }
   if (!reason)         { alert('대리 지정 사유를 입력하세요.'); return; }
   if (reason.length > 500) { alert('사유는 500자를 넘을 수 없습니다. (현재 ' + reason.length + '자)'); return; }
 
   // 같은 기간에 이미 신청한 건이 있으면 막는다. 중복 지정은 어느 쪽이 유효한지 판단할 수 없다.
   try {
-    const dup = (myData || []).find(r => {
+    // 대신 신청이면 위임자 기준으로 겹치는지 본다. 내 목록만 보면 놓친다.
+    const pool = proxy ? await fetchReqs() : (myData || []);
+    const dup = pool.find(r => {
       const f = r.fields;
+      if ((f.RequesterEmail || '').trim().toLowerCase() !== (dg.email || '').trim().toLowerCase()) return false;
       if (!['대기', '승인완료'].includes((f.Status || '').trim())) return false;
       return !(f.EndDate < start || f.StartDate > end);
     });
@@ -733,7 +893,8 @@ async function submitForm() {
     }
   } catch (e) { /* 목록을 아직 못 읽었으면 서버 검증에 맡긴다 */ }
 
-  if (!confirm('결재 대리를 신청합니다.\n\n대리인 : ' + _selDeputy.name +
+  if (!confirm('결재 대리를 신청합니다.\n\n위임자 : ' + dg.name + (proxy ? '  (대신 신청)' : '  (본인)') +
+               '\n대리인 : ' + _selDeputy.name +
                '\n기간   : ' + start + ' ~ ' + end +
                '\n대상   : ' + scopeLabel(scope) +
                '\n\n대리인이 수락하고 관리자가 승인하면 효력이 생깁니다.')) return;
@@ -750,9 +911,15 @@ async function submitForm() {
     const created = await api('/sites/' + siteId + '/lists/' + LIST_REQ + '/items', 'POST', {
       fields: {
         Title: 'AAC-tmp',
-        RequesterEmail: meEmail,
-        RequesterName: me ? me.name : (user.name || meEmail),
-        RequesterDept: me ? (me.dept + (me.team ? ' / ' + me.team : '')) : '',
+        // 신청자 = 결재 권한을 넘기는 사람(위임자). 대신 신청이어도 위임자로 기록한다.
+        // 그래야 위임자 본인이 자기 신청 목록에서 볼 수 있다.
+        RequesterEmail: dg.email,
+        RequesterName: dg.name,
+        RequesterDept: (dg.dept || '') + (dg.team ? ' / ' + dg.team : ''),
+        // 실제로 화면에서 신청한 사람. 본인 신청이면 위와 같다.
+        SubmittedByEmail: meEmail,
+        SubmittedByName: me ? me.name : (user.name || meEmail),
+        ProxyReason: proxy ? pReason : '',
         DeputyEmail: _selDeputy.email,
         DeputyName: _selDeputy.name,
         DeputyDept: _selDeputy.dept + (_selDeputy.team ? ' / ' + _selDeputy.team : ''),
@@ -769,18 +936,23 @@ async function submitForm() {
     await api('/sites/' + siteId + '/lists/' + LIST_REQ + '/items/' + reqId, 'PATCH', { fields: { Title: title } });
 
     // ② 결재선 — 1차 대리인 수락, 2차 관리자 승인
-    const line = [
-      { order: 1, role: '대리인 수락', name: _selDeputy.name, email: _selDeputy.email },
-    ];
+    // 대신 신청이면 위임자 본인 확인을 맨 앞에 둔다.
+    // 남의 결재 권한을 넘기는 일이라 본인 확인 없이 진행하면 통제가 무너진다.
+    // 위임자가 정말 확인이 어려운 상황이면 관리자가 대신 확인할 수 있도록
+    // 관리자 승인 단계는 그대로 남긴다.
+    const line = [];
+    if (proxy) line.push({ order: 1, role: '위임자 확인', name: dg.name, email: dg.email });
+    line.push({ order: line.length + 1, role: '대리인 수락', name: _selDeputy.name, email: _selDeputy.email });
     // 2차 관리자 — 신청자·대리인과 겹치지 않는 사람을 고른다.
     // 겹치면 자기 신청을 자기가 최종 승인하거나, 수락과 승인을 같은 사람이 연달아 처리해
     // 2단계로 나눈 의미가 사라진다.
     const _lowMe  = meEmail.trim().toLowerCase();
     const _lowDep = _selDeputy.email.trim().toLowerCase();
-    const adm = adminEmails.find(a => a !== _lowMe && a !== _lowDep);
+    const _lowDg = (dg.email || '').trim().toLowerCase();
+    const adm = adminEmails.find(a => a !== _lowMe && a !== _lowDep && a !== _lowDg);
     if (adm) {
       const ai = employeeData.find(e => e.email.trim().toLowerCase() === adm);
-      line.push({ order: 2, role: '관리자 승인',
+      line.push({ order: line.length + 1, role: '관리자 승인',
                   name: ai ? ai.name : ((_sysConfig?.AAC_ADMIN_1?.name || _sysConfig?.ADMIN_SP_1?.name) || '관리자'),
                   email: adm });
     } else if (adminEmails.length) {
@@ -797,7 +969,7 @@ async function submitForm() {
           ApproverRole: a.role,
           ApproverName: a.name,
           ApproverEmail: a.email,
-          Status: a.order === 1 ? '대기' : '대기(잠김)'
+          Status: a.order === line[0].order ? '대기' : '대기(잠김)'
         }
       });
     }
@@ -853,6 +1025,12 @@ function effStatus(f) {
   if (s === '승인완료' && f.EndDate && String(f.EndDate).slice(0, 10) < kstToday()) return '만료';
   return s;
 }
+// 대신 신청인지 — 신청 화면에서 누른 사람과 위임자가 다르면 대신 신청이다
+function isProxyReq(f) {
+  const a = (f.SubmittedByEmail || '').trim().toLowerCase();
+  const b = (f.RequesterEmail || '').trim().toLowerCase();
+  return !!a && !!b && a !== b;
+}
 function isActive(f) {
   if ((f.Status || '').trim() !== '승인완료') return false;
   const t = kstToday();
@@ -865,7 +1043,8 @@ async function loadMy(force) {
   try {
     const rows = await fetchReqs();
     if (seq !== _loadSeq.my) return;              // 그 사이 다시 불렸으면 버린다
-    myData = rows.filter(r => isMe(r.fields.RequesterEmail));
+    // 내가 위임자인 건 + 내가 대신 신청해 준 건 모두 보여준다
+    myData = rows.filter(r => isMe(r.fields.RequesterEmail) || isMe(r.fields.SubmittedByEmail));
     document.getElementById('my-count').textContent = '총 ' + myData.length + '건';
     document.getElementById('my-body').innerHTML = myData.length ? myData.map((r, i) => {
       const f = r.fields, st = effStatus(f);
@@ -873,7 +1052,8 @@ async function loadMy(force) {
         '<td>' + (myData.length - i) + '</td>' +
         '<td style="color:#0078d4;font-weight:600">' + esc(f.Title || '') + '</td>' +
         '<td>' + esc(f.DeputyName || '') + '<div class="mini">' + esc(f.DeputyEmail || '') + '</div></td>' +
-        '<td>' + fmtDay(f.StartDate) + ' ~ ' + fmtDay(f.EndDate) + '</td>' +
+        '<td>' + fmtDay(f.StartDate) + ' ~ ' + fmtDay(f.EndDate) +
+          (isProxyReq(f) ? '<div class="mini">위임자 ' + esc(f.RequesterName || '') + '</div>' : '') + '</td>' +
         '<td class="mini">' + esc(scopeLabel(f.Scope)) + '</td>' +
         '<td><span class="st ' + stClass(st) + '">' + esc(st) + '</span></td>' +
         '<td class="mini">' + fmtDate(f.RequestDate) + '</td></tr>';
@@ -936,7 +1116,9 @@ function renderAdmin() {
     return '<tr style="cursor:pointer" onclick="openDetail(' + r.id + ')">' +
       '<td>' + (list.length - i) + '</td>' +
       '<td style="color:#0078d4;font-weight:600">' + esc(f.Title || '') + '</td>' +
-      '<td>' + esc(f.RequesterName || '') + '<div class="mini">' + esc(f.RequesterEmail || '') + '</div></td>' +
+      '<td>' + esc(f.RequesterName || '') + (isProxyReq(f) ? '<span class="proxy-tag">대신</span>' : '') +
+        '<div class="mini">' + esc(f.RequesterEmail || '') + '</div>' +
+        (isProxyReq(f) ? '<div class="mini">신청 ' + esc(f.SubmittedByName || '') + '</div>' : '') + '</td>' +
       '<td>' + esc(f.DeputyName || '') + '<div class="mini">' + esc(f.DeputyEmail || '') + '</div></td>' +
       '<td>' + fmtDay(f.StartDate) + ' ~ ' + fmtDay(f.EndDate) + '</td>' +
       '<td class="mini">' + esc(scopeLabel(f.Scope)) + '</td>' +
@@ -970,8 +1152,13 @@ async function openDetail(id) {
     let html = '<div class="section-title" style="margin-top:0">기본 정보</div>' +
       drow('신청번호', '<b>' + esc(f.Title || '') + '</b>') +
       drow('상태', '<span class="st ' + stClass(st) + '">' + esc(st) + '</span>') +
-      drow('신청자', esc(f.RequesterName || '') + ' <span class="mini">' + esc(f.RequesterEmail || '') + '</span>' +
+      drow('위임자', esc(f.RequesterName || '') + ' <span class="mini">' + esc(f.RequesterEmail || '') + '</span>' +
+           (isProxyReq(f) ? '<span class="proxy-tag">대신 신청</span>' : '') +
            (f.RequesterDept ? '<div class="mini">' + esc(f.RequesterDept) + '</div>' : '')) +
+      (isProxyReq(f)
+        ? drow('대신 신청한 사람', esc(f.SubmittedByName || '') + ' <span class="mini">' + esc(f.SubmittedByEmail || '') + '</span>') +
+          drow('대신 신청 사유', '<span style="white-space:pre-wrap">' + safeText(f.ProxyReason) + '</span>')
+        : '') +
       drow('신청일', fmtDate(f.RequestDate)) +
       '<div class="section-title">대리 내용</div>' +
       drow('대리인', esc(f.DeputyName || '') + ' <span class="mini">' + esc(f.DeputyEmail || '') + '</span>' +
@@ -1120,18 +1307,21 @@ async function doConfirm() {
 /* ── Excel ──────────────────────────────────────────────── */
 function exportExcel() {
   try {
-    const rows = [['신청번호', '신청자', '신청자 이메일', '부서', '대리인', '대리인 이메일', '대리인 부서',
+    const rows = [['신청번호', '대신 신청', '위임자', '위임자 이메일', '부서', '대신 신청자', '대신 신청 사유',
+                   '대리인', '대리인 이메일', '대리인 부서',
                    '시작일', '종료일', '일수', '대상 시스템', '사유', '상태', '신청일', '종료 처리일', '종료 의견']];
     adminData.forEach(r => {
       const f = r.fields;
-      rows.push([f.Title || '', f.RequesterName || '', f.RequesterEmail || '', f.RequesterDept || '',
+      rows.push([f.Title || '', isProxyReq(f) ? 'Y' : '', f.RequesterName || '', f.RequesterEmail || '', f.RequesterDept || '',
+                 isProxyReq(f) ? (f.SubmittedByName || '') : '', spText(f.ProxyReason),
                  f.DeputyName || '', f.DeputyEmail || '', f.DeputyDept || '',
                  fmtDay(f.StartDate), fmtDay(f.EndDate), dayCount(f),
                  scopeLabel(f.Scope), spText(f.Reason), effStatus(f),
                  fmtDate(f.RequestDate), f.ClosedDate ? fmtDate(f.ClosedDate) : '', spText(f.ClosedComment)]);
     });
     const ws = XLSX.utils.aoa_to_sheet(rows);
-    ws['!cols'] = [{ wch: 22 }, { wch: 14 }, { wch: 28 }, { wch: 18 }, { wch: 14 }, { wch: 28 }, { wch: 18 },
+    ws['!cols'] = [{ wch: 22 }, { wch: 8 }, { wch: 14 }, { wch: 28 }, { wch: 18 }, { wch: 14 }, { wch: 30 },
+                   { wch: 14 }, { wch: 28 }, { wch: 18 },
                    { wch: 12 }, { wch: 12 }, { wch: 7 }, { wch: 24 }, { wch: 40 }, { wch: 10 }, { wch: 17 }, { wch: 17 }, { wch: 30 }];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, '결재대리');
@@ -1168,6 +1358,7 @@ async function boot(account) {
     document.getElementById('aac-contact').textContent = '문의 Email: ' + contactEmail;
     if (isAdmin()) document.getElementById('tab-admin').style.display = '';
     await loadEmployees();
+    initProxy();
 
     // 기본 기간 — 오늘부터
     document.getElementById('f-start').value = kstToday();
