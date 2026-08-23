@@ -1,0 +1,1157 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>STK 결재 대리 지정</title>
+<script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@3.28.0/lib/msal-browser.min.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+<style>
+
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI','Malgun Gothic',sans-serif;background:#f3f2f1;color:#252423;font-size:14px}
+.wrap{max-width:1180px;margin:0 auto;padding:20px}
+.card{background:#fff;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,.08);padding:22px 26px;margin-bottom:16px}
+
+/* 헤더 */
+.hd{display:flex;justify-content:space-between;align-items:flex-start;gap:16px}
+.hd h1{font-size:1.35rem;color:#101B34;font-weight:700}
+.hd .sub{font-size:.78rem;color:#605e5c;margin-top:3px}
+.hd .who{font-size:.78rem;color:#323130;text-align:right}
+.btn{padding:7px 15px;border:none;border-radius:4px;font-size:.8rem;font-weight:600;cursor:pointer;font-family:inherit}
+.btn-p{background:#0078d4;color:#fff}
+.btn-g{background:#fff;color:#605e5c;border:1px solid #d2d0ce}
+.btn-r{background:#a4262c;color:#fff}
+.btn-s{background:#107c10;color:#fff}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+
+/* 탭 */
+.cats{display:flex;gap:4px;border-bottom:2px solid #edebe9;margin-bottom:0}
+.cat{padding:11px 22px;cursor:pointer;font-size:.9rem;font-weight:600;color:#605e5c;border-bottom:3px solid transparent;margin-bottom:-2px}
+.cat.on{color:#0078d4;border-bottom-color:#0078d4}
+.tabs{display:flex;gap:4px;margin:14px 0 18px}
+.tab{padding:8px 16px;cursor:pointer;font-size:.82rem;font-weight:600;color:#605e5c;background:#f3f2f1;border-radius:4px}
+.tab.on{background:#0078d4;color:#fff}
+.tab .badge{background:#a4262c;color:#fff;border-radius:9px;padding:1px 6px;font-size:.68rem;margin-left:5px}
+
+/* 폼 */
+.sec{background:#f3f7fb;border-left:3px solid #0078d4;border-radius:0 4px 4px 0;padding:8px 13px;font-weight:700;font-size:.85rem;color:#101B34;margin:20px 0 12px}
+.sec:first-of-type{margin-top:4px}
+.row{display:flex;gap:16px;flex-wrap:wrap}
+.fld{flex:1;min-width:220px;margin-bottom:13px}
+.fld.full{flex:0 0 100%}
+label{display:block;font-size:.76rem;font-weight:600;color:#323130;margin-bottom:5px}
+label .req{color:#a4262c;margin-left:2px}
+input[type=text],input[type=date],input[type=number],select,textarea{
+  width:100%;padding:8px 10px;border:1px solid #d2d0ce;border-radius:4px;font-size:.82rem;font-family:inherit;background:#fff}
+textarea{resize:vertical;min-height:76px;line-height:1.55}
+input:focus,select:focus,textarea:focus{outline:none;border-color:#0078d4}
+input:disabled,select:disabled,textarea:disabled{background:#f3f2f1;color:#605e5c}
+.hint{font-size:.7rem;color:#8a8886;margin-top:4px;line-height:1.5}
+.chk{display:inline-flex;align-items:center;gap:6px;font-size:.8rem;cursor:pointer;margin-right:18px}
+.chk input{width:14px;height:14px;cursor:pointer}
+
+/* 표 */
+table{width:100%;border-collapse:collapse;font-size:.8rem}
+th{background:#1F3864;color:#fff;padding:9px 8px;text-align:left;font-weight:600;font-size:.76rem}
+td{padding:9px 8px;border-bottom:1px solid #edebe9;vertical-align:top}
+tbody tr:hover{background:#f8f9fb}
+.tbl-wrap{overflow-x:auto}
+.empty{text-align:center;color:#a19f9d;padding:26px;font-size:.82rem}
+
+/* 상태 */
+.st{display:inline-block;border-radius:9px;padding:2px 9px;font-size:.7rem;font-weight:700;white-space:nowrap}
+.st-대기{background:#fff4ce;color:#7d5700}
+.st-승인완료{background:#dff6dd;color:#107c10}
+.st-반려{background:#fde7e9;color:#a4262c}
+.st-철회{background:#f1f5f9;color:#64748b}
+.st-lock{background:#f3f2f1;color:#a19f9d}
+
+/* 모달 */
+.ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:center;justify-content:center;padding:20px}
+.ov.on{display:flex}
+.mod{background:#fff;border-radius:8px;box-shadow:0 16px 48px rgba(0,0,0,.22);width:100%;max-width:820px;max-height:90vh;overflow-y:auto}
+.mod-hd{padding:14px 18px;background:#0078d4;color:#fff;display:flex;justify-content:space-between;align-items:center;font-weight:600;border-radius:8px 8px 0 0;position:sticky;top:0;z-index:2}
+.mod-hd button{background:none;border:none;color:#fff;font-size:18px;cursor:pointer;font-family:inherit}
+.mod-bd{padding:18px 20px}
+.dl{display:flex;padding:7px 0;border-bottom:1px solid #f3f2f1;font-size:.82rem}
+.dl dt{flex:0 0 190px;color:#605e5c;font-weight:600}
+.dl dd{flex:1;color:#252423;white-space:pre-wrap;word-break:break-word}
+
+/* 결재 이력 */
+.apr-card{background:#f9f9f9;border:1px solid #edebe9;border-radius:4px}
+.apr-row{padding:11px 14px;border-bottom:1px solid #edebe9}
+.apr-row:last-child{border-bottom:none}
+.apr-top{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.apr-role{font-size:.82rem;font-weight:700;color:#252423}
+.apr-who{font-size:.75rem;color:#605e5c;margin-top:2px}
+.apr-when{font-size:.72rem;color:#a19f9d;margin-top:2px}
+.apr-cmt{font-size:.75rem;color:#605e5c;margin-top:5px;background:#fff;border:1px solid #edebe9;border-radius:4px;padding:6px 9px;white-space:pre-wrap}
+
+/* 안내 박스 */
+.note{background:#f8f9fb;border-left:3px solid #0078d4;border-radius:0 4px 4px 0;padding:10px 13px;font-size:.75rem;color:#605e5c;line-height:1.65;margin-bottom:14px}
+.note b{color:#323130}
+.warn{background:#fdf2f2;border:1px solid #f0c8c8;border-radius:6px;padding:9px 12px;font-size:.75rem;color:#a4262c;line-height:1.6}
+.cfgwarn{display:none;background:#fff4ce;border:1px solid #f0d9a0;border-radius:6px;padding:9px 12px;font-size:.76rem;color:#7d5700;margin-bottom:14px}
+
+/* 첨부 */
+.drop{border:2px dashed #d2d0ce;border-radius:6px;padding:18px;text-align:center;cursor:pointer;font-size:.8rem;color:#605e5c;background:#fafafa}
+.drop:hover{border-color:#0078d4;color:#0078d4}
+.fitem{display:flex;justify-content:space-between;align-items:center;padding:6px 10px;background:#f8f9fb;border:1px solid #edebe9;border-radius:4px;margin-top:6px;font-size:.78rem}
+.fitem button{background:none;border:none;color:#a4262c;cursor:pointer;font-size:.8rem;font-family:inherit}
+
+/* 페이지네이션 */
+.pg{display:flex;justify-content:center;align-items:center;gap:10px;margin-top:14px;font-size:.78rem;color:#64748b}
+.pg button{background:#fff;border:1px solid #d2d0ce;border-radius:4px;padding:3px 10px;cursor:pointer;font-family:inherit}
+.pg button:disabled{opacity:.4;cursor:not-allowed}
+
+/* 로그인 / 로딩 */
+#login{display:flex;align-items:center;justify-content:center;min-height:100vh;background:#101B34}
+.lg{background:#fff;border-radius:10px;padding:44px 46px;text-align:center;max-width:400px;width:100%}
+.lg h2{font-size:1.4rem;color:#101B34;margin-bottom:6px}
+.lg p{font-size:.8rem;color:#605e5c;margin-bottom:24px}
+#loading{display:none;position:fixed;inset:0;background:rgba(255,255,255,.75);z-index:999;align-items:center;justify-content:center;backdrop-filter:blur(3px)}
+#loading.on{display:flex}
+.lbox{background:#fff;border-radius:8px;padding:22px 30px;box-shadow:0 8px 28px rgba(0,0,0,.16);display:flex;align-items:center;gap:13px;font-size:.85rem}
+.spin{width:20px;height:20px;border:3px solid #edebe9;border-top-color:#0078d4;border-radius:50%;animation:sp .8s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.foot{text-align:center;font-size:.72rem;color:#a19f9d;padding:16px 0 30px;line-height:1.7}
+@media print{body{background:#fff}.no-print{display:none!important}}
+
+/* ── AAC 전용 ────────────────────────────────────────── */
+.st-만료{background:#f3f2f1;color:#8a8886}
+.st-진행중{background:#e0e7ff;color:#4338ca}
+.person-box{background:#fafafa;border:1px solid #edebe9;border-radius:6px;padding:12px 14px}
+.person-box .pv{font-size:.82rem;font-weight:600;color:#323130;margin-top:4px;min-height:19px}
+.period{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.period .sep{color:#a19f9d;font-weight:700}
+.dayspan{background:#eaf3fd;border:1px solid #b6d7f2;border-radius:9px;padding:2px 10px;
+  font-size:.72rem;font-weight:700;color:#0b5fa5;white-space:nowrap}
+.warnbox{background:#fdf6e3;border:1px solid #f0d9a0;border-radius:6px;padding:9px 12px;
+  font-size:.75rem;color:#8a6116;line-height:1.6;margin-top:10px}
+.errbox{background:#fdf2f2;border:1px solid #f0c8c8;border-radius:6px;padding:9px 12px;
+  font-size:.75rem;color:#a4262c;line-height:1.6;margin-top:10px}
+.okbox{background:#f1f8f4;border:1px solid #c9e4d3;border-radius:6px;padding:9px 12px;
+  font-size:.75rem;color:#0e7a3c;line-height:1.6;margin-top:10px}
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:900;
+  align-items:center;justify-content:center;padding:20px}
+.modal-bg.open{display:flex}
+.modal{background:#fff;border-radius:10px;max-width:760px;width:100%;max-height:88vh;
+  display:flex;flex-direction:column;box-shadow:0 8px 28px rgba(0,0,0,.22)}
+.modal-hd{display:flex;justify-content:space-between;align-items:center;
+  padding:15px 20px;border-bottom:1px solid #edebe9}
+.modal-hd h3{font-size:1rem;color:#101B34}
+.modal-x{background:none;border:none;font-size:1.2rem;cursor:pointer;color:#a19f9d;line-height:1}
+.modal-bd{padding:18px 20px;overflow-y:auto}
+.drow{display:flex;padding:7px 0;border-bottom:1px solid #f3f2f1;font-size:.82rem}
+.drow:last-child{border-bottom:none}
+.dlbl{width:150px;flex-shrink:0;color:#605e5c;font-size:.76rem}
+.dval{flex:1;color:#323130;word-break:break-word}
+.appr-item{display:flex;justify-content:space-between;align-items:flex-start;
+  padding:9px 10px;border-bottom:1px solid #edebe9;font-size:.8rem;gap:10px}
+.appr-item:last-child{border-bottom:none}
+.appr-box{background:#f9f9f9;border:1px solid #edebe9;border-radius:6px;margin-top:6px}
+.status-대기{color:#7d5700;font-weight:600}
+.status-승인{color:#107c10;font-weight:600}
+.status-반려{color:#a4262c;font-weight:600}
+.status-잠김{color:#a19f9d;font-weight:600}
+.mini{font-size:.72rem;color:#a19f9d}
+.sysgrid{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:4px}
+
+</style>
+</head>
+<body>
+
+<div id="login">
+  <div class="lg">
+    <h2>STK 결재 대리 지정</h2>
+    <p>Approval Authority Delegation</p>
+    <button id="btn-login" class="btn btn-p" style="width:100%;padding:11px" onclick="signIn()" disabled>로그인 준비 중...</button>
+    <div id="login-err" style="display:none;margin-top:14px;font-size:.76rem;color:#a4262c;line-height:1.6"></div>
+  </div>
+</div>
+
+<div id="app" style="display:none">
+<div class="wrap">
+
+  <div class="card hd">
+    <div>
+      <h1>STK 결재 대리 지정</h1>
+      <div class="sub">Approval Authority Delegation &nbsp;·&nbsp; 출장 · 휴가 시 결재 권한 위임</div>
+      <div class="sub" id="contact-email">문의 Email: -</div>
+    </div>
+    <div class="who">
+      <div id="user-name" style="margin-bottom:7px"></div>
+      <button class="btn btn-g" onclick="signOut()">로그아웃</button>
+      <button class="btn btn-p" style="margin-left:5px" onclick="location.href='https://aps.startruckkorea.com'">돌아가기</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div id="cfg-warn" class="cfgwarn">설정 파일(system_config_final.xlsx)을 불러오지 못했습니다. 관리자 정보가 비어 있을 수 있으니 IT팀에 알려주세요.</div>
+
+    <div class="tabs">
+      <div class="tab on" data-tab="new" onclick="switchTab('new')">대리 지정 신청</div>
+      <div class="tab" data-tab="my" onclick="switchTab('my')">내 신청 내역</div>
+      <div class="tab" data-tab="apr" onclick="switchTab('apr')">결재함<span class="badge" id="apr-badge" style="display:none">0</span></div>
+      <div class="tab" data-tab="admin" id="tab-admin" style="display:none" onclick="switchTab('admin')">관리자</div>
+    </div>
+
+    <!-- ══════════════ 신청 ══════════════ -->
+    <div id="pane-new">
+      <div class="note">
+        <b>결재 대리 지정이란</b><br>
+        출장 · 휴가 등으로 자리를 비우는 기간 동안, 내가 처리해야 할 결재를 다른 직원이 대신 볼 수 있도록 미리 지정하는 기능입니다.
+        지정된 기간에만 적용되며, 기간이 지나면 자동으로 해제됩니다.
+        <b>원래 결재자 기록은 그대로 남고</b>, 대리인이 처리한 건은 대리 처리로 표시됩니다.
+      </div>
+
+      <div class="sec">1. 대리 기간</div>
+      <div class="row">
+        <div class="fld">
+          <label>시작일<span class="req">*</span></label>
+          <input type="date" id="f-start" onchange="onPeriodChange()">
+        </div>
+        <div class="fld">
+          <label>종료일<span class="req">*</span></label>
+          <input type="date" id="f-end" onchange="onPeriodChange()">
+        </div>
+        <div class="fld" style="min-width:150px">
+          <label>기간</label>
+          <div style="padding-top:7px"><span class="dayspan" id="f-days">-</span></div>
+        </div>
+      </div>
+      <div id="period-msg"></div>
+
+      <div class="sec">2. 대리인 지정</div>
+      <div class="row">
+        <div class="fld">
+          <label>부서<span class="req">*</span></label>
+          <select id="f-dept" onchange="onDeptChange()"><option value="">부서 선택</option></select>
+        </div>
+        <div class="fld">
+          <label>팀<span class="req">*</span></label>
+          <select id="f-team" onchange="onTeamChange()" disabled><option value="">팀 선택</option></select>
+        </div>
+        <div class="fld">
+          <label>직원<span class="req">*</span></label>
+          <select id="f-person" onchange="onPersonChange()" disabled><option value="">직원 선택</option></select>
+        </div>
+      </div>
+      <div class="person-box">
+        <div style="font-size:.72rem;color:#605e5c">선택된 대리인</div>
+        <div class="pv" id="f-deputy-view">-</div>
+        <div class="mini" id="f-deputy-mail"></div>
+      </div>
+      <div id="deputy-msg"></div>
+
+      <div class="sec">3. 대상 시스템</div>
+      <div class="hint" style="margin-bottom:8px">대리 처리를 허용할 시스템을 고릅니다. 전체를 선택하면 이후 새로 생기는 시스템에도 자동으로 적용됩니다.</div>
+      <label class="chk"><input type="checkbox" id="f-all" checked onchange="onScopeAll()"> <b>전체 시스템</b></label>
+      <div class="sysgrid" id="f-syslist" style="margin-top:10px"></div>
+
+      <div class="sec">4. 사유</div>
+      <div class="fld full">
+        <label>대리 지정 사유<span class="req">*</span></label>
+        <textarea id="f-reason" maxlength="500" placeholder="예) 2026-09-01 ~ 09-05 독일 본사 출장으로 결재 처리가 어렵습니다."></textarea>
+        <div class="hint">최대 500자 · 결재자와 감사 기록에 그대로 남습니다.</div>
+      </div>
+
+      <div class="note" style="margin-top:16px">
+        <b>승인 절차</b><br>
+        1차 <b>대리인 수락</b> — 지정된 분이 직접 수락해야 효력이 생깁니다.<br>
+        2차 <b>관리자 승인</b> — 기록 확인 후 최종 승인됩니다.
+      </div>
+
+      <div style="text-align:right;margin-top:18px">
+        <button class="btn btn-g" onclick="resetForm()">초기화</button>
+        <button class="btn btn-p" style="margin-left:6px" id="btn-submit" onclick="submitForm()">신청</button>
+      </div>
+    </div>
+
+    <!-- ══════════════ 내 신청 내역 ══════════════ -->
+    <div id="pane-my" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div style="font-size:.85rem;font-weight:700;color:#101B34">내 신청 내역</div>
+        <div><span class="mini" id="my-count"></span>
+          <button class="btn btn-g" style="margin-left:8px" onclick="loadMy(true)">새로고침</button></div>
+      </div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th style="width:50px">번호</th><th>신청번호</th><th>대리인</th><th>기간</th><th>대상</th><th style="width:90px">상태</th><th style="width:130px">신청일</th></tr></thead>
+        <tbody id="my-body"><tr><td colspan="7" class="empty">불러오는 중...</td></tr></tbody>
+      </table></div>
+    </div>
+
+    <!-- ══════════════ 결재함 ══════════════ -->
+    <div id="pane-apr" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div style="font-size:.85rem;font-weight:700;color:#101B34">결재함</div>
+        <div><span class="mini" id="apr-count"></span>
+          <button class="btn btn-g" style="margin-left:8px" onclick="loadApr(true)">새로고침</button></div>
+      </div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th style="width:50px">번호</th><th>신청번호</th><th>신청자</th><th>대리인</th><th>기간</th><th style="width:110px">내 역할</th><th style="width:130px">신청일</th></tr></thead>
+        <tbody id="apr-body"><tr><td colspan="7" class="empty">불러오는 중...</td></tr></tbody>
+      </table></div>
+    </div>
+
+    <!-- ══════════════ 관리자 ══════════════ -->
+    <div id="pane-admin" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div style="font-size:.85rem;font-weight:700;color:#101B34">전체 신청 관리</div>
+        <div>
+          <select id="ad-status" onchange="renderAdmin()" style="width:auto;display:inline-block">
+            <option value="">전체 상태</option><option>대기</option><option>승인완료</option>
+            <option>반려</option><option>철회</option><option>만료</option>
+          </select>
+          <button class="btn btn-s" style="margin-left:6px" onclick="exportExcel()">Excel 내보내기</button>
+          <button class="btn btn-g" style="margin-left:4px" onclick="loadAdmin(true)">새로고침</button>
+        </div>
+      </div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th style="width:50px">번호</th><th>신청번호</th><th>신청자</th><th>대리인</th><th>기간</th><th>대상</th><th style="width:90px">상태</th><th style="width:130px">신청일</th></tr></thead>
+        <tbody id="ad-body"><tr><td colspan="8" class="empty">불러오는 중...</td></tr></tbody>
+      </table></div>
+      <div class="note" style="margin-top:14px">
+        <b>현재 유효한 대리 지정</b> — 오늘 날짜 기준으로 효력이 있는 건입니다.
+      </div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>신청번호</th><th>원래 결재자</th><th>대리인</th><th>기간</th><th>대상 시스템</th></tr></thead>
+        <tbody id="ad-active"><tr><td colspan="5" class="empty">-</td></tr></tbody>
+      </table></div>
+    </div>
+
+  </div>
+
+  <div style="text-align:center;padding:20px 0 10px">
+    <div style="font-size:12px;color:#605e5c">&copy; 2026 Star Truck Korea &middot; AAC</div>
+    <div style="font-size:11px;color:#a19f9d;margin-top:3px">This system is internally developed by Star Truck Korea IT Dept. Unauthorized access is strictly prohibited.</div>
+  </div>
+</div>
+</div>
+
+<!-- 상세 모달 -->
+<div class="modal-bg" id="detail-modal" onclick="if(event.target===this)closeDetail()">
+  <div class="modal">
+    <div class="modal-hd"><h3>신청 상세</h3><button class="modal-x" onclick="closeDetail()">&times;</button></div>
+    <div class="modal-bd" id="detail-body"></div>
+  </div>
+</div>
+
+<!-- 처리 확인 모달 -->
+<div class="modal-bg" id="confirm-modal" onclick="if(event.target===this)closeConfirm()">
+  <div class="modal" style="max-width:460px">
+    <div class="modal-hd"><h3 id="cf-title">확인</h3><button class="modal-x" onclick="closeConfirm()">&times;</button></div>
+    <div class="modal-bd">
+      <div id="cf-msg" style="font-size:.83rem;line-height:1.65;color:#323130;margin-bottom:12px"></div>
+      <div id="cf-comment-wrap">
+        <label>의견<span class="req" id="cf-req" style="display:none">*</span></label>
+        <textarea id="cf-comment" maxlength="500" placeholder="의견을 입력하세요"></textarea>
+      </div>
+      <div style="text-align:right;margin-top:14px">
+        <button class="btn btn-g" onclick="closeConfirm()">취소</button>
+        <button class="btn btn-p" style="margin-left:6px" id="cf-ok" onclick="doConfirm()">확인</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<script>
+
+/* ══════════════════════════════════════════════════════════════
+   STK 결재 대리 지정 (AAC — Approval Authority Delegation)
+
+   출장·휴가 등으로 자리를 비울 때 내 결재를 다른 직원이 대신 볼 수 있도록
+   미리 신청·승인해 두는 시스템.
+
+   구조는 다른 APS 시스템과 동일하다.
+     · GitHub Pages 단일 파일 · MSAL 리다이렉트 로그인
+     · SharePoint List 를 저장소로, Microsoft Graph 로 접근
+     · api() 재시도 + POST 안전(_idem) · esc/spText · KST 보정
+   ══════════════════════════════════════════════════════════════ */
+
+const TENANT_ID = '19cab1f5-21f4-44df-8ac6-96d6ca595203';
+const CLIENT_ID = '432976c2-b43a-492e-8213-ece505fa1f51';
+const SITE_PATH = 'startruckkorea.sharepoint.com:/sites/STK-DB:';
+const GRAPH     = 'https://graph.microsoft.com/v1.0';
+const SCOPES    = ['User.Read', 'Sites.ReadWrite.All', 'Files.ReadWrite.All'];
+
+const LIST_REQ = 'AAC_Requests';
+const LIST_APR = 'AAC_Approvals';
+
+// 대리 지정을 걸 수 있는 시스템. 값은 APS 가 쓰는 시스템 키와 맞춘다.
+const SYSTEMS = [
+  { key: 'ACC', label: 'ACC Voucher' },
+  { key: 'GW',  label: 'Goodwill Approval' },
+  { key: 'SSC', label: 'Shared Service Center' },
+  { key: 'SCC', label: 'Contract Checklist' },
+  { key: 'IT',  label: 'IT Ticket' },
+  { key: 'FA',  label: 'Fixed Asset' },
+  { key: 'BP',  label: 'BP Master Data' },
+  { key: 'MC',  label: 'Mobility Car' },
+  { key: 'GA',  label: 'General Affairs' },
+  { key: 'LTR', label: 'LTR-PC' },
+  { key: 'CTR', label: 'Purchase Requisition' },
+  { key: 'ACO', label: 'Accounting Others' }
+];
+
+const MSAL_CONFIG = {
+  auth: { clientId: CLIENT_ID, authority: 'https://login.microsoftonline.com/' + TENANT_ID,
+          redirectUri: window.location.origin + window.location.pathname },
+  cache: { cacheLocation: 'localStorage', storeAuthStateInCookie: false }
+};
+const msalApp = new msal.PublicClientApplication(MSAL_CONFIG);
+
+let user = null, siteId = null, _docDriveId = null, _sysConfig = null;
+let employeeData = [], adminEmails = [], contactEmail = 'stk_it@hyosung.com';
+let myData = [], aprData = [], adminData = [];
+let _selDeputy = null, _curDetail = null, _cfAction = null;
+let _loadSeq = { my: 0, apr: 0, admin: 0 };   // 탭마다 따로 — 하나를 공유하면 서로 취소된다
+
+/* ── 공통 헬퍼 ──────────────────────────────────────────── */
+function esc(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+function spText(s) {
+  return String(s == null ? '' : s)
+    .replace(/<br\s*\/?>/gi, '\n').replace(/<\/p>/gi, '\n').replace(/<[^>]*>/g, '')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&#(\d+);/g, (m, d) => { const n = parseInt(d, 10); return (n >= 32 && n <= 1114111) ? String.fromCodePoint(n) : m; })
+    .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'")
+    .replace(/&amp;/g, '&').replace(/\n{3,}/g, '\n\n').trim();
+}
+function safeText(s) { return esc(spText(s)); }
+function kstNow()   { return new Date(new Date().getTime() + 9 * 3600 * 1000); }
+function kstToday() { return kstNow().toISOString().slice(0, 10); }
+function fmtDate(v) {
+  if (!v) return '-';
+  const d = new Date(v); if (isNaN(d)) return '-';
+  const k = new Date(d.getTime() + 9 * 3600 * 1000);
+  return k.toISOString().slice(0, 10) + ' ' + k.toISOString().slice(11, 16);
+}
+function fmtDay(v) { return v ? String(v).slice(0, 10) : '-'; }
+function stClass(s) {
+  const t = String(s || '').trim();
+  if (t === '대기') return 'st-대기';
+  if (t === '승인완료') return 'st-승인완료';
+  if (t === '반려') return 'st-반려';
+  if (t === '철회') return 'st-철회';
+  if (t === '만료') return 'st-만료';
+  if (t === '진행중') return 'st-진행중';
+  return 'st-lock';
+}
+function apprClass(s) {
+  const t = String(s || '').trim();
+  if (t === '대기') return 'status-대기';
+  if (t === '승인' || t === '승인완료') return 'status-승인';
+  if (t === '반려') return 'status-반려';
+  return 'status-잠김';
+}
+function isMe(e)  { return (e || '').trim().toLowerCase() === (user?.email || user?.username || '').trim().toLowerCase(); }
+function isAdmin(){ return adminEmails.includes((user?.email || user?.username || '').trim().toLowerCase()); }
+function loading(el, msg) {
+  const t = document.getElementById(el);
+  if (t) t.innerHTML = '<tr><td colspan="9" class="empty">' + esc(msg || '불러오는 중...') + '</td></tr>';
+}
+
+/* ── 인증 · Graph ───────────────────────────────────────── */
+function signIn()  { msalApp.loginRedirect({ scopes: SCOPES }); }
+function signOut() { msalApp.logoutRedirect(); }
+function showLoginErr(msg) {
+  const el = document.getElementById('login-err');
+  if (el) { el.style.display = 'block'; el.textContent = '오류: ' + msg; }
+}
+async function token() {
+  try {
+    const r = await msalApp.acquireTokenSilent({ scopes: SCOPES, account: msalApp.getActiveAccount() });
+    return r.accessToken;
+  } catch (e) {
+    if (e.name === 'InteractionRequiredAuthError' ||
+        ['interaction_required', 'login_required', 'consent_required'].includes(e.errorCode)) {
+      await msalApp.acquireTokenRedirect({ scopes: SCOPES, account: msalApp.getActiveAccount() });
+      return null;
+    }
+    throw e;
+  }
+}
+async function api(path, method = 'GET', body = null, _retry = 0) {
+  const t = await token();
+  const opts = { method, headers: { Authorization: 'Bearer ' + t, 'Content-Type': 'application/json',
+    Prefer: 'HonorNonIndexedQueriesWarningMayFailRandomly' } };
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetch(path.startsWith('http') ? path : GRAPH + path, opts);
+  // 429(스로틀)는 처리되지 않은 것이 확실하므로 메서드와 무관하게 재시도한다.
+  // 503/504 는 요청이 이미 처리되고 응답만 유실됐을 수 있어 POST 는 재시도하지 않는다.
+  const _idem = method === 'GET' || method === 'PATCH' || method === 'DELETE';
+  if (!res.ok && (res.status === 429 || (_idem && [503, 504].includes(res.status))) && _retry < 3) {
+    const _ra = parseInt(res.headers.get('Retry-After') || '0', 10);
+    const _wait = _ra > 0 ? _ra * 1000 : Math.pow(2, _retry) * 800;
+    console.warn('[API] ' + res.status + ' 재시도 ' + (_retry + 1) + '/3 (' + _wait + 'ms 후): ' + method + ' ' + path.slice(0, 60));
+    await new Promise(r => setTimeout(r, _wait));
+    return api(path, method, body, _retry + 1);
+  }
+  if (!res.ok && [503, 504].includes(res.status) && !_idem) {
+    console.warn('[API] ' + res.status + ' — ' + method + ' 는 중복 생성 방지를 위해 재시도하지 않습니다');
+  }
+  if (!res.ok) throw new Error((await res.json().catch(() => null))?.error?.message || res.status);
+  return res.status === 204 ? null : res.json();
+}
+async function apiAll(path) {
+  if (!/[?&]\$top=/.test(path)) path += (path.includes('?') ? '&' : '?') + '$top=999';
+  let items = [], url = path;
+  while (url) { const d = await api(url); items = items.concat(d.value || []); url = d['@odata.nextLink'] || null; }
+  return { value: items };
+}
+async function ensureSite() { if (!siteId) { const s = await api('/sites/' + SITE_PATH); siteId = s.id; } return siteId; }
+async function getDocDriveId() {
+  if (_docDriveId) return _docDriveId;
+  await ensureSite();
+  const drives = await api('/sites/' + siteId + '/drives');
+  const d = (drives.value || []).find(x => ['Documents', '문서', 'Shared Documents'].includes(x.name)) || (drives.value || [])[0];
+  if (!d) throw new Error('문서 라이브러리를 찾을 수 없습니다');
+  _docDriveId = d.id; return _docDriveId;
+}
+
+/* ── 설정 · 직원 ────────────────────────────────────────── */
+async function loadSystemConfig() {
+  try {
+    const t = await token();
+    const driveId = await getDocDriveId();
+    const res = await fetch(GRAPH + '/drives/' + driveId + '/root:/system_config_final.xlsx:/content',
+      { headers: { Authorization: 'Bearer ' + t } });
+    if (!res.ok) throw new Error('system_config_final.xlsx not found');
+    const wb = XLSX.read(await res.arrayBuffer(), { type: 'array' });
+    const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1 });
+    const cfg = {};
+    rows.forEach(row => {
+      const key = (row[0] || '').toString().trim();
+      if (!key || key.startsWith('■') || key.startsWith('[') || key.startsWith('STK') || key.startsWith('※')) return;
+      cfg[key] = { name: (row[1] || '').toString().trim(), email: (row[2] || '').toString().trim() };
+    });
+    _sysConfig = cfg;
+    // 관리자 — AAC 전용 키가 없으면 공통 슈퍼 관리자를 쓴다
+    ['AAC_ADMIN_1', 'AAC_ADMIN_2', 'AAC_ADMIN_3', 'ADMIN_SP_1', 'ADMIN_SP_2'].forEach(k => {
+      const e = (cfg[k]?.email || '').trim().toLowerCase();
+      if (e && e.includes('@') && !adminEmails.includes(e)) adminEmails.push(e);
+    });
+    contactEmail = (cfg['AAC_CONTACT']?.email || cfg['CONTACT_EMAIL']?.email || contactEmail).trim();
+    console.log('[Config] 로드', Object.keys(cfg).length, '건 · 관리자', adminEmails.length, '명');
+    return cfg;
+  } catch (e) {
+    console.warn('[Config] 로드 실패:', e.message);
+    document.getElementById('cfg-warn').style.display = 'block';
+    // 설정을 못 읽어도 시스템 자체는 동작해야 한다. 관리자만 비게 둔다.
+    return null;
+  }
+}
+async function loadEmployees() {
+  try {
+    const t = await token();
+    const driveId = await getDocDriveId();
+    const res = await fetch(GRAPH + '/drives/' + driveId + '/root:/employee_search.xlsx:/content',
+      { headers: { Authorization: 'Bearer ' + t } });
+    if (!res.ok) throw new Error('employee_search.xlsx 로드 실패 (' + res.status + ')');
+    const wb = XLSX.read(await res.arrayBuffer(), { type: 'array' });
+    const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
+    employeeData = rows.map(r => ({
+      dept: (r['Department'] || '').toString().trim(),
+      team: (r['Team'] || '').toString().trim(),
+      name: (r['EngName'] || '').toString().trim(),
+      email: (r['EMail'] || r['email'] || '').toString().trim()
+    })).filter(r => r.email && r.name);
+    initDept();
+    console.log('[Employee] 로드', employeeData.length, '명');
+  } catch (e) {
+    console.warn('[Employee] 로드 실패:', e.message);
+    const el = document.getElementById('deputy-msg');
+    if (el) el.innerHTML = '<div class="errbox">직원 목록(employee_search.xlsx)을 불러오지 못했습니다. IT팀에 알려주세요.<br>' + esc(e.message) + '</div>';
+  }
+}
+function myInfo() {
+  const me = (user?.email || user?.username || '').trim().toLowerCase();
+  return employeeData.find(e => e.email.trim().toLowerCase() === me) || null;
+}
+
+/* ── 대리인 선택 ────────────────────────────────────────── */
+function initDept() {
+  const depts = [...new Set(employeeData.map(e => e.dept).filter(Boolean))].sort();
+  const sel = document.getElementById('f-dept');
+  sel.innerHTML = '<option value="">부서 선택</option>' + depts.map(d => '<option value="' + esc(d) + '">' + esc(d) + '</option>').join('');
+}
+function onDeptChange() {
+  const dept = document.getElementById('f-dept').value;
+  const teamSel = document.getElementById('f-team'), personSel = document.getElementById('f-person');
+  const teams = [...new Set(employeeData.filter(e => e.dept === dept).map(e => e.team).filter(Boolean))].sort();
+  teamSel.innerHTML = '<option value="">팀 선택</option>' + teams.map(t => '<option value="' + esc(t) + '">' + esc(t) + '</option>').join('');
+  teamSel.disabled = !dept;
+  personSel.innerHTML = '<option value="">직원 선택</option>'; personSel.disabled = true;
+  setDeputy(null);
+}
+function onTeamChange() {
+  const dept = document.getElementById('f-dept').value, team = document.getElementById('f-team').value;
+  const personSel = document.getElementById('f-person');
+  const persons = employeeData.filter(e => e.dept === dept && e.team === team)
+                              .sort((a, b) => a.name.localeCompare(b.name));
+  personSel.innerHTML = '<option value="">직원 선택</option>' +
+    persons.map(p => '<option value="' + esc(p.email) + '">' + esc(p.name) + '</option>').join('');
+  personSel.disabled = !team;
+  setDeputy(null);
+}
+function onPersonChange() {
+  const email = document.getElementById('f-person').value;
+  setDeputy(employeeData.find(e => e.email === email) || null);
+}
+function setDeputy(p) {
+  _selDeputy = p;
+  document.getElementById('f-deputy-view').textContent = p ? p.name : '-';
+  document.getElementById('f-deputy-mail').textContent = p ? p.email + '  ·  ' + p.dept + (p.team ? ' / ' + p.team : '') : '';
+  const msg = document.getElementById('deputy-msg');
+  if (!p) { msg.innerHTML = ''; return; }
+  // 자기 자신을 대리인으로 지정하면 의미가 없다
+  if (isMe(p.email)) {
+    msg.innerHTML = '<div class="errbox">본인을 대리인으로 지정할 수 없습니다.</div>';
+    _selDeputy = null; return;
+  }
+  msg.innerHTML = '<div class="okbox">' + esc(p.name) + ' 님이 수락하면 지정한 기간 동안 대리 결재가 가능합니다.</div>';
+}
+
+/* ── 기간 ───────────────────────────────────────────────── */
+function onPeriodChange() {
+  const s = document.getElementById('f-start').value, e = document.getElementById('f-end').value;
+  const box = document.getElementById('f-days'), msg = document.getElementById('period-msg');
+  msg.innerHTML = '';
+  if (!s || !e) { box.textContent = '-'; return; }
+  const ds = new Date(s + 'T00:00:00'), de = new Date(e + 'T00:00:00');
+  if (de < ds) { box.textContent = '-'; msg.innerHTML = '<div class="errbox">종료일이 시작일보다 빠릅니다.</div>'; return; }
+  const days = Math.round((de - ds) / 86400000) + 1;
+  box.textContent = days + '일';
+  const today = kstToday();
+  if (e < today) msg.innerHTML = '<div class="errbox">이미 지난 기간입니다. 종료일을 오늘 이후로 지정해 주세요.</div>';
+  else if (days > 90) msg.innerHTML = '<div class="warnbox">90일을 넘는 장기 지정입니다. 필요한 기간만 지정하는 것을 권장합니다.</div>';
+  else if (s < today) msg.innerHTML = '<div class="warnbox">시작일이 오늘보다 이전입니다. 승인 시점부터 효력이 생깁니다.</div>';
+}
+
+/* ── 대상 시스템 ────────────────────────────────────────── */
+function renderSystems() {
+  document.getElementById('f-syslist').innerHTML = SYSTEMS.map(s =>
+    '<label class="chk"><input type="checkbox" class="sys-chk" value="' + esc(s.key) + '" disabled onchange="onScopeOne()"> ' + esc(s.label) + '</label>'
+  ).join('');
+}
+function onScopeAll() {
+  const all = document.getElementById('f-all').checked;
+  document.querySelectorAll('.sys-chk').forEach(c => { c.disabled = all; if (all) c.checked = false; });
+}
+function onScopeOne() { /* 개별 선택 시 별도 처리 없음 — 제출 시 검증 */ }
+function getScope() {
+  if (document.getElementById('f-all').checked) return 'ALL';
+  const on = [...document.querySelectorAll('.sys-chk')].filter(c => c.checked).map(c => c.value);
+  return on.join(',');
+}
+function scopeLabel(v) {
+  const s = (v || '').trim();
+  if (!s || s === 'ALL') return '전체 시스템';
+  const keys = s.split(',').map(x => x.trim()).filter(Boolean);
+  return keys.map(k => (SYSTEMS.find(x => x.key === k) || {}).label || k).join(' · ');
+}
+
+/* ── 화면 전환 ──────────────────────────────────────────── */
+function switchTab(t) {
+  document.querySelectorAll('.tab').forEach(x => x.classList.toggle('on', x.dataset.tab === t));
+  ['new', 'my', 'apr', 'admin'].forEach(p => {
+    const el = document.getElementById('pane-' + p);
+    if (el) el.style.display = (p === t ? '' : 'none');
+  });
+  if (t === 'my') loadMy();
+  if (t === 'apr') loadApr();
+  if (t === 'admin') loadAdmin();
+}
+function resetForm() {
+  ['f-start', 'f-end', 'f-reason'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  document.getElementById('f-dept').value = '';
+  onDeptChange();
+  document.getElementById('f-all').checked = true; onScopeAll();
+  document.getElementById('f-days').textContent = '-';
+  document.getElementById('period-msg').innerHTML = '';
+  document.getElementById('deputy-msg').innerHTML = '';
+}
+
+/* ── 신청 ───────────────────────────────────────────────── */
+async function submitForm() {
+  const btn = document.getElementById('btn-submit');
+  const start = document.getElementById('f-start').value;
+  const end   = document.getElementById('f-end').value;
+  const reason = document.getElementById('f-reason').value.trim();
+  const scope = getScope();
+
+  if (!start || !end)  { alert('대리 기간을 입력하세요.'); return; }
+  if (end < start)     { alert('종료일이 시작일보다 빠릅니다.'); return; }
+  if (end < kstToday()){ alert('이미 지난 기간입니다. 종료일을 오늘 이후로 지정해 주세요.'); return; }
+  if (!_selDeputy)     { alert('대리인을 선택하세요.'); return; }
+  if (isMe(_selDeputy.email)) { alert('본인을 대리인으로 지정할 수 없습니다.'); return; }
+  if (!scope)          { alert('대상 시스템을 하나 이상 선택하거나 전체를 선택하세요.'); return; }
+  if (!reason)         { alert('대리 지정 사유를 입력하세요.'); return; }
+  if (reason.length > 500) { alert('사유는 500자를 넘을 수 없습니다. (현재 ' + reason.length + '자)'); return; }
+
+  // 같은 기간에 이미 신청한 건이 있으면 막는다. 중복 지정은 어느 쪽이 유효한지 판단할 수 없다.
+  try {
+    const dup = (myData || []).find(r => {
+      const f = r.fields;
+      if (!['대기', '승인완료'].includes((f.Status || '').trim())) return false;
+      return !(f.EndDate < start || f.StartDate > end);
+    });
+    if (dup) {
+      alert('같은 기간에 이미 신청한 건이 있습니다.\n\n' + (dup.fields.Title || '') +
+            '\n' + fmtDay(dup.fields.StartDate) + ' ~ ' + fmtDay(dup.fields.EndDate) +
+            '\n\n기존 건을 철회한 뒤 다시 신청해 주세요.');
+      return;
+    }
+  } catch (e) { /* 목록을 아직 못 읽었으면 서버 검증에 맡긴다 */ }
+
+  if (!confirm('결재 대리를 신청합니다.\n\n대리인 : ' + _selDeputy.name +
+               '\n기간   : ' + start + ' ~ ' + end +
+               '\n대상   : ' + scopeLabel(scope) +
+               '\n\n대리인이 수락하고 관리자가 승인하면 효력이 생깁니다.')) return;
+
+  btn.disabled = true; btn.textContent = '신청 중...';
+  let reqId = null;
+  try {
+    await ensureSite();
+    const me = myInfo();
+    const meEmail = (user.email || user.username || '').trim();
+
+    // ① 신청서 생성 — Title 은 임시값으로 만들고 ID 를 받은 뒤 확정한다
+    const created = await api('/sites/' + siteId + '/lists/' + LIST_REQ + '/items', 'POST', {
+      fields: {
+        Title: 'AAC-tmp',
+        RequesterEmail: meEmail,
+        RequesterName: me ? me.name : (user.name || meEmail),
+        RequesterDept: me ? (me.dept + (me.team ? ' / ' + me.team : '')) : '',
+        DeputyEmail: _selDeputy.email,
+        DeputyName: _selDeputy.name,
+        DeputyDept: _selDeputy.dept + (_selDeputy.team ? ' / ' + _selDeputy.team : ''),
+        StartDate: start,
+        EndDate: end,
+        Scope: scope,
+        Reason: reason,
+        Status: '대기',
+        RequestDate: new Date().toISOString()
+      }
+    });
+    reqId = created.id;
+    const title = 'AAC-' + kstToday() + '_ID-' + reqId;
+    await api('/sites/' + siteId + '/lists/' + LIST_REQ + '/items/' + reqId, 'PATCH', { fields: { Title: title } });
+
+    // ② 결재선 — 1차 대리인 수락, 2차 관리자 승인
+    const line = [
+      { order: 1, role: '대리인 수락', name: _selDeputy.name, email: _selDeputy.email },
+    ];
+    const adm = adminEmails[0];
+    if (adm) {
+      const ai = employeeData.find(e => e.email.trim().toLowerCase() === adm);
+      line.push({ order: 2, role: '관리자 승인', name: ai ? ai.name : (_sysConfig?.ADMIN_SP_1?.name || '관리자'), email: adm });
+    }
+    for (const a of line) {
+      await api('/sites/' + siteId + '/lists/' + LIST_APR + '/items', 'POST', {
+        fields: {
+          Title: title + '-' + a.order,
+          RequestID: String(reqId),
+          ApprovalOrder: a.order,
+          ApproverRole: a.role,
+          ApproverName: a.name,
+          ApproverEmail: a.email,
+          Status: a.order === 1 ? '대기' : '대기(잠김)'
+        }
+      });
+    }
+
+    // ③ 결재선이 실제로 만들어졌는지 확인한다.
+    //    중간에 끊기면 신청서만 남고 아무에게도 뜨지 않는 상태가 된다.
+    const chk = await apiAll('/sites/' + siteId + '/lists/' + LIST_APR +
+      "/items?$expand=fields&$filter=fields/RequestID eq '" + reqId + "'");
+    const cnt = (chk.value || []).length;
+    if (cnt < line.length) {
+      await api('/sites/' + siteId + '/lists/' + LIST_REQ + '/items/' + reqId, 'PATCH',
+        { fields: { Status: '철회' } });
+      throw new Error('결재선 생성이 완료되지 않아 신청을 되돌렸습니다. (생성 ' + cnt + ' / 필요 ' + line.length + ')\n다시 시도해 주세요.');
+    }
+    if (cnt > line.length) {
+      console.warn('[AAC] 결재선 중복 생성 감지:', cnt, '/', line.length);
+      alert('신청은 접수되었으나 결재선이 예상보다 많이 생성되었습니다 (' + cnt + '건).\nIT팀에 ' + title + ' 을 알려주세요.');
+    }
+
+    alert('신청이 접수되었습니다.\n\n' + title + '\n\n' + _selDeputy.name + ' 님의 수락을 기다립니다.');
+    resetForm();
+    myData = []; switchTab('my');
+  } catch (e) {
+    console.error('[AAC] 신청 실패:', e);
+    alert('신청에 실패했습니다.\n\n' + e.message + (reqId ? '\n\n신청번호 참고: ' + reqId : ''));
+  } finally {
+    btn.disabled = false; btn.textContent = '신청';
+  }
+}
+
+/* ── 목록 ───────────────────────────────────────────────── */
+async function fetchReqs() {
+  await ensureSite();
+  const d = await apiAll('/sites/' + siteId + '/lists/' + LIST_REQ + '/items?$expand=fields');
+  return (d.value || []).sort((a, b) => Number(b.id) - Number(a.id));
+}
+async function fetchAprs() {
+  await ensureSite();
+  const d = await apiAll('/sites/' + siteId + '/lists/' + LIST_APR + '/items?$expand=fields');
+  return d.value || [];
+}
+// 기간이 지난 승인 건은 화면에서 만료로 보여준다. 저장값은 건드리지 않는다.
+function effStatus(f) {
+  const s = (f.Status || '').trim();
+  if (s === '승인완료' && f.EndDate && String(f.EndDate).slice(0, 10) < kstToday()) return '만료';
+  return s;
+}
+function isActive(f) {
+  if ((f.Status || '').trim() !== '승인완료') return false;
+  const t = kstToday();
+  return String(f.StartDate || '').slice(0, 10) <= t && t <= String(f.EndDate || '').slice(0, 10);
+}
+
+async function loadMy(force) {
+  const seq = ++_loadSeq.my;
+  loading('my-body');
+  try {
+    const rows = await fetchReqs();
+    if (seq !== _loadSeq.my) return;              // 그 사이 다시 불렸으면 버린다
+    myData = rows.filter(r => isMe(r.fields.RequesterEmail));
+    document.getElementById('my-count').textContent = '총 ' + myData.length + '건';
+    document.getElementById('my-body').innerHTML = myData.length ? myData.map((r, i) => {
+      const f = r.fields, st = effStatus(f);
+      return '<tr style="cursor:pointer" onclick="openDetail(' + r.id + ')">' +
+        '<td>' + (myData.length - i) + '</td>' +
+        '<td style="color:#0078d4;font-weight:600">' + esc(f.Title || '') + '</td>' +
+        '<td>' + esc(f.DeputyName || '') + '<div class="mini">' + esc(f.DeputyEmail || '') + '</div></td>' +
+        '<td>' + fmtDay(f.StartDate) + ' ~ ' + fmtDay(f.EndDate) + '</td>' +
+        '<td class="mini">' + esc(scopeLabel(f.Scope)) + '</td>' +
+        '<td><span class="st ' + stClass(st) + '">' + esc(st) + '</span></td>' +
+        '<td class="mini">' + fmtDate(f.RequestDate) + '</td></tr>';
+    }).join('') : '<tr><td colspan="7" class="empty">신청 내역이 없습니다.</td></tr>';
+  } catch (e) {
+    if (seq !== _loadSeq.my) return;
+    document.getElementById('my-body').innerHTML = '<tr><td colspan="7" class="empty">불러오지 못했습니다. ' + esc(e.message) + '</td></tr>';
+  }
+}
+
+async function loadApr(force) {
+  const seq = ++_loadSeq.apr;
+  loading('apr-body');
+  try {
+    const [reqs, aprs] = await Promise.all([fetchReqs(), fetchAprs()]);
+    if (seq !== _loadSeq.apr) return;
+    const mine = aprs.filter(a => isMe(a.fields.ApproverEmail) && (a.fields.Status || '').trim() === '대기');
+    const byId = {}; reqs.forEach(r => byId[r.id] = r);
+    aprData = mine.map(a => ({ apr: a, req: byId[a.fields.RequestID] })).filter(x => x.req);
+    const n = aprData.length;
+    document.getElementById('apr-count').textContent = '총 ' + n + '건';
+    const badge = document.getElementById('apr-badge');
+    badge.textContent = n; badge.style.display = n ? '' : 'none';
+    document.getElementById('apr-body').innerHTML = n ? aprData.map((x, i) => {
+      const f = x.req.fields;
+      return '<tr style="cursor:pointer" onclick="openDetail(' + x.req.id + ')">' +
+        '<td>' + (n - i) + '</td>' +
+        '<td style="color:#0078d4;font-weight:600">' + esc(f.Title || '') + '</td>' +
+        '<td>' + esc(f.RequesterName || '') + '<div class="mini">' + esc(f.RequesterEmail || '') + '</div></td>' +
+        '<td>' + esc(f.DeputyName || '') + '</td>' +
+        '<td>' + fmtDay(f.StartDate) + ' ~ ' + fmtDay(f.EndDate) + '</td>' +
+        '<td><span class="st st-대기">' + esc(x.apr.fields.ApproverRole || '') + '</span></td>' +
+        '<td class="mini">' + fmtDate(f.RequestDate) + '</td></tr>';
+    }).join('') : '<tr><td colspan="7" class="empty">처리할 결재가 없습니다.</td></tr>';
+  } catch (e) {
+    if (seq !== _loadSeq.apr) return;
+    document.getElementById('apr-body').innerHTML = '<tr><td colspan="7" class="empty">불러오지 못했습니다. ' + esc(e.message) + '</td></tr>';
+  }
+}
+
+async function loadAdmin(force) {
+  if (!isAdmin()) return;
+  const seq = ++_loadSeq.admin;
+  loading('ad-body');
+  try {
+    const rows = await fetchReqs();
+    if (seq !== _loadSeq.admin) return;
+    adminData = rows;
+    renderAdmin();
+  } catch (e) {
+    if (seq !== _loadSeq.admin) return;
+    document.getElementById('ad-body').innerHTML = '<tr><td colspan="8" class="empty">불러오지 못했습니다. ' + esc(e.message) + '</td></tr>';
+  }
+}
+function renderAdmin() {
+  const fs = document.getElementById('ad-status').value;
+  const list = adminData.filter(r => !fs || effStatus(r.fields) === fs);
+  document.getElementById('ad-body').innerHTML = list.length ? list.map((r, i) => {
+    const f = r.fields, st = effStatus(f);
+    return '<tr style="cursor:pointer" onclick="openDetail(' + r.id + ')">' +
+      '<td>' + (list.length - i) + '</td>' +
+      '<td style="color:#0078d4;font-weight:600">' + esc(f.Title || '') + '</td>' +
+      '<td>' + esc(f.RequesterName || '') + '<div class="mini">' + esc(f.RequesterEmail || '') + '</div></td>' +
+      '<td>' + esc(f.DeputyName || '') + '<div class="mini">' + esc(f.DeputyEmail || '') + '</div></td>' +
+      '<td>' + fmtDay(f.StartDate) + ' ~ ' + fmtDay(f.EndDate) + '</td>' +
+      '<td class="mini">' + esc(scopeLabel(f.Scope)) + '</td>' +
+      '<td><span class="st ' + stClass(st) + '">' + esc(st) + '</span></td>' +
+      '<td class="mini">' + fmtDate(f.RequestDate) + '</td></tr>';
+  }).join('') : '<tr><td colspan="8" class="empty">해당하는 신청이 없습니다.</td></tr>';
+
+  const act = adminData.filter(r => isActive(r.fields));
+  document.getElementById('ad-active').innerHTML = act.length ? act.map(r => {
+    const f = r.fields;
+    return '<tr><td style="color:#0078d4;font-weight:600">' + esc(f.Title || '') + '</td>' +
+      '<td>' + esc(f.RequesterName || '') + '<div class="mini">' + esc(f.RequesterEmail || '') + '</div></td>' +
+      '<td>' + esc(f.DeputyName || '') + '<div class="mini">' + esc(f.DeputyEmail || '') + '</div></td>' +
+      '<td>' + fmtDay(f.StartDate) + ' ~ ' + fmtDay(f.EndDate) + '</td>' +
+      '<td class="mini">' + esc(scopeLabel(f.Scope)) + '</td></tr>';
+  }).join('') : '<tr><td colspan="5" class="empty">현재 유효한 대리 지정이 없습니다.</td></tr>';
+}
+
+/* ── 상세 · 결재 처리 ───────────────────────────────────── */
+async function openDetail(id) {
+  try {
+    await ensureSite();
+    const r = await api('/sites/' + siteId + '/lists/' + LIST_REQ + '/items/' + id + '?$expand=fields');
+    const f = r.fields; _curDetail = { id, f };
+    const st = effStatus(f);
+
+    const aprs = (await apiAll('/sites/' + siteId + '/lists/' + LIST_APR +
+      "/items?$expand=fields&$filter=fields/RequestID eq '" + id + "'")).value
+      .sort((a, b) => Number(a.fields.ApprovalOrder) - Number(b.fields.ApprovalOrder));
+
+    let html = '<div class="sec" style="margin-top:0">기본 정보</div>' +
+      drow('신청번호', '<b>' + esc(f.Title || '') + '</b>') +
+      drow('상태', '<span class="st ' + stClass(st) + '">' + esc(st) + '</span>') +
+      drow('신청자', esc(f.RequesterName || '') + ' <span class="mini">' + esc(f.RequesterEmail || '') + '</span>' +
+           (f.RequesterDept ? '<div class="mini">' + esc(f.RequesterDept) + '</div>' : '')) +
+      drow('신청일', fmtDate(f.RequestDate)) +
+      '<div class="sec">대리 내용</div>' +
+      drow('대리인', esc(f.DeputyName || '') + ' <span class="mini">' + esc(f.DeputyEmail || '') + '</span>' +
+           (f.DeputyDept ? '<div class="mini">' + esc(f.DeputyDept) + '</div>' : '')) +
+      drow('기간', fmtDay(f.StartDate) + ' ~ ' + fmtDay(f.EndDate) + ' <span class="dayspan">' + dayCount(f) + '</span>') +
+      drow('대상 시스템', esc(scopeLabel(f.Scope))) +
+      drow('사유', '<span style="white-space:pre-wrap">' + safeText(f.Reason) + '</span>');
+
+    if (isActive(f)) {
+      html += '<div class="okbox" style="margin-top:12px"><b>현재 효력이 있습니다.</b><br>' +
+        esc(f.DeputyName || '') + ' 님이 ' + esc(f.RequesterName || '') + ' 님을 대신해 ' +
+        esc(scopeLabel(f.Scope)) + ' 의 결재를 처리할 수 있습니다.</div>';
+    }
+
+    html += '<div class="sec">결재 이력</div><div class="appr-box">' +
+      (aprs.length ? aprs.map(a => {
+        const af = a.fields;
+        return '<div class="appr-item"><div>' +
+          '<b>' + esc(af.ApprovalOrder || '') + '차 · ' + esc(af.ApproverRole || '') + '</b>' +
+          '<br><span class="mini">' + esc(af.ApproverName || '') + ' · ' + esc(af.ApproverEmail || '') + '</span>' +
+          (af.ApprovalDate ? '<br><span class="mini">' + fmtDate(af.ApprovalDate) + '</span>' : '') +
+          (af.Comment ? '<br><span style="font-size:.72rem;background:#fff;border:1px solid #edebe9;border-radius:4px;padding:2px 6px;display:inline-block;margin-top:3px">&#128172; ' + safeText(af.Comment) + '</span>' : '') +
+          '</div><span class="' + apprClass(af.Status) + '">' + esc(af.Status || '') + '</span></div>';
+      }).join('') : '<div class="empty">결재 이력이 없습니다.</div>') + '</div>';
+
+    // 버튼 — 내 차례일 때만
+    const mine = aprs.find(a => isMe(a.fields.ApproverEmail) && (a.fields.Status || '').trim() === '대기');
+    let btns = '';
+    if (mine) {
+      const isDeputy = Number(mine.fields.ApprovalOrder) === 1;
+      btns = '<button class="btn btn-r" onclick="askConfirm(' + id + ',' + mine.id + ',\'반려\')">' +
+             (isDeputy ? '거절' : '반려') + '</button>' +
+             '<button class="btn btn-s" style="margin-left:6px" onclick="askConfirm(' + id + ',' + mine.id + ',\'승인\')">' +
+             (isDeputy ? '수락' : '승인') + '</button>';
+    }
+    // 신청자 본인은 대기·승인완료 상태에서 철회할 수 있다
+    if (isMe(f.RequesterEmail) && ['대기', '승인완료'].includes((f.Status || '').trim())) {
+      btns = '<button class="btn btn-g" onclick="askConfirm(' + id + ',0,\'철회\')">철회</button>' + (btns ? ' ' + btns : '');
+    }
+    if (btns) html += '<div style="text-align:right;margin-top:16px">' + btns + '</div>';
+
+    document.getElementById('detail-body').innerHTML = html;
+    document.getElementById('detail-modal').classList.add('open');
+  } catch (e) {
+    alert('상세를 불러오지 못했습니다.\n\n' + e.message);
+  }
+}
+function drow(l, v) { return '<div class="drow"><div class="dlbl">' + esc(l) + '</div><div class="dval">' + v + '</div></div>'; }
+function dayCount(f) {
+  if (!f.StartDate || !f.EndDate) return '-';
+  const s = new Date(String(f.StartDate).slice(0, 10) + 'T00:00:00');
+  const e = new Date(String(f.EndDate).slice(0, 10) + 'T00:00:00');
+  if (isNaN(s) || isNaN(e) || e < s) return '-';
+  return (Math.round((e - s) / 86400000) + 1) + '일';
+}
+function closeDetail() { document.getElementById('detail-modal').classList.remove('open'); }
+
+function askConfirm(reqId, aprId, action) {
+  _cfAction = { reqId, aprId, action };
+  const isRej = action === '반려';
+  document.getElementById('cf-title').textContent = action + ' 확인';
+  document.getElementById('cf-msg').innerHTML =
+    action === '철회' ? '이 신청을 철회합니다. 철회하면 되돌릴 수 없습니다.' :
+    isRej ? '이 신청을 반려합니다. 사유를 남겨주세요.' :
+            '이 신청을 승인합니다.';
+  document.getElementById('cf-req').style.display = (isRej || action === '철회') ? '' : 'none';
+  document.getElementById('cf-comment').value = '';
+  document.getElementById('cf-ok').className = 'btn ' + (isRej || action === '철회' ? 'btn-r' : 'btn-s');
+  document.getElementById('cf-ok').textContent = action;
+  document.getElementById('confirm-modal').classList.add('open');
+}
+function closeConfirm() { document.getElementById('confirm-modal').classList.remove('open'); }
+
+async function doConfirm() {
+  if (!_cfAction) return;
+  const { reqId, aprId, action } = _cfAction;
+  const cm = document.getElementById('cf-comment').value.trim();
+  if ((action === '반려' || action === '철회') && !cm) { alert('사유를 입력하세요.'); return; }
+  if (cm.length > 500) { alert('의견은 500자를 넘을 수 없습니다.'); return; }
+
+  const ok = document.getElementById('cf-ok');
+  ok.disabled = true; ok.textContent = '처리 중...';
+  try {
+    await ensureSite();
+
+    if (action === '철회') {
+      await api('/sites/' + siteId + '/lists/' + LIST_REQ + '/items/' + reqId, 'PATCH',
+        { fields: { Status: '철회', ClosedComment: cm, ClosedDate: new Date().toISOString() } });
+      // 남은 결재선을 잠근다. 그대로 두면 다른 사람 결재함에 계속 뜬다.
+      const rest = (await apiAll('/sites/' + siteId + '/lists/' + LIST_APR +
+        "/items?$expand=fields&$filter=fields/RequestID eq '" + reqId + "'")).value
+        .filter(a => ['대기', '대기(잠김)'].includes((a.fields.Status || '').trim()));
+      for (const a of rest) {
+        await api('/sites/' + siteId + '/lists/' + LIST_APR + '/items/' + a.id, 'PATCH',
+          { fields: { Status: '철회(잠김)' } });
+      }
+    } else {
+      // 내 결재 행을 먼저 갱신한다
+      await api('/sites/' + siteId + '/lists/' + LIST_APR + '/items/' + aprId, 'PATCH', {
+        fields: { Status: action, Comment: cm, ApprovalDate: new Date().toISOString() }
+      });
+      const all = (await apiAll('/sites/' + siteId + '/lists/' + LIST_APR +
+        "/items?$expand=fields&$filter=fields/RequestID eq '" + reqId + "'")).value
+        .sort((a, b) => Number(a.fields.ApprovalOrder) - Number(b.fields.ApprovalOrder));
+
+      if (action === '반려') {
+        await api('/sites/' + siteId + '/lists/' + LIST_REQ + '/items/' + reqId, 'PATCH',
+          { fields: { Status: '반려', ClosedComment: cm, ClosedDate: new Date().toISOString() } });
+        for (const a of all.filter(x => ['대기', '대기(잠김)'].includes((x.fields.Status || '').trim()))) {
+          await api('/sites/' + siteId + '/lists/' + LIST_APR + '/items/' + a.id, 'PATCH',
+            { fields: { Status: '반려(잠김)' } });
+        }
+      } else {
+        // 다음 차례를 연다. 조회가 0건이면 승인완료로 넘기지 않는다.
+        // 넘겨버리면 실제로는 결재가 남았는데 끝난 것으로 처리된다.
+        const next = all.find(a => (a.fields.Status || '').trim() === '대기(잠김)');
+        if (next) {
+          await api('/sites/' + siteId + '/lists/' + LIST_APR + '/items/' + next.id, 'PATCH',
+            { fields: { Status: '대기' } });
+        } else {
+          const pending = all.filter(a => (a.fields.Status || '').trim() === '대기');
+          if (pending.length === 0 && all.length > 0) {
+            await api('/sites/' + siteId + '/lists/' + LIST_REQ + '/items/' + reqId, 'PATCH',
+              { fields: { Status: '승인완료', ClosedDate: new Date().toISOString() } });
+          } else if (all.length === 0) {
+            throw new Error('결재선을 찾지 못해 상태를 바꾸지 않았습니다. IT팀에 알려주세요.');
+          }
+        }
+      }
+    }
+
+    closeConfirm(); closeDetail();
+    alert(action + ' 처리되었습니다.');
+    myData = []; aprData = []; adminData = [];
+    const cur = document.querySelector('.tab.on')?.dataset.tab || 'my';
+    switchTab(cur);
+    refreshBadge();
+  } catch (e) {
+    console.error('[AAC] 처리 실패:', e);
+    alert('처리에 실패했습니다.\n\n' + e.message);
+  } finally {
+    ok.disabled = false; ok.textContent = _cfAction ? _cfAction.action : '확인';
+  }
+}
+
+/* ── Excel ──────────────────────────────────────────────── */
+function exportExcel() {
+  try {
+    const rows = [['신청번호', '신청자', '신청자 이메일', '부서', '대리인', '대리인 이메일', '대리인 부서',
+                   '시작일', '종료일', '일수', '대상 시스템', '사유', '상태', '신청일', '종료 처리일', '종료 의견']];
+    adminData.forEach(r => {
+      const f = r.fields;
+      rows.push([f.Title || '', f.RequesterName || '', f.RequesterEmail || '', f.RequesterDept || '',
+                 f.DeputyName || '', f.DeputyEmail || '', f.DeputyDept || '',
+                 fmtDay(f.StartDate), fmtDay(f.EndDate), dayCount(f),
+                 scopeLabel(f.Scope), spText(f.Reason), effStatus(f),
+                 fmtDate(f.RequestDate), f.ClosedDate ? fmtDate(f.ClosedDate) : '', spText(f.ClosedComment)]);
+    });
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    ws['!cols'] = [{ wch: 22 }, { wch: 14 }, { wch: 28 }, { wch: 18 }, { wch: 14 }, { wch: 28 }, { wch: 18 },
+                   { wch: 12 }, { wch: 12 }, { wch: 7 }, { wch: 24 }, { wch: 40 }, { wch: 10 }, { wch: 17 }, { wch: 17 }, { wch: 30 }];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, '결재대리');
+    XLSX.writeFile(wb, 'AAC_결재대리_' + kstToday() + '.xlsx');
+  } catch (e) { alert('Excel 내보내기에 실패했습니다.\n\n' + e.message); }
+}
+
+/* ── 배지 ───────────────────────────────────────────────── */
+async function refreshBadge() {
+  try {
+    await ensureSite();
+    const d = await apiAll('/sites/' + siteId + '/lists/' + LIST_APR +
+      "/items?$expand=fields&$filter=fields/Status eq '대기'");
+    const n = (d.value || []).filter(a => isMe(a.fields.ApproverEmail)).length;
+    const b = document.getElementById('apr-badge');
+    b.textContent = n; b.style.display = n ? '' : 'none';
+  } catch (e) { /* 배지는 부가 기능이라 실패해도 화면에 영향을 주지 않는다 */ }
+}
+
+/* ── 부팅 ───────────────────────────────────────────────── */
+async function boot(account) {
+  try {
+    user = { name: account.name, email: account.username, username: account.username };
+    document.getElementById('login').style.display = 'none';
+    document.getElementById('app').style.display = '';
+    document.getElementById('user-name').textContent = (account.name || '') + ' (' + account.username + ')';
+
+    await ensureSite();
+    renderSystems();
+    await loadSystemConfig();
+    document.getElementById('contact-email').textContent = '문의 Email: ' + contactEmail;
+    if (isAdmin()) document.getElementById('tab-admin').style.display = '';
+    await loadEmployees();
+
+    // 기본 기간 — 오늘부터
+    document.getElementById('f-start').value = kstToday();
+    document.getElementById('f-end').value = kstToday();
+    onPeriodChange();
+
+    await loadMy();
+    refreshBadge();
+    setInterval(refreshBadge, 60000);
+  } catch (e) {
+    console.error('[AAC] 부팅 실패:', e);
+    alert('초기화에 실패했습니다.\n\n' + e.message + '\n\n새로고침 후에도 계속되면 IT팀에 알려주세요.');
+  }
+}
+
+(async function initMsal() {
+  const btn = document.getElementById('btn-login');
+  try {
+    await msalApp.initialize();
+    const resp = await msalApp.handleRedirectPromise();
+    if (resp && resp.account) { msalApp.setActiveAccount(resp.account); await boot(resp.account); return; }
+    const accounts = msalApp.getAllAccounts();
+    if (accounts.length) { msalApp.setActiveAccount(accounts[0]); await boot(accounts[0]); return; }
+    if (btn) { btn.disabled = false; btn.textContent = 'Microsoft 365 계정으로 로그인'; }
+  } catch (e) {
+    if (btn) { btn.disabled = false; btn.textContent = 'Microsoft 365 계정으로 로그인'; }
+    showLoginErr(e.message);
+  }
+})();
+
+</script>
+</body>
+</html>
