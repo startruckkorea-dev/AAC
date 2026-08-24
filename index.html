@@ -766,43 +766,47 @@ function _iga(w) {
   if (c < 0xAC00 || c > 0xD7A3) return '가';
   return ((c - 0xAC00) % 28) ? '이' : '가';
 }
-function chainOf(person, submitter) {
+// 상위 결재자 — G열(Boss) 직속상사 한 명만 쓴다.
+// H열(Boss of Boss)은 쓰지 않는다. 부서장까지 넣으면 결재선이 길어지고,
+// 같은 부서끼리 맡길 때 중복 생략이 계속 생겨 오히려 읽기 어려웠다.
+// G 가 '-' 면 그 위가 없다는 뜻(대표이사)이므로 아무도 넣지 않고 건너뛴다.
+// 예전에는 이 경우 신청자를 넣었는데, 신청한 사람이 최종 결재자가 되어버려 잘못이었다.
+function chainOf(person) {
   const rec = empByName(person?.name) || person;
   if (!rec) return [];
-  const out = [];
   const g = empByName(rec.boss);
-  const h = empByName(rec.boss2);
-  if (g) out.push({ p: g, kind: '직속상사' });
-  if (h && (!g || h.email.toLowerCase() !== g.email.toLowerCase())) out.push({ p: h, kind: '부서장' });
-  // 위에 아무도 없으면 대표이사. 신청한 사람이 확인한다.
-  if (!out.length && submitter) out.push({ p: submitter, kind: '신청자 확인' });
-  return out;
+  return g ? [{ p: g, kind: '직속상사' }] : [];
 }
 
 // 위임자·대리인 양쪽의 상위 결재자를 결재선에 넣는다.
 // 이미 결재선에 있는 사람과 겹치면 그 단계는 건너뛰고, 어디서 겹쳤는지 기록한다.
-function buildHeads(dg, dep, submitter) {
+function buildHeads(dg, dep) {
   const out = [];
   const taken = new Map();   // 이메일 → 이미 어느 자리에 있는지
   if (dg?.email)  taken.set(dg.email.toLowerCase(),  '위임자');
   if (dep?.email) taken.set(dep.email.toLowerCase(), '대리인');
 
   [[dg, '위임자'], [dep, '대리인']].forEach(([person, side]) => {
-    const chain = chainOf(person, submitter);
+    const chain = chainOf(person);
     if (!chain.length) {
-      out.push({ skip: { step: side + ' 상위 결재자', who: person?.name || '-',
-                         at: null, why: '상위 결재자를 찾지 못했습니다',
-                         hint: 'employee_search 의 Boss · Boss of Boss 열을 확인해 주세요' } });
+      // G 가 '-' 인 경우 = 최상위(대표이사). 위에 결재할 사람이 없으므로 넘어간다.
+      const rec = empByName(person?.name) || person;
+      const top = !rec?.boss || rec.boss === '-';
+      out.push({ skip: { step: side + ' 직속상사', who: person?.name || '-', at: null,
+        why: top ? '위에 결재할 상사가 없습니다 (최상위)' : '직속상사를 찾지 못했습니다',
+        hint: top ? null : 'employee_search 의 Boss 열 이름이 EngName 과 일치하는지 확인해 주세요' } });
       return;
     }
     chain.forEach(({ p, kind }) => {
       const low = (p.email || '').toLowerCase();
       const at = taken.get(low);
       if (at) {
+        // at 이 '위임자 직속상사' 처럼 두 단어면 '같은 분입니다' 쪽으로 보낸다
+        const atSimple = (at === '위임자' || at === '대리인') ? at : null;
         out.push({ skip: { step: side + ' ' + kind, who: p.name, at,
                            // 받침에 따라 '이/가' 를 가른다 (부서장가 → 부서장이)
-                           why: (at === '위임자' || at === '대리인')
-                                ? side + '의 ' + kind + _iga(kind) + ' ' + at + ' 본인입니다'
+                           why: atSimple
+                                ? side + '의 ' + kind + _iga(kind) + ' ' + atSimple + ' 본인입니다'
                                 : '위임자와 대리인의 ' + kind + _iga(kind) + ' 같은 분입니다',
                            hint: null } });
         return;
@@ -1032,7 +1036,7 @@ function renderApprPreview() {
   if (proxy) line.push({ role: '위임자 확인', p: dg, fixed: false });
   line.push({ role: '대리인 수락', p: _selDeputy, fixed: false });
   const notes = [];
-  buildHeads(dg, _selDeputy, { name: me ? me.name : (user.name || meEmail), email: meEmail })
+  buildHeads(dg, _selDeputy)
     .forEach(x => { if (x.skip) notes.push(x.skip); else line.push({ role: x.role, p: x.p, fixed: true }); });
 
   // ① 한 줄 요약
@@ -1194,9 +1198,8 @@ async function submitForm() {
     line.push({ order: line.length + 1, role: '대리인 수락', name: _selDeputy.name, email: _selDeputy.email });
     // 부서장 승인 — 양쪽 부서장이 모두 확인한다.
     // 권한을 넘기는 쪽(위임자)과 받는 쪽(대리인) 모두 조직에서 알고 있어야 하기 때문이다.
-    const _sub = { name: (me ? me.name : (user.name || meEmail)), email: meEmail };
     const _skips = [];
-    buildHeads(dg, _selDeputy, _sub).forEach(x => {
+    buildHeads(dg, _selDeputy).forEach(x => {
       if (x.skip) { _skips.push(skipText(x.skip)); return; }
       line.push({ order: line.length + 1, role: x.role, name: x.p.name, email: x.p.email });
     });
