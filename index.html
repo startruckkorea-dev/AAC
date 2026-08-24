@@ -769,16 +769,34 @@ function headOf(person, submitter) {
 // 이미 결재선에 있는 사람(위임자·대리인·앞 단계 부서장)과 겹치면 그 단계는 건너뛴다.
 function buildHeads(dg, dep, submitter) {
   const out = [];
-  const taken = [(dg?.email || '').toLowerCase(), (dep?.email || '').toLowerCase()].filter(Boolean);
+  // 이미 결재선에 있는 사람을 '누구로서' 들어가 있는지까지 기록한다.
+  // 이메일만 담으면 겹쳤을 때 어느 단계와 겹쳤는지 설명할 수 없다.
+  const taken = [];
+  if (dg?.email)  taken.push({ email: dg.email.toLowerCase(),  as: '위임자',  name: dg.name });
+  if (dep?.email) taken.push({ email: dep.email.toLowerCase(), as: '대리인', name: dep.name });
+
   const add = (person, role, label) => {
     const h = headOf(person, submitter);
-    if (!h || !h.email) { out.push({ skip: label + '의 부서장을 찾지 못해 해당 승인 단계가 생략되었습니다.' }); return; }
-    const low = h.email.toLowerCase();
-    if (taken.includes(low)) {
-      out.push({ skip: label + '의 부서장(' + h.name + ')이 이미 결재선에 있어 중복 단계가 생략되었습니다.' });
+    if (!h || !h.email) {
+      out.push({ skip: label + ' 승인 생략 — ' + (person?.name || '-') + ' 님의 부서장을 찾지 못했습니다. '
+        + 'employee_search 의 Boss · Boss of Boss 열을 확인해 주세요. 이 단계 없이 결재선이 만들어집니다.' });
       return;
     }
-    taken.push(low);
+    const low = h.email.toLowerCase();
+    const dup = taken.find(t => t.email === low);
+    if (dup) {
+      // 어느 단계와 겹쳤는지, 왜 같은 사람이 나오는지를 함께 설명한다
+      const why = dup.as === '위임자'
+        ? label + '의 부서장이 위임자 본인입니다.'
+        : dup.as === '대리인'
+          ? label + '의 부서장이 대리인 본인입니다.'
+          : '위임자와 대리인이 같은 부서라 부서장이 한 분입니다.';
+      const where = dup.as === '부서장' ? '앞 단계에 부서장으로' : dup.as + '로';
+      out.push({ skip: label + ' 승인 생략 — ' + h.name + ' 님은 이미 ' + where + ' 결재선에 있습니다. '
+        + why + ' 같은 사람이 두 번 결재하지 않도록 이 단계를 건너뜁니다.' });
+      return;
+    }
+    taken.push({ email: low, as: '부서장', name: h.name });
     out.push({ role, p: h });
   };
   add(dg,  '위임자 부서장', '위임자');
