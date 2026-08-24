@@ -196,8 +196,16 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
 @media(max-width:640px){.appr-info{grid-template-columns:1fr}}
 .appr-info input{width:100%;padding:6px 9px;border:1px solid #e1dfdd;border-radius:4px;
   font-size:12px;font-family:inherit;color:#605e5c;background:#fff}
-.appr-skip{background:#fdf6e3;border:1px solid #f0d9a0;border-radius:6px;padding:9px 12px;
-  font-size:.72rem;color:#8a6116;line-height:1.6;margin-bottom:8px}
+.appr-skip{background:#fdf6e3;border:1px solid #f0d9a0;border-radius:6px;padding:10px 13px;
+  font-size:.72rem;color:#8a6116;margin-bottom:8px}
+.appr-skip .as-t{font-weight:600;margin-bottom:6px;font-size:.72rem}
+.appr-skip .as-r{display:grid;grid-template-columns:112px 150px 1fr;gap:10px;
+  padding:5px 0;border-top:1px solid #f0e2bd;line-height:1.5}
+@media(max-width:720px){.appr-skip .as-r{grid-template-columns:1fr;gap:2px}}
+.appr-skip .as-step{font-weight:600;white-space:nowrap}
+.appr-skip .as-who{color:#a17d2a}
+.appr-skip .as-who em{font-style:normal;color:#b8933f;font-size:.68rem}
+.appr-skip .as-why{color:#a17d2a}
 
 .proxy-tag{display:inline-block;background:#fdf6e3;color:#8a6116;border:1px solid #f0d9a0;
   border-radius:10px;padding:2px 9px;font-size:11px;font-weight:600;margin-left:6px}
@@ -746,68 +754,63 @@ function empByName(n) {
   const low = t.toLowerCase();
   return employeeData.find(e => e.name.trim().toLowerCase() === low) || null;
 }
-// 위임자의 부서장을 정한다.
-//   ① Boss of Boss(H) → ② '-' 면 Boss(G) → ③ 둘 다 '-' 면 대표이사이므로 신청자에게 맡긴다
-function headOf(person, submitter) {
-  if (!person) return null;
-  const rec = empByName(person.name) || person;
-  const h = (rec.boss2 || '').trim();
-  if (h && h !== '-') {
-    const e = empByName(h);
-    if (e) return { ...e, _src: '부서장' };
-  }
-  const g = (rec.boss || '').trim();
-  if (g && g !== '-') {
-    const e = empByName(g);
-    if (e) return { ...e, _src: '상위 결재자' };
-  }
-  // 대표이사 — 위에 결재자가 없다. 신청한 사람이 확인한다.
-  return submitter ? { ...submitter, _src: '신청자' } : null;
+// 상위 결재자 사슬을 만든다.
+//   G(Boss)          = 직속상사
+//   H(Boss of Boss)  = 부서장
+// 둘 다 결재선에 들어가야 한다. 예전에는 H 만 쓰고 G 를 건너뛰어
+// 직속상사(예: Martin)가 빠지는 문제가 있었다.
+// 같은 사람이면 한 번만, 둘 다 '-' 면 최상위(대표이사)라 신청자가 확인한다.
+// 받침이 있으면 '이', 없으면 '가'
+function _iga(w) {
+  const c = String(w || '').charCodeAt(String(w).length - 1);
+  if (c < 0xAC00 || c > 0xD7A3) return '가';
+  return ((c - 0xAC00) % 28) ? '이' : '가';
+}
+function chainOf(person, submitter) {
+  const rec = empByName(person?.name) || person;
+  if (!rec) return [];
+  const out = [];
+  const g = empByName(rec.boss);
+  const h = empByName(rec.boss2);
+  if (g) out.push({ p: g, kind: '직속상사' });
+  if (h && (!g || h.email.toLowerCase() !== g.email.toLowerCase())) out.push({ p: h, kind: '부서장' });
+  // 위에 아무도 없으면 대표이사. 신청한 사람이 확인한다.
+  if (!out.length && submitter) out.push({ p: submitter, kind: '신청자 확인' });
+  return out;
 }
 
-// 위임자·대리인 양쪽 부서장을 결재선에 넣을 형태로 만든다.
-// 이미 결재선에 있는 사람(위임자·대리인·앞 단계 부서장)과 겹치면 그 단계는 건너뛴다.
+// 위임자·대리인 양쪽의 상위 결재자를 결재선에 넣는다.
+// 이미 결재선에 있는 사람과 겹치면 그 단계는 건너뛰고, 어디서 겹쳤는지 기록한다.
 function buildHeads(dg, dep, submitter) {
   const out = [];
-  // 이미 결재선에 있는 사람을 '누구로서' 들어가 있는지까지 기록한다.
-  // 이메일만 담으면 겹쳤을 때 어느 단계와 겹쳤는지 설명할 수 없다.
-  const taken = [];
-  if (dg?.email)  taken.push({ email: dg.email.toLowerCase(),  as: '위임자',  name: dg.name });
-  if (dep?.email) taken.push({ email: dep.email.toLowerCase(), as: '대리인', name: dep.name });
+  const taken = new Map();   // 이메일 → 이미 어느 자리에 있는지
+  if (dg?.email)  taken.set(dg.email.toLowerCase(),  '위임자');
+  if (dep?.email) taken.set(dep.email.toLowerCase(), '대리인');
 
-  const add = (person, role, label) => {
-    const h = headOf(person, submitter);
-    if (!h || !h.email) {
-      out.push({ skip: label + ' 승인 생략 — ' + (person?.name || '-') + ' 님의 부서장을 찾지 못했습니다. '
-        + 'employee_search 의 Boss · Boss of Boss 열을 확인해 주세요. 이 단계 없이 결재선이 만들어집니다.' });
+  [[dg, '위임자'], [dep, '대리인']].forEach(([person, side]) => {
+    const chain = chainOf(person, submitter);
+    if (!chain.length) {
+      out.push({ skip: { step: side + ' 상위 결재자', who: person?.name || '-',
+                         at: null, why: '상위 결재자를 찾지 못했습니다',
+                         hint: 'employee_search 의 Boss · Boss of Boss 열을 확인해 주세요' } });
       return;
     }
-    const low = h.email.toLowerCase();
-    const dup = taken.find(t => t.email === low);
-    if (dup) {
-      // 어느 단계와 겹쳤는지, 왜 같은 사람이 나오는지를 함께 설명한다
-      const why = dup.as === '위임자'
-        ? label + '의 부서장이 위임자 본인입니다.'
-        : dup.as === '대리인'
-          ? label + '의 부서장이 대리인 본인입니다.'
-          : '위임자와 대리인이 같은 부서라 부서장이 한 분입니다.';
-      // 받침이 있으면 '으로', 없으면 '로'. 대리인로 · 위임자으로 같은 표기를 막는다.
-      const _josa = w => {
-        const c = w.charCodeAt(w.length - 1);
-        if (c < 0xAC00 || c > 0xD7A3) return '로';
-        const jong = (c - 0xAC00) % 28;
-        return (jong === 0 || jong === 8) ? '로' : '으로';   // 받침 없음 또는 ㄹ
-      };
-      const where = dup.as === '부서장' ? '앞 단계에 부서장으로' : dup.as + _josa(dup.as);
-      out.push({ skip: label + ' 승인 생략 — ' + h.name + ' 님은 이미 ' + where + ' 결재선에 있습니다. '
-        + why + ' 같은 사람이 두 번 결재하지 않도록 이 단계를 건너뜁니다.' });
-      return;
-    }
-    taken.push({ email: low, as: '부서장', name: h.name });
-    out.push({ role, p: h });
-  };
-  add(dg,  '위임자 부서장', '위임자');
-  add(dep, '대리인 부서장', '대리인');
+    chain.forEach(({ p, kind }) => {
+      const low = (p.email || '').toLowerCase();
+      const at = taken.get(low);
+      if (at) {
+        out.push({ skip: { step: side + ' ' + kind, who: p.name, at,
+                           // 받침에 따라 '이/가' 를 가른다 (부서장가 → 부서장이)
+                           why: (at === '위임자' || at === '대리인')
+                                ? side + '의 ' + kind + _iga(kind) + ' ' + at + ' 본인입니다'
+                                : '위임자와 대리인의 ' + kind + _iga(kind) + ' 같은 분입니다',
+                           hint: null } });
+        return;
+      }
+      taken.set(low, side + ' ' + kind);
+      out.push({ role: side + ' ' + kind, p });
+    });
+  });
   return out;
 }
 
@@ -999,6 +1002,11 @@ function scopeLabel(v) {
   return keys.map(k => (SYSTEMS.find(x => x.key === k) || {}).label || k).join(' · ');
 }
 
+// 생략 사유를 한 줄로. 기록(ClosedComment)에 쓴다.
+function skipText(k) {
+  return k.step + ' 생략 · ' + k.who + (k.at ? ' (이미 ' + k.at + ')' : '') + ' — ' + k.why;
+}
+
 // 결재 라인 미리보기 + 결재자 블록 — GW 와 같은 3단 구조
 function renderApprPreview() {
   const guide = document.getElementById('appr-guide');
@@ -1025,7 +1033,7 @@ function renderApprPreview() {
   line.push({ role: '대리인 수락', p: _selDeputy, fixed: false });
   const notes = [];
   buildHeads(dg, _selDeputy, { name: me ? me.name : (user.name || meEmail), email: meEmail })
-    .forEach(x => { if (x.skip) notes.push(x.skip); else line.push({ role: x.role, p: x.p, src: x.p._src, fixed: true }); });
+    .forEach(x => { if (x.skip) notes.push(x.skip); else line.push({ role: x.role, p: x.p, fixed: true }); });
 
   // ① 한 줄 요약
   preview.style.display = 'block';
@@ -1039,13 +1047,20 @@ function renderApprPreview() {
   // ② 결재자별 블록
   blocks.innerHTML = line.map((x, i) =>
     '<div class="appr-block' + (x.fixed ? ' appr-fixed' : '') + '">' +
-    '<div class="appr-title">' + (i + 1) + '차 결재자 <span class="hint">&mdash; ' + esc(x.role) +
-    (x.src && x.src !== '부서장' ? ' · ' + esc(x.src) : '') + ' (자동 지정)</span></div>' +
+    '<div class="appr-title">' + (i + 1) + '차 결재자 <span class="hint">&mdash; ' + esc(x.role) + ' (자동 지정)</span></div>' +
     '<div class="appr-info">' +
     '<input type="text" value="' + esc(x.p.name || '') + '" readonly>' +
     '<input type="text" value="' + esc(x.p.email || '') + '" readonly>' +
     '</div></div>').join('')
-    + (notes.length ? '<div class="appr-skip">' + notes.map(esc).join('<br>') + '</div>' : '');
+    + (notes.length
+        ? '<div class="appr-skip"><div class="as-t">생략된 단계 ' + notes.length + '건</div>' +
+          notes.map(k =>
+            '<div class="as-r">' +
+            '<span class="as-step">' + esc(k.step) + '</span>' +
+            '<span class="as-who">' + esc(k.who) + (k.at ? ' <em>이미 ' + esc(k.at) + '</em>' : '') + '</span>' +
+            '<span class="as-why">' + esc(k.why) + (k.hint ? ' · ' + esc(k.hint) : '') + '</span>' +
+            '</div>').join('') + '</div>'
+        : '');
 }
 
 /* ── 화면 전환 ──────────────────────────────────────────── */
@@ -1182,12 +1197,12 @@ async function submitForm() {
     const _sub = { name: (me ? me.name : (user.name || meEmail)), email: meEmail };
     const _skips = [];
     buildHeads(dg, _selDeputy, _sub).forEach(x => {
-      if (x.skip) { _skips.push(x.skip); return; }
+      if (x.skip) { _skips.push(skipText(x.skip)); return; }
       line.push({ order: line.length + 1, role: x.role, name: x.p.name, email: x.p.email });
     });
     if (_skips.length) {
       console.warn('[AAC] 생략된 단계:', _skips.join(' / '));
-      selfNote = _skips.join(' ');
+      selfNote = _skips.join(' / ');
     }
     for (const a of line) {
       await api('/sites/' + siteId + '/lists/' + LIST_APR + '/items', 'POST', {
