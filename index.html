@@ -38,11 +38,11 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
    .hdr-contact-row 는 display:contents 로 두어 마크업을 바꾸지 않고 칸만 넘긴다. */
 .hdr-contact{display:inline-grid;grid-template-columns:max-content 1fr;align-items:center;
   row-gap:0;margin-top:7px;font-size:.66rem;line-height:1.45;color:#5a6472;
-  background:#f4f8fd;border:1px solid #dbe7f5;border-radius:7px;padding:4px 10px 4px 9px}
+  padding:0}
 .hdr-contact-row{display:contents}
 /* 위아래 여백을 0 으로 두어 줄마다의 구분선이 하나로 이어져 보인다. */
 .hdr-contact-tag{color:#2b5c9e;font-weight:700;letter-spacing:-.01em;white-space:nowrap;
-  padding:1px 7px 1px 0;margin-right:7px;border-right:1px solid #cfdff2}
+  padding:1px 0;margin-right:9px}
 .hdr-contact-mail{color:#3d4756;font-weight:500}
 .hdr-contact-mail a{color:#2b5c9e;text-decoration:none}
 .hdr-contact-mail a:hover{text-decoration:underline}
@@ -57,8 +57,8 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
 .tab-btn.active { color: #0078d4; border-bottom: 3px solid #0078d4; font-weight: 500; }
 .tab-btn:hover:not(.active) { background: #f3f2f1; }
 .card { background: #fff; border-radius: 8px; padding: 22px 24px; margin-bottom: 14px; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
-.card-title { font-size: 14px; font-weight: 600; color: #323130; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid #edebe9; }
-.section-title { font-size: 13px; font-weight: 600; color: #0078d4; margin: 20px 0 8px; padding: 6px 10px; background: #f0f6ff; border-radius: 4px; border-left: 3px solid #0078d4; }
+.card-title{font-size:.9rem;font-weight:700;color:#323130;margin-bottom:18px;padding-bottom:10px;border-bottom:1px solid #edebe9}
+.section-title{font-size:.82rem;font-weight:600;color:#0078d4;margin:18px 0 12px;padding:5px 10px;background:#f0f6ff;border-radius:4px;border-left:3px solid #0078d4}
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 10px; }
 .form-row.three { grid-template-columns: 1fr 1fr 1fr; }
 .form-row.four { grid-template-columns: 1fr 1fr 1fr 1fr; }
@@ -100,7 +100,13 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
 .aac-note{background:#f0f6ff;border:1px solid #c7e0f4;border-radius:6px;
   padding:12px 15px;font-size:12px;color:#0b5fa5;line-height:1.75;margin-bottom:16px}
 .aac-note b{color:#004578;font-weight:600}
-.en{font-size:.78em;color:#8a8886;font-weight:400;margin-left:5px;letter-spacing:.01em}
+/* 한/영 병기 — 영문은 한 단계 작은 회색 보조 글자. 버튼·세그먼트 안에서는 줄을 바꾸지 않는다. */
+.en{font-size:.76em;color:#8a8886;font-weight:400;margin-left:5px;letter-spacing:.01em;white-space:nowrap}
+.tab-btn .en{margin-left:4px}
+.tab-btn.active .en{color:#7aa7d4}
+.seg-i .en{display:none}                       /* 세그먼트(본인/대신 신청)는 한글만 — 폭이 좁아 두 줄이 된다 */
+.rl .en{display:block;margin:1px 0 0;font-size:.68rem;line-height:1.2}   /* 라벨은 아래줄로 */
+label .en{margin-left:4px}
 .aac-note .en-line{display:block;margin-top:6px;color:#5b6b7a;font-size:.86em;line-height:1.55}
 .aac-lock{background:#fff4e5;border:1px solid #f0c78a;border-radius:6px;padding:12px 14px;margin:0 0 14px;font-size:.82rem;color:#8a5a00;line-height:1.6}
 .aac-lock b{color:#8a5a00}
@@ -293,7 +299,7 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
   <div class="app-header" id="app-header" style="display:none">
     <div>
       <div class="app-title">Approval Delegation</div>
-      <div class="app-sub">STK 결재 대리 지정 시스템 · Approval Delegation</div>
+      <div class="app-sub">STK 결재 대리 지정 시스템</div>
       <div style="font-size:11px;color:#605e5c;margin-top:4px">
               <div class="hdr-contact">
           <div class="hdr-contact-row">
@@ -343,8 +349,8 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
       <div class="row-lbl">
         <span class="rl">신청 유형<span class="en">Type</span></span>
         <div class="seg">
-          <label class="seg-i"><input type="radio" name="pv-mode" value="self" checked onchange="onProxyMode()"><span>본인 신청<span class="en">Myself</span></span></label>
-          <label class="seg-i" id="pv-opt-other"><input type="radio" name="pv-mode" value="other" onchange="onProxyMode()"><span>대신 신청<span class="en">On behalf of</span></span></label>
+          <label class="seg-i"><input type="radio" name="pv-mode" value="self" checked onchange="onProxyMode()"><span title="Myself">본인 신청</span></label>
+          <label class="seg-i" id="pv-opt-other"><input type="radio" name="pv-mode" value="other" onchange="onProxyMode()"><span title="On behalf of">대신 신청</span></label>
         </div>
       </div>
       <div id="pv-locked" class="msg-w" style="display:none">
@@ -430,8 +436,8 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
       <div id="appr-blocks"></div>
 
       <div style="text-align:right;margin-top:18px">
-        <button class="btn btn-secondary" onclick="resetForm()">초기화 <span class="en" style="margin-left:2px">Reset</span></button>
-        <button class="btn btn-primary" style="margin-left:6px" id="btn-submit" onclick="submitForm()">신청 <span class="en" style="color:rgba(255,255,255,.75);margin-left:2px">Submit</span></button>
+        <button class="btn btn-secondary" onclick="resetForm()" title="Reset">초기화</button>
+        <button class="btn btn-primary" style="margin-left:6px" id="btn-submit" onclick="submitForm()" title="Submit">신청</button>
       </div>
     </div>
   </div>
