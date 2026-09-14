@@ -98,8 +98,17 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
 /* ── AAC 전용 — ACC 의 톤(색·모서리·크기)을 그대로 따른다 ───── */
 
 /* 안내 블록 — ACC 의 .sp-note.info 와 같은 톤 */
-.aac-note{background:#f0f6ff;border:1px solid #c7e0f4;border-radius:6px;
-  padding:12px 15px;font-size:12px;color:#0b5fa5;line-height:1.75;margin-bottom:16px}
+.aac-note{background:#f7fbff;border:1px solid #cfe3f5;border-left:3px solid #0078d4;
+  border-radius:6px;padding:14px 18px;margin-bottom:16px}
+/* 제목 — 카드 제목과 같은 구성(한글 + 옅은 영문). .card-title / .en 규칙을 따른다. */
+.aac-note-h{font-size:.82rem;font-weight:700;color:#004578;margin-bottom:9px;
+  padding-bottom:8px;border-bottom:1px solid #e3eef9}
+.aac-note-h span{font-size:.76em;font-weight:400;color:#7aa7d4;margin-left:5px;letter-spacing:.01em}
+/* 본문 — 한글·영문 같은 크기(12px). 예전에는 영문만 .86em 이라 잔글씨로 보였다.
+   word-break:keep-all 로 한글 단어가 중간에서 잘리지 않게 한다. */
+.aac-note p{margin:0;font-size:12px;line-height:1.75;color:#0b5fa5;
+  word-break:keep-all;overflow-wrap:break-word}
+.aac-note p + p{margin-top:9px;padding-top:9px;border-top:1px dashed #d8e8f6;color:#5f7d99}
 .aac-note b{color:#004578;font-weight:600}
 /* 한/영 병기 — 영문은 한 단계 작은 회색 보조 글자. 버튼·세그먼트 안에서는 줄을 바꾸지 않는다. */
 .en{font-size:.76em;color:#8a8886;font-weight:400;margin-left:5px;letter-spacing:.01em;white-space:nowrap}
@@ -108,7 +117,6 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
 .seg-i .en{display:none}                       /* 세그먼트(본인/대신 신청)는 한글만 — 폭이 좁아 두 줄이 된다 */
 .rl .en{display:block;margin:1px 0 0;font-size:.68rem;line-height:1.2}   /* 라벨은 아래줄로 */
 label .en{margin-left:4px}
-.aac-note .en-line{display:block;margin-top:6px;color:#5b6b7a;font-size:.86em;line-height:1.55}
 .aac-lock{background:#fff4e5;border:1px solid #f0c78a;border-radius:6px;padding:12px 14px;margin:0 0 14px;font-size:.82rem;color:#8a5a00;line-height:1.6}
 .aac-lock b{color:#8a5a00}
 
@@ -360,12 +368,15 @@ label .en{margin-left:4px}
       <div id="cfg-warn" class="cfgwarn">설정 파일(system_config_final.xlsx)을 불러오지 못했습니다. 관리자 정보가 비어 있을 수 있으니 IT팀에 알려주세요.</div>
 
       <div class="aac-note">
-        <b>결재 대리 지정이란</b><br>
-        출장 &middot; 휴가 등으로 자리를 비우는 기간 동안, 내가 처리해야 할 결재를 다른 직원이 대신 볼 수 있도록 미리 지정하는 기능입니다.
+        <div class="aac-note-h">결재 대리 지정이란<span>What is Approval Delegation?</span></div>
+        <p>출장 &middot; 휴가 등으로 자리를 비우는 기간 동안, 내가 처리해야 할 결재를 다른 직원이 대신 볼 수 있도록 미리 지정하는 기능입니다.
         지정된 기간에만 적용되며, 기간이 지나면 자동으로 해제됩니다.
         <b>원래 결재자 기록은 그대로 남고</b>, 대리인이 처리한 건은 대리 처리로 표시됩니다.
-        <b>결재는 대리인의 수락만으로 확정</b>되며, 대리인으로 지정된 기간에는 그 사람이 다시 다른 사람에게 결재를 넘길 수 없습니다.
-        <span class="en-line"><b>Approval Delegation</b> lets you assign a deputy to handle your approvals while you are away (business trip, leave). It applies only for the period you set and expires automatically. Your own approval history is kept; items handled by the deputy are marked as delegated. The request is confirmed by the deputy's acceptance only, and a person who is currently acting as a deputy cannot delegate their own approvals to someone else during that period.</span>
+        <b>결재는 대리인의 수락만으로 확정</b>되며, 대리인으로 지정된 기간에는 그 사람이 다시 다른 사람에게 결재를 넘길 수 없습니다.</p>
+        <p>Assign a deputy to handle your approvals while you are away on a business trip or leave.
+        It applies only for the period you set and expires automatically.
+        <b>Your own approval history is kept</b>, and items handled by the deputy are marked as delegated.
+        <b>The request is confirmed by the deputy's acceptance alone</b>, and a person acting as a deputy cannot pass their approvals on to someone else during that period.</p>
       </div>
 
       <div class="section-title">1. 위임 (Delegation)</div>
@@ -1298,7 +1309,7 @@ function lockText(f) {
   return '지금 <b>' + esc(f.RequesterName || f.RequesterEmail || '') + '</b> 님의 대리인으로 지정되어 있습니다 '
     + '(<b>' + esc(fmtDay(f.StartDate)) + ' ~ ' + esc(fmtDay(f.EndDate)) + '</b> · ' + esc(f.Title || '') + '). '
     + '이 기간에는 결재를 다른 사람에게 다시 넘길 수 없어 <b>새 대리 지정을 신청할 수 없습니다</b>.'
-    + '<span class="en-line" style="display:block;margin-top:4px;color:#8a5a00;font-size:.9em">You are currently acting as a deputy for '
+    + '<span class="en-line" style="display:block;margin-top:8px;padding-top:8px;border-top:1px dashed #edd3a8;color:#9a6f2a">You are currently acting as a deputy for '
     + esc(f.RequesterName || f.RequesterEmail || '') + ' (' + esc(fmtDay(f.StartDate)) + ' – ' + esc(fmtDay(f.EndDate)) + '). '
     + 'A deputy cannot delegate their own approvals during that period, so a new request cannot be submitted.</span>';
 }
@@ -1892,7 +1903,7 @@ function askSubmitConfirm(o) {
     + '<div>· 대리인이 처리한 건은 <b>대리인 본인의 결재로 기록</b>되며, 원래 결재자가 누구였는지도 함께 남습니다.</div>'
     + '<div>· 기간이 끝나면 <b>자동으로 해제</b>됩니다. 먼저 끝내려면 [내 신청 내역]에서 철회하세요.</div>'
     + '<div>· 같은 기간에 두 건을 지정할 수 없습니다. 기간이 겹치면 신청이 막힙니다.</div>'
-    + '<div class="en-line" style="color:#a08050;margin-top:6px">The deputy cannot re-delegate during this period. Approvals created within the period are routed to the deputy, and items already pending can also be handled by the deputy in the APS portal. Items handled by the deputy are recorded as the deputy\'s own approval, with the original approver kept. The delegation expires automatically.</div>';
+    + '<div class="en-line" style="color:#9a6f2a;margin-top:8px;padding-top:8px;border-top:1px dashed #edd3a8">The deputy cannot re-delegate during this period. Approvals created within the period are routed to the deputy, and items already pending can also be handled by the deputy in the APS portal. Items handled by the deputy are recorded as the deputy\'s own approval, with the original approver kept. The delegation expires automatically.</div>';
   document.getElementById('submit-modal').classList.add('open');
   return new Promise(res => {
     _scResolve = res;
