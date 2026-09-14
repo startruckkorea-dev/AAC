@@ -1683,11 +1683,11 @@ function askSubmitConfirm(o) {
         + (o.proxy ? '<br><span style="color:#8a8886">대신 신청이므로 위임자 <b>' + esc(o.dg.name) + '</b> 님의 확인이 먼저 필요합니다.</span>' : ''), 'Approval');
   document.getElementById('sc-warn').innerHTML =
       '<div>· 대리인으로 지정된 <b>' + esc(o.deputy.name) + '</b> 님은 이 기간에 <b>자기 결재를 다시 다른 사람에게 넘길 수 없습니다</b> (재위임 불가 · 신청 자체가 막힙니다).</div>'
-    + '<div>· 기간 중에 올라오는 결재만 대리인에게 갑니다. <b>이미 대기 중인 결재는 넘어가지 않습니다</b> — 급한 건은 직접 처리하거나 IT팀에 문의해 주세요.</div>'
+    + '<div>· 기간 중에 올라오는 결재는 대리인에게 바로 가고, <b>이미 대기 중이던 결재도 APS 통합 결재함에서 대리인이 처리</b>할 수 있습니다.</div>'
     + '<div>· 대리인이 처리한 건은 <b>대리인 본인의 결재로 기록</b>되며, 원래 결재자가 누구였는지도 함께 남습니다.</div>'
     + '<div>· 기간이 끝나면 <b>자동으로 해제</b>됩니다. 먼저 끝내려면 [내 신청 내역]에서 철회하세요.</div>'
     + '<div>· 같은 기간에 두 건을 지정할 수 없습니다. 기간이 겹치면 신청이 막힙니다.</div>'
-    + '<div class="en-line" style="color:#a08050;margin-top:6px">The deputy cannot re-delegate during this period. Only approvals created within the period are routed to the deputy; items already pending are not moved. Items handled by the deputy are recorded as the deputy\'s own approval, with the original approver kept. The delegation expires automatically.</div>';
+    + '<div class="en-line" style="color:#a08050;margin-top:6px">The deputy cannot re-delegate during this period. Approvals created within the period are routed to the deputy, and items already pending can also be handled by the deputy in the APS portal. Items handled by the deputy are recorded as the deputy\'s own approval, with the original approver kept. The delegation expires automatically.</div>';
   document.getElementById('submit-modal').classList.add('open');
   return new Promise(res => {
     _scResolve = res;
