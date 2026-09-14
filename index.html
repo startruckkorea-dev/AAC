@@ -285,6 +285,12 @@ label .en{margin-left:4px}
 
 .btn-danger{background:#a4262c;color:#fff}
 .btn-danger:hover{background:#8a1f24}
+/* 결재 처리 버튼 — IT(.btn-approve/.btn-reject, 225~228행)와 같은 색.
+   상세 모달 하단에서는 가로를 반씩 나눠 채운다. */
+.btn-approve{background:#107c10;color:#fff;border:none;border-radius:4px;padding:8px 24px;font-size:.85rem;font-weight:600;cursor:pointer;font-family:inherit}
+.btn-approve:hover{background:#0e6b0e}
+.btn-reject{background:#a4262c;color:#fff;border:none;border-radius:4px;padding:8px 24px;font-size:.85rem;font-weight:600;cursor:pointer;font-family:inherit}
+.btn-reject:hover{background:#8f1f24}
 .det-label{width:130px;min-width:130px;flex-shrink:0;color:#605e5c;font-size:12px}
 .det-value{flex:1;color:#323130;font-size:13px;word-break:break-word}
 .det-row:last-child{border-bottom:none}
@@ -1784,17 +1790,24 @@ async function openDetail(id) {
     const mine = aprs.find(a => isMe(a.fields.ApproverEmail) && (a.fields.Status || '').trim() === '대기');
     let btns = '';
     if (mine) {
+      // 1차는 「대리인 수락」 단계라 문구가 수락/거절이고, 그 뒤 단계는 승인/반려다.
+      // 색·크기는 IT 상세 모달(2099~2101행)과 같게 — 초록/빨강을 가로로 반씩 채운다.
       const isDeputy = Number(mine.fields.ApprovalOrder) === 1;
-      btns = '<button class="btn btn-danger" onclick="askConfirm(' + id + ',' + mine.id + ',\'반려\')">' +
-             (isDeputy ? '거절' : '반려') + '</button>' +
-             '<button class="btn btn-primary" style="margin-left:6px" onclick="askConfirm(' + id + ',' + mine.id + ',\'승인\')">' +
-             (isDeputy ? '수락' : '승인') + '</button>';
+      btns = '<div style="display:flex;gap:10px;margin-top:14px">' +
+             '<button class="btn-approve" style="flex:1;border-radius:6px;padding:10px;font-size:.9rem;font-weight:700" onclick="askConfirm(' + id + ',' + mine.id + ',\'승인\')">' +
+             '\u2705 ' + (isDeputy ? '수락' : '승인') + '</button>' +
+             '<button class="btn-reject" style="flex:1;border-radius:6px;padding:10px;font-size:.9rem;font-weight:700" onclick="askConfirm(' + id + ',' + mine.id + ',\'반려\')">' +
+             '\u274C ' + (isDeputy ? '거절' : '반려') + '</button>' +
+             '</div>';
     }
-    // 신청자 본인은 아직 수락 전(대기)인 건을 철회할 수 있다 — canWithdraw() 참고
+    // 신청자 본인은 아직 수락 전(대기)인 건을 철회할 수 있다 — canWithdraw() 참고.
+    // 철회는 성격이 달라(내가 낸 신청을 거두는 것) 결재 버튼과 한 줄에 두지 않고
+    // 위에 따로 오른쪽 정렬로 둔다.
     if (isMe(f.RequesterEmail) && canWithdraw(f)) {
-      btns = '<button class="btn btn-secondary" onclick="askConfirm(' + id + ',0,\'철회\')">철회</button>' + (btns ? ' ' + btns : '');
+      html += '<div style="text-align:right;margin-top:16px">' +
+              '<button class="btn btn-secondary" onclick="askConfirm(' + id + ',0,\'철회\')">철회</button></div>';
     }
-    if (btns) html += '<div style="text-align:right;margin-top:16px">' + btns + '</div>';
+    if (btns) html += btns;
 
     document.getElementById('detail-body').innerHTML = html;
     document.getElementById('detail-modal').classList.add('open');
