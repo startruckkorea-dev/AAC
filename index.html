@@ -21,8 +21,9 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
 .btn-login:disabled{background:#cbd5e0;cursor:not-allowed;transform:none;box-shadow:none}
 #login-err{color:#e53e3e;font-size:.78rem;margin-top:10px;display:none}
 .login-page-footer{position:fixed;bottom:0;left:0;right:0;padding:10px 24px;display:flex;justify-content:space-between;align-items:center;font-size:11px;color:rgba(255,255,255,.55);background:rgba(0,0,0,.18)}
-/* 본문 폭 — APS 표준 960px. ACC·GW 는 JS 로 960 을 덮어쓰지만
-   AAC 는 단독 상세 모드가 없어 CSS 에서 바로 지정한다. */
+/* 본문 폭 — 기본은 APS 표준 960px(신청 폼 기준).
+   목록 세 탭(내 신청 내역·결재함·관리자)은 switchTab() 에서 1280px 로 넓힌다
+   — GW(1025행)·IT(1600행)와 같은 방식. */
 #app { display: none; max-width: 960px; margin: 0 auto; padding: 24px 20px 48px; }
 .app-header{background:#fff;border-radius:8px;padding:18px 24px;margin-bottom:18px;display:flex;justify-content:space-between;align-items:flex-start;box-shadow:0 1px 4px rgba(0,0,0,.08)}
 .app-title{font-size:1.1rem;font-weight:700;color:#323130}
@@ -86,7 +87,7 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
 .list-empty { text-align: center; padding: 48px; color: #a19f9d; font-size: 14px; }
 .modal-box{background:#fff;border-radius:8px;padding:28px 32px;max-width:680px;width:95%;max-height:88vh;overflow-y:auto;position:relative}
 .modal-close{position:absolute;top:12px;right:16px;background:none;border:none;font-size:1.2rem;cursor:pointer;color:#605e5c}
-.det-row{display:flex;padding:5px 0;border-bottom:1px solid #f3f2f1;font-size:.8rem}
+.det-row{display:flex;padding:7px 0;border-bottom:.5px solid #edebe9;font-size:13px}
 .appr-item{display:flex;justify-content:space-between;align-items:flex-start;padding:9px 10px;border-bottom:1px solid #edebe9;font-size:.8rem;gap:10px}
 .appr-item:last-child{border-bottom:none}
 .status-대기{color:#7d5700;font-weight:600}
@@ -270,7 +271,7 @@ label .en{margin-left:4px}
 
 .btn-danger{background:#a4262c;color:#fff}
 .btn-danger:hover{background:#8a1f24}
-.det-label{width:150px;flex-shrink:0;color:#605e5c;font-size:12px}
+.det-label{width:130px;min-width:130px;flex-shrink:0;color:#605e5c;font-size:12px}
 .det-value{flex:1;color:#323130;font-size:13px;word-break:break-word}
 .det-row:last-child{border-bottom:none}
 
@@ -516,12 +517,12 @@ label .en{margin-left:4px}
 
 <!-- 상세 모달 -->
 <div class="modal-overlay" id="detail-modal" onclick="if(event.target===this)closeDetail()">
-  <div class="modal-box">
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:15px 20px;border-bottom:1px solid #edebe9">
+  <div class="modal-box" style="max-width:640px;padding:0">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 22px 13px;border-bottom:1px solid #edebe9">
       <h3 style="font-size:1rem;color:#0f2744;margin:0">신청 상세</h3>
       <button class="modal-close" onclick="closeDetail()">&times;</button>
     </div>
-    <div style="padding:18px 20px;overflow-y:auto;max-height:70vh" id="detail-body"></div>
+    <div style="padding:16px 22px 20px;overflow-y:auto;max-height:72vh" id="detail-body"></div>
   </div>
 </div>
 
@@ -555,7 +556,7 @@ label .en{margin-left:4px}
 </div>
 
 <div class="modal-overlay" id="confirm-modal" onclick="if(event.target===this)closeConfirm()">
-  <div class="modal-box" style="max-width:460px">
+  <div class="modal-box" style="max-width:460px;padding:0">
     <div style="display:flex;justify-content:space-between;align-items:center;padding:15px 20px;border-bottom:1px solid #edebe9">
       <h3 style="font-size:1rem;color:#0f2744;margin:0" id="cf-title">확인</h3>
       <button class="modal-close" onclick="closeConfirm()">&times;</button>
@@ -1197,6 +1198,11 @@ function renderApprPreview() {
 
 /* ── 화면 전환 ──────────────────────────────────────────── */
 function switchTab(t) {
+  // 목록 세 탭은 열이 7~8개이고 「기간」 이 'YYYY-MM-DD HH:mm ~ YYYY-MM-DD HH:mm' 로
+  // 길어서 960px(여유 920px)로는 표가 넘쳐 가로 스크롤이 났다. 이 탭에서만 1280px 로 넓힌다.
+  // 신청 폼은 입력란이 지나치게 늘어나므로 960px 를 유지한다 — GW(1025행)·IT(1600행)와 같은 규칙.
+  const _appEl = document.getElementById('app');
+  if (_appEl) _appEl.style.maxWidth = ['my', 'apr', 'admin'].includes(t) ? '1280px' : '960px';
   document.querySelectorAll('.tab-btn').forEach(x => x.classList.toggle('active', x.dataset.tab === t));
   ['new', 'my', 'apr', 'admin'].forEach(p => {
     const el = document.getElementById('pane-' + p);
