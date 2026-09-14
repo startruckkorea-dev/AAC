@@ -100,6 +100,10 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
 .aac-note{background:#f0f6ff;border:1px solid #c7e0f4;border-radius:6px;
   padding:12px 15px;font-size:12px;color:#0b5fa5;line-height:1.75;margin-bottom:16px}
 .aac-note b{color:#004578;font-weight:600}
+.en{font-size:.78em;color:#8a8886;font-weight:400;margin-left:5px;letter-spacing:.01em}
+.aac-note .en-line{display:block;margin-top:6px;color:#5b6b7a;font-size:.86em;line-height:1.55}
+.aac-lock{background:#fff4e5;border:1px solid #f0c78a;border-radius:6px;padding:12px 14px;margin:0 0 14px;font-size:.82rem;color:#8a5a00;line-height:1.6}
+.aac-lock b{color:#8a5a00}
 
 /* 선택 결과 표시 — ACC 의 .appr-block 과 같은 톤 */
 .aac-box{background:#fff;border:1px solid #edebe9;border-radius:8px;padding:14px 16px}
@@ -289,7 +293,7 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
   <div class="app-header" id="app-header" style="display:none">
     <div>
       <div class="app-title">Approval Delegation</div>
-      <div class="app-sub">STK 결재 대리 지정 시스템</div>
+      <div class="app-sub">STK 결재 대리 지정 시스템 · Approval Delegation</div>
       <div style="font-size:11px;color:#605e5c;margin-top:4px">
               <div class="hdr-contact">
           <div class="hdr-contact-row">
@@ -312,16 +316,17 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
   </div>
 
   <div class="tabs" id="aac-tabs" style="display:none">
-    <button class="tab-btn active" data-tab="new" onclick="switchTab('new')">대리 지정 신청</button>
-    <button class="tab-btn" data-tab="my" onclick="switchTab('my')">내 신청 내역</button>
-    <button class="tab-btn" data-tab="apr" onclick="switchTab('apr')">결재함<span class="tab-badge" id="apr-badge" style="display:none">0</span></button>
-    <button class="tab-btn" data-tab="admin" id="tab-admin" style="display:none" onclick="switchTab('admin')">관리자</button>
+    <button class="tab-btn active" data-tab="new" onclick="switchTab('new')">대리 지정 신청<span class="en">Request</span></button>
+    <button class="tab-btn" data-tab="my" onclick="switchTab('my')">내 신청 내역<span class="en">My Requests</span></button>
+    <button class="tab-btn" data-tab="apr" onclick="switchTab('apr')">결재함<span class="en">Approvals</span><span class="tab-badge" id="apr-badge" style="display:none">0</span></button>
+    <button class="tab-btn" data-tab="admin" id="tab-admin" style="display:none" onclick="switchTab('admin')">관리자<span class="en">Admin</span></button>
   </div>
 
   <!-- ══════════ 신청 ══════════ -->
   <div id="pane-new" style="display:none">
     <div class="card">
-      <div class="card-title">대리 지정 신청</div>
+      <div class="card-title">대리 지정 신청<span class="en">Delegation Request</span></div>
+      <div id="aac-lock" class="aac-lock" style="display:none"></div>
       <div id="cfg-warn" class="cfgwarn">설정 파일(system_config_final.xlsx)을 불러오지 못했습니다. 관리자 정보가 비어 있을 수 있으니 IT팀에 알려주세요.</div>
 
       <div class="aac-note">
@@ -329,15 +334,17 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
         출장 &middot; 휴가 등으로 자리를 비우는 기간 동안, 내가 처리해야 할 결재를 다른 직원이 대신 볼 수 있도록 미리 지정하는 기능입니다.
         지정된 기간에만 적용되며, 기간이 지나면 자동으로 해제됩니다.
         <b>원래 결재자 기록은 그대로 남고</b>, 대리인이 처리한 건은 대리 처리로 표시됩니다.
+        <b>결재는 대리인의 수락만으로 확정</b>되며, 대리인으로 지정된 기간에는 그 사람이 다시 다른 사람에게 결재를 넘길 수 없습니다.
+        <span class="en-line"><b>Approval Delegation</b> lets you assign a deputy to handle your approvals while you are away (business trip, leave). It applies only for the period you set and expires automatically. Your own approval history is kept; items handled by the deputy are marked as delegated. The request is confirmed by the deputy's acceptance only, and a person who is currently acting as a deputy cannot delegate their own approvals to someone else during that period.</span>
       </div>
 
       <div class="section-title">1. 위임 (Delegation)</div>
 
       <div class="row-lbl">
-        <span class="rl">신청 유형</span>
+        <span class="rl">신청 유형<span class="en">Type</span></span>
         <div class="seg">
-          <label class="seg-i"><input type="radio" name="pv-mode" value="self" checked onchange="onProxyMode()"><span>본인 신청</span></label>
-          <label class="seg-i" id="pv-opt-other"><input type="radio" name="pv-mode" value="other" onchange="onProxyMode()"><span>대신 신청</span></label>
+          <label class="seg-i"><input type="radio" name="pv-mode" value="self" checked onchange="onProxyMode()"><span>본인 신청<span class="en">Myself</span></span></label>
+          <label class="seg-i" id="pv-opt-other"><input type="radio" name="pv-mode" value="other" onchange="onProxyMode()"><span>대신 신청<span class="en">On behalf of</span></span></label>
         </div>
       </div>
       <div id="pv-locked" class="msg-w" style="display:none">
@@ -345,7 +352,7 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
       </div>
 
       <div class="row-lbl" id="pv-row" style="display:none">
-        <span class="rl">위임자</span>
+        <span class="rl">위임자<span class="en">Delegator</span></span>
         <div class="pick">
           <select id="p-dept" onchange="onPDeptChange()"><option value="">부서</option></select>
           <select id="p-team" onchange="onPTeamChange()" disabled><option value="">팀</option></select>
@@ -354,12 +361,12 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
         </div>
       </div>
       <div class="row-lbl" id="pv-self">
-        <span class="rl">위임자</span>
+        <span class="rl">위임자<span class="en">Delegator</span></span>
         <div class="pick"><span class="pk on" id="p-view-self">-</span></div>
       </div>
 
       <div class="row-lbl">
-        <span class="rl">대리인<i>*</i></span>
+        <span class="rl">대리인<i>*</i><span class="en">Deputy</span></span>
         <div class="pick">
           <select id="f-dept" onchange="onDeptChange()"><option value="">부서</option></select>
           <select id="f-team" onchange="onTeamChange()" disabled><option value="">팀</option></select>
@@ -373,14 +380,14 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
       <div id="deputy-msg"></div>
 
       <div class="row-lbl" id="pv-reason" style="display:none">
-        <span class="rl">대신 신청 사유<i>*</i></span>
+        <span class="rl">대신 신청 사유<i>*</i><span class="en">Reason for proxy</span></span>
         <input type="text" id="p-reason" maxlength="200" class="wide"
                placeholder="예) 대표이사 해외 출장으로 비서실에서 대신 신청합니다.">
       </div>
 
       <div class="section-title">2. 대리 기간 (Period)</div>
       <div class="row-lbl">
-        <span class="rl">기간<i>*</i></span>
+        <span class="rl">기간<i>*</i><span class="en">Period</span></span>
         <div class="pr">
           <input type="date" id="f-start" onchange="onPeriodChange()">
           <input type="time" id="f-start-t" value="00:00" step="1800" onchange="onPeriodChange()">
@@ -394,7 +401,7 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
 
       <div class="section-title">3. 대상 시스템 (Scope)</div>
       <div class="row-lbl">
-        <span class="rl">범위</span>
+        <span class="rl">범위<span class="en">Scope</span></span>
         <label class="chk-all"><input type="checkbox" id="f-all" checked onchange="onScopeAll()">
           전체 시스템<span class="sub">이후 추가되는 시스템까지</span></label>
       </div>
@@ -403,7 +410,7 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
       <div class="section-title">4. 사유 (Reason)</div>
       <div class="form-row full">
         <div class="form-group">
-          <label>대리 지정 사유<span class="req">*</span></label>
+          <label>대리 지정 사유<span class="req">*</span><span class="en">Reason</span></label>
           <textarea id="f-reason" maxlength="500" rows="3" placeholder="예) 2026-09-01 ~ 09-05 독일 본사 출장으로 결재 처리가 어렵습니다."></textarea>
           <div class="fld-hint">입력한 사유는 결재자 화면과 감사 기록에 그대로 남습니다. (최대 500자)</div>
         </div>
@@ -417,14 +424,14 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
       </div>
 
       <div class="line-preview" id="line-preview" style="display:none">
-        <div class="line-preview-title">결재 라인 (위임자 &middot; 대리인 기준 자동 구성)</div>
+        <div class="line-preview-title">결재 라인 — 대리인 수락으로 확정 <span class="en">Approval line · confirmed by the deputy's acceptance</span></div>
         <div id="line-preview-content"></div>
       </div>
       <div id="appr-blocks"></div>
 
       <div style="text-align:right;margin-top:18px">
-        <button class="btn btn-secondary" onclick="resetForm()">초기화</button>
-        <button class="btn btn-primary" style="margin-left:6px" id="btn-submit" onclick="submitForm()">신청</button>
+        <button class="btn btn-secondary" onclick="resetForm()">초기화 <span class="en" style="margin-left:2px">Reset</span></button>
+        <button class="btn btn-primary" style="margin-left:6px" id="btn-submit" onclick="submitForm()">신청 <span class="en" style="color:rgba(255,255,255,.75);margin-left:2px">Submit</span></button>
       </div>
     </div>
   </div>
@@ -432,7 +439,7 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
   <!-- ══════════ 내 신청 내역 ══════════ -->
   <div id="pane-my" style="display:none">
     <div class="card">
-      <div class="card-title">내 신청 내역</div>
+      <div class="card-title">내 신청 내역<span class="en">My Requests</span></div>
       <div style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
         <div style="margin-left:auto;display:flex;align-items:center;gap:10px">
           <span id="my-count" style="font-size:.82rem;color:#605e5c;font-weight:500;white-space:nowrap"></span>
@@ -449,7 +456,7 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
   <!-- ══════════ 결재함 ══════════ -->
   <div id="pane-apr" style="display:none">
     <div class="card">
-      <div class="card-title">결재함</div>
+      <div class="card-title">결재함<span class="en">Approvals</span></div>
       <div style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
         <div style="margin-left:auto;display:flex;align-items:center;gap:10px">
           <span id="apr-count" style="font-size:.82rem;color:#605e5c;font-weight:500;white-space:nowrap"></span>
@@ -466,7 +473,7 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
   <!-- ══════════ 관리자 ══════════ -->
   <div id="pane-admin" style="display:none">
     <div class="card">
-      <div class="card-title">전체 신청 관리</div>
+      <div class="card-title">전체 신청 관리<span class="en">All Requests</span></div>
       <div style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
         <select id="ad-status" onchange="renderAdmin()" style="border:1px solid #d2d0ce;border-radius:4px;padding:6px 10px;font-size:.72rem;font-family:inherit;background:#fff;color:#323130">
           <option value="">전체 상태</option><option>대기</option><option>승인완료</option>
@@ -486,7 +493,7 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
       </table></div>
     </div>
     <div class="card">
-      <div class="card-title">현재 유효한 대리 지정</div>
+      <div class="card-title">현재 유효한 대리 지정<span class="en">Active Delegations</span></div>
       <div class="fld-hint" style="margin:0 0 10px">오늘 날짜 기준으로 효력이 있는 건입니다.</div>
       <div class="tbl-wrap"><table class="voucher-table">
         <thead><tr><th>신청번호</th><th>원래 결재자</th><th>대리인</th><th>기간</th><th>대상 시스템</th></tr></thead>
@@ -924,6 +931,7 @@ function setDeputy(p) {
 
 /* ── 대신 신청 ──────────────────────────────────────────── */
 function onProxyMode(){
+  setTimeout(refreshDelegationLock, 0);
   const on = isProxyMode();
   // 본인 신청이면 위임자 선택 줄을 통째로 감추고, 내 이름만 한 줄로 보여준다.
   document.getElementById('pv-row').style.display  = on ? '' : 'none';
@@ -981,6 +989,7 @@ function onPPersonChange(){
 }
 function setDelegator(p){
   _selDelegator = p;
+  refreshDelegationLock();
   const v = document.getElementById('p-view');
   v.className = 'pk' + (p ? ' on' : '');
   v.innerHTML = p ? esc(p.name) + '<span class="e">' + esc(p.email) + '</span>' : '';
@@ -1085,12 +1094,12 @@ function renderApprPreview() {
   }
   guide.style.display = 'none';
 
+  // 결재선(09-14 변경): 대리인 수락만으로 확정한다. 대신 신청이면 위임자 본인 확인을 먼저 둔다.
+  // 위임자·대리인의 직속상사/부서장 단계(buildHeads)는 더 이상 결재선에 넣지 않는다.
   const line = [];
   if (proxy) line.push({ role: '위임자 확인', p: dg, fixed: false });
   line.push({ role: '대리인 수락', p: _selDeputy, fixed: false });
   const notes = [];
-  buildHeads(dg, _selDeputy)
-    .forEach(x => { if (x.skip) notes.push(x.skip); else line.push({ role: x.role, p: x.p, fixed: true }); });
 
   // ① 한 줄 요약
   preview.style.display = 'block';
@@ -1127,6 +1136,7 @@ function switchTab(t) {
     const el = document.getElementById('pane-' + p);
     if (el) el.style.display = (p === t ? '' : 'none');
   });
+  if (t === 'new') refreshDelegationLock();
   if (t === 'my') loadMy();
   if (t === 'apr') loadApr();
   if (t === 'admin') loadAdmin();
@@ -1148,6 +1158,39 @@ function resetForm() {
 }
 
 /* ── 신청 ───────────────────────────────────────────────── */
+/* ── 대리인 잠금 규칙 (09-14) ────────────────────────────────────────
+   지금 누군가의 대리인으로 지정되어 있는 사람(승인완료 · 종료일이 오늘 이후)은 그 기간에
+   자기 결재를 다른 사람에게 다시 넘길 수 없다 — 신청 자체를 막는다.
+   대신 신청도 같은 규칙: 위임자가 현재 대리인이면 막는다.
+   서버 값으로 판정한다(화면 캐시가 아니라 목록을 다시 읽는다). 조회 실패 시에는 막지 않고 콘솔에 남긴다 — 
+   잠금 자체가 통제이므로 실패로 신청을 못 하게 하면 업무가 멈춘다.                       */
+async function activeDeputyOf(email) {
+  const e = (email || '').trim().toLowerCase(); if (!e) return [];
+  const today = kstToday();
+  const res = await apiAll('/sites/' + siteId + '/lists/' + LIST_REQ + '/items?$expand=fields&$top=500'
+    + "&$filter=fields/Status eq '승인완료' and fields/DeputyEmail eq '" + e.replace(/'/g, "''") + "'");
+  return (res.value || []).map(x => x.fields).filter(f => String(f.EndDate || '').slice(0, 10) >= today && String(f.StartDate || '').slice(0, 10) <= today);
+}
+function lockText(f) {
+  return '지금 <b>' + esc(f.RequesterName || f.RequesterEmail || '') + '</b> 님의 대리인으로 지정되어 있습니다 '
+    + '(<b>' + esc(String(f.StartDate || '').slice(0, 10)) + ' ~ ' + esc(String(f.EndDate || '').slice(0, 10)) + '</b> · ' + esc(f.Title || '') + '). '
+    + '이 기간에는 결재를 다른 사람에게 다시 넘길 수 없어 <b>새 대리 지정을 신청할 수 없습니다</b>.'
+    + '<span class="en-line" style="display:block;margin-top:4px;color:#8a5a00;font-size:.9em">You are currently acting as a deputy for '
+    + esc(f.RequesterName || f.RequesterEmail || '') + ' (' + esc(String(f.StartDate || '').slice(0, 10)) + ' – ' + esc(String(f.EndDate || '').slice(0, 10)) + '). '
+    + 'A deputy cannot delegate their own approvals during that period, so a new request cannot be submitted.</span>';
+}
+// 신청 화면을 열 때·위임자를 바꿀 때 호출 — 잠금이면 안내 띠와 버튼 비활성
+async function refreshDelegationLock() {
+  const box = document.getElementById('aac-lock'); const btn = document.getElementById('btn-submit');
+  if (!box || !btn) return;
+  const dg = delegator(); const email = dg?.email || user?.email || user?.username || '';
+  try {
+    const hits = await activeDeputyOf(email);
+    if (hits.length) { box.innerHTML = '&#9888;&#65039; ' + lockText(hits[0]); box.style.display = 'block'; btn.disabled = true; btn.title = '현재 대리인으로 지정된 기간에는 신청할 수 없습니다'; }
+    else { box.style.display = 'none'; btn.disabled = false; btn.title = ''; }
+  } catch (e) { console.warn('[AAC] 대리인 잠금 확인 실패(신청은 허용):', e && e.message); box.style.display = 'none'; btn.disabled = false; }
+}
+
 async function submitForm() {
   const btn = document.getElementById('btn-submit');
   const start = periodStart();
@@ -1166,6 +1209,18 @@ async function submitForm() {
     if (pReason.length > 200) { alert('대신 신청 사유는 200자를 넘을 수 없습니다.'); return; }
   }
   const dg = delegator();
+
+  // 잠금 규칙 — 위임자(본인 또는 대신 신청의 위임자)가 지금 누군가의 대리인이면 신청 불가. 제출 직전 서버 값으로 다시 확인한다.
+  try {
+    const locked = await activeDeputyOf(dg?.email || '');
+    if (locked.length) {
+      const f = locked[0];
+      alert((proxy ? (dg?.name || '위임자') + ' 님은' : '') + ' 지금 ' + (f.RequesterName || f.RequesterEmail || '') + ' 님의 대리인으로 지정되어 있습니다 ('
+        + String(f.StartDate || '').slice(0, 10) + ' ~ ' + String(f.EndDate || '').slice(0, 10) + ').\n\n대리인으로 지정된 기간에는 결재를 다른 사람에게 다시 넘길 수 없어 신청할 수 없습니다.\n'
+        + 'A deputy cannot delegate their own approvals during the delegation period.');
+      await refreshDelegationLock(); return;
+    }
+  } catch (e) { console.warn('[AAC] 제출 전 잠금 확인 실패(진행):', e && e.message); }
 
   if (!start || !end)  { alert('대리 기간을 입력하세요.'); return; }
   if (end <= start)    { alert('종료가 시작보다 빠르거나 같습니다.'); return; }
@@ -1241,25 +1296,12 @@ async function submitForm() {
     const title = 'AAC-' + kstToday() + '_ID-' + reqId;
     await api('/sites/' + siteId + '/lists/' + LIST_REQ + '/items/' + reqId, 'PATCH', { fields: { Title: title } });
 
-    // ② 결재선 — 1차 대리인 수락, 2차 관리자 승인
-    // 대신 신청이면 위임자 본인 확인을 맨 앞에 둔다.
-    // 남의 결재 권한을 넘기는 일이라 본인 확인 없이 진행하면 통제가 무너진다.
-    // 위임자가 정말 확인이 어려운 상황이면 관리자가 대신 확인할 수 있도록
-    // 관리자 승인 단계는 그대로 남긴다.
+    // ② 결재선(09-14 변경) — 대리인 수락 한 단계로 확정한다.
+    // 대신 신청이면 위임자 본인 확인을 맨 앞에 둔다(남의 결재 권한을 넘기는 일이라 본인 확인 없이는 진행하지 않는다).
+    // 직속상사·부서장 단계는 두지 않는다. 지정 사실은 「현재 유효한 대리 지정」 목록과 APS 표시로 조직에 드러난다.
     const line = [];
     if (proxy) line.push({ order: 1, role: '위임자 확인', name: dg.name, email: dg.email });
     line.push({ order: line.length + 1, role: '대리인 수락', name: _selDeputy.name, email: _selDeputy.email });
-    // 부서장 승인 — 양쪽 부서장이 모두 확인한다.
-    // 권한을 넘기는 쪽(위임자)과 받는 쪽(대리인) 모두 조직에서 알고 있어야 하기 때문이다.
-    const _skips = [];
-    buildHeads(dg, _selDeputy).forEach(x => {
-      if (x.skip) { _skips.push(skipText(x.skip)); return; }
-      line.push({ order: line.length + 1, role: x.role, name: x.p.name, email: x.p.email });
-    });
-    if (_skips.length) {
-      console.warn('[AAC] 생략된 단계:', _skips.join(' / '));
-      selfNote = _skips.join(' / ');
-    }
     for (const a of line) {
       await api('/sites/' + siteId + '/lists/' + LIST_APR + '/items', 'POST', {
         fields: {
@@ -1682,6 +1724,7 @@ async function boot(account) {
     onPeriodChange();
 
     await loadMy();
+    refreshDelegationLock();   // 신청 화면 잠금(현재 대리인 여부) — 로그인 직후 한 번
     refreshBadge();
     setInterval(refreshBadge, 60000);
   } catch (e) {
