@@ -654,8 +654,28 @@ function fmtDate(v) {
   return k.toISOString().slice(0, 10) + ' ' + k.toISOString().slice(11, 16);
 }
 // 날짜만 저장된 옛 값도 그대로 보여준다
+/* ── 날짜 값 정규화 ─────────────────────────────────────────────
+   StartDate·EndDate·RequestDate 는 「날짜 및 시간」 열이라 Graph 가 UTC ISO(2026-09-14T15:00:00Z)로 돌려준다.
+   화면·비교는 KST 기준이므로 한 곳에서 「YYYY-MM-DD HH:mm」(KST)로 바꿔 쓴다.
+   열을 텍스트로 만든 환경(옛 데이터)에서는 이미 그 형식이므로 그대로 통과시킨다.            */
+function kstStr(v) {
+  const t = String(v == null ? '' : v).trim();
+  if (!t) return '';
+  if (/^\d{4}-\d{2}-\d{2}([ T]\d{2}:\d{2})?$/.test(t)) return t.replace('T', ' ');   // 이미 KST 문자열
+  const d = new Date(t);
+  if (isNaN(d)) return t;
+  const k = new Date(d.getTime() + 9 * 3600 * 1000);
+  const p2 = n => String(n).padStart(2, '0');
+  return k.getUTCFullYear() + '-' + p2(k.getUTCMonth() + 1) + '-' + p2(k.getUTCDate()) + ' ' + p2(k.getUTCHours()) + ':' + p2(k.getUTCMinutes());
+}
+// KST 「YYYY-MM-DD HH:mm」 → 저장용 UTC ISO (날짜 및 시간 열이 받는 형식)
+function kstToIso(s) {
+  const t = String(s || '').trim(); if (!t) return '';
+  const m = t.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})/); if (!m) return t;
+  return new Date(Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4] - 9, +m[5])).toISOString();
+}
 function fmtDay(v) {
-  const t = String(v || '').trim();
+  const t = kstStr(v);
   if (!t) return '-';
   return t.length <= 10 ? t : t.slice(0, 16);
 }
@@ -1203,14 +1223,14 @@ async function activeDeputyOf(email) {
   const today = kstToday();
   const res = await apiAll('/sites/' + siteId + '/lists/' + LIST_REQ + '/items?$expand=fields&$top=500'
     + "&$filter=fields/Status eq '승인완료' and fields/DeputyEmail eq '" + e.replace(/'/g, "''") + "'");
-  return (res.value || []).map(x => x.fields).filter(f => String(f.EndDate || '').slice(0, 10) >= today && String(f.StartDate || '').slice(0, 10) <= today);
+  return (res.value || []).map(x => x.fields).filter(f => kstStr(f.EndDate).slice(0, 10) >= today && kstStr(f.StartDate).slice(0, 10) <= today);
 }
 function lockText(f) {
   return '지금 <b>' + esc(f.RequesterName || f.RequesterEmail || '') + '</b> 님의 대리인으로 지정되어 있습니다 '
-    + '(<b>' + esc(String(f.StartDate || '').slice(0, 10)) + ' ~ ' + esc(String(f.EndDate || '').slice(0, 10)) + '</b> · ' + esc(f.Title || '') + '). '
+    + '(<b>' + esc(kstStr(f.StartDate).slice(0, 10)) + ' ~ ' + esc(kstStr(f.EndDate).slice(0, 10)) + '</b> · ' + esc(f.Title || '') + '). '
     + '이 기간에는 결재를 다른 사람에게 다시 넘길 수 없어 <b>새 대리 지정을 신청할 수 없습니다</b>.'
     + '<span class="en-line" style="display:block;margin-top:4px;color:#8a5a00;font-size:.9em">You are currently acting as a deputy for '
-    + esc(f.RequesterName || f.RequesterEmail || '') + ' (' + esc(String(f.StartDate || '').slice(0, 10)) + ' – ' + esc(String(f.EndDate || '').slice(0, 10)) + '). '
+    + esc(f.RequesterName || f.RequesterEmail || '') + ' (' + esc(kstStr(f.StartDate).slice(0, 10)) + ' – ' + esc(kstStr(f.EndDate).slice(0, 10)) + '). '
     + 'A deputy cannot delegate their own approvals during that period, so a new request cannot be submitted.</span>';
 }
 // 신청 화면을 열 때·위임자를 바꿀 때 호출 — 잠금이면 안내 띠와 버튼 비활성
@@ -1279,7 +1299,7 @@ async function submitForm() {
     if (locked.length) {
       const f = locked[0];
       alert((proxy ? (dg?.name || '위임자') + ' 님은' : '') + ' 지금 ' + (f.RequesterName || f.RequesterEmail || '') + ' 님의 대리인으로 지정되어 있습니다 ('
-        + String(f.StartDate || '').slice(0, 10) + ' ~ ' + String(f.EndDate || '').slice(0, 10) + ').\n\n대리인으로 지정된 기간에는 결재를 다른 사람에게 다시 넘길 수 없어 신청할 수 없습니다.\n'
+        + kstStr(f.StartDate).slice(0, 10) + ' ~ ' + kstStr(f.EndDate).slice(0, 10) + ').\n\n대리인으로 지정된 기간에는 결재를 다른 사람에게 다시 넘길 수 없어 신청할 수 없습니다.\n'
         + 'A deputy cannot delegate their own approvals during the delegation period.');
       await refreshDelegationLock(); return;
     }
@@ -1305,7 +1325,7 @@ async function submitForm() {
       const f = r.fields;
       if ((f.RequesterEmail || '').trim().toLowerCase() !== (dg.email || '').trim().toLowerCase()) return false;
       if (!['대기', '승인완료'].includes((f.Status || '').trim())) return false;
-      const fe = String(f.EndDate || ''), fs2 = String(f.StartDate || '');
+      const fe = kstStr(f.EndDate), fs2 = kstStr(f.StartDate);
       return !((fe.length <= 10 ? fe + ' 23:59' : fe) < start
             || (fs2.length <= 10 ? fs2 + ' 00:00' : fs2) > end);
     });
@@ -1343,8 +1363,8 @@ async function submitForm() {
         DeputyEmail: _selDeputy.email,
         DeputyName: _selDeputy.name,
         DeputyDept: _selDeputy.dept + (_selDeputy.team ? ' / ' + _selDeputy.team : ''),
-        StartDate: start,
-        EndDate: end,
+        StartDate: kstToIso(start),
+        EndDate: kstToIso(end),
         Scope: scope,
         Reason: reason,
         Status: '대기',
@@ -1435,7 +1455,7 @@ async function fetchAprs() {
 function effStatus(f) {
   const s = (f.Status || '').trim();
   const now = kstNow().toISOString().slice(0, 16).replace('T', ' ');
-  const en = String(f.EndDate || '').trim();
+  const en = kstStr(f.EndDate);
   if (s === '승인완료' && en && (en.length <= 10 ? en + ' 23:59' : en) < now) return '만료';
   return s;
 }
@@ -1449,7 +1469,7 @@ function isActive(f) {
   if ((f.Status || '').trim() !== '승인완료') return false;
   // 시간까지 비교한다. 날짜만 보면 오전에 끝나는 지정이 하루 종일 유효해진다.
   const now = kstNow().toISOString().slice(0, 16).replace('T', ' ');
-  const st = String(f.StartDate || '').trim(), en = String(f.EndDate || '').trim();
+  const st = kstStr(f.StartDate), en = kstStr(f.EndDate);
   if (!st || !en) return false;
   return st <= now && now <= (en.length <= 10 ? en + ' 23:59' : en);
 }
@@ -1635,8 +1655,8 @@ async function openDetail(id) {
 function drow(l, v) { return '<div class="det-row"><div class="det-label">' + esc(l) + '</div><div class="det-value">' + v + '</div></div>'; }
 function dayCount(f) {
   if (!f.StartDate || !f.EndDate) return '-';
-  const s = new Date(String(f.StartDate).slice(0, 10) + 'T00:00:00');
-  const e = new Date(String(f.EndDate).slice(0, 10) + 'T00:00:00');
+  const s = new Date(kstStr(f.StartDate).slice(0, 10) + 'T00:00:00');
+  const e = new Date(kstStr(f.EndDate).slice(0, 10) + 'T00:00:00');
   if (isNaN(s) || isNaN(e) || e < s) return '-';
   return (Math.round((e - s) / 86400000) + 1) + '일';
 }
