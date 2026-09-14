@@ -1428,7 +1428,7 @@ async function submitForm() {
       const _aprMapped = await mapFields(LIST_APR, {
           Title: title + '-' + a.order,
           RequestID: String(reqId),
-          ApprovalOrder: a.order,
+          ApprovalOrder: String(a.order),   // 한 줄 텍스트 열 — 숫자로 보내면 형식 오류가 날 수 있어 문자열로 저장하고, 읽을 때 Number() 로 되돌린다
           ApproverRole: a.role,
           ApproverName: a.name,
           ApproverEmail: a.email,
