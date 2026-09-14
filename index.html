@@ -526,6 +526,34 @@ label .en{margin-left:4px}
 </div>
 
 <!-- 처리 확인 모달 -->
+<!-- 신청 확인 — 상신 전 내용·주의사항을 한눈에 (브라우저 confirm 대신, 다른 APS 시스템과 같은 모양) -->
+<div class="modal-overlay" id="submit-modal" onclick="if(event.target===this)closeSubmitConfirm()">
+  <div class="modal-box" style="max-width:620px;padding:0">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;padding:18px 22px 14px;border-bottom:1px solid #edebe9">
+      <div>
+        <h3 style="font-size:1rem;color:#0f2744;margin:0">결재 대리를 신청합니다<span class="en" style="margin-left:6px">Submit delegation request</span></h3>
+        <div style="font-size:.75rem;color:#8a8886;margin-top:3px">아래 내용으로 신청됩니다. 신청 후에는 내용을 바꿀 수 없고, 철회한 뒤 다시 신청해야 합니다.</div>
+      </div>
+      <button class="modal-close" onclick="closeSubmitConfirm()">&times;</button>
+    </div>
+    <div style="padding:16px 22px 4px">
+      <table style="width:100%;border-collapse:collapse;font-size:.83rem">
+        <tbody id="sc-rows"></tbody>
+      </table>
+    </div>
+    <div style="padding:6px 22px 0">
+      <div style="background:#fff8ea;border:1px solid #f0d9a0;border-radius:7px;padding:12px 14px;font-size:.78rem;color:#8a5a00;line-height:1.7">
+        <div style="font-weight:700;margin-bottom:5px">&#9888;&#65039; 신청 전에 확인해 주세요 <span style="font-weight:400;color:#a08050">Before you submit</span></div>
+        <div id="sc-warn"></div>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:flex-end;gap:8px;padding:16px 22px 18px">
+      <button class="btn btn-secondary" onclick="closeSubmitConfirm()">취소</button>
+      <button class="btn btn-primary" id="sc-ok">이 내용으로 신청</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="confirm-modal" onclick="if(event.target===this)closeConfirm()">
   <div class="modal-box" style="max-width:460px">
     <div style="display:flex;justify-content:space-between;align-items:center;padding:15px 20px;border-bottom:1px solid #edebe9">
@@ -1260,11 +1288,8 @@ async function submitForm() {
     }
   } catch (e) { /* 목록을 아직 못 읽었으면 서버 검증에 맡긴다 */ }
 
-  if (!confirm('결재 대리를 신청합니다.\n\n위임자 : ' + dg.name + (proxy ? '  (대신 신청)' : '  (본인)') +
-               '\n대리인 : ' + _selDeputy.name +
-               '\n기간   : ' + start + ' ~ ' + end +
-               '\n대상   : ' + scopeLabel(scope) +
-               '\n\n대리인이 수락하고 관리자가 승인하면 효력이 생깁니다.')) return;
+  // 상신 전 확인 — 내용과 주의사항을 모달로 보여준다(브라우저 confirm 은 줄바꿈·강조가 안 된다)
+  if (!(await askSubmitConfirm({ dg, proxy, deputy: _selDeputy, start, end, scope, reason }))) return;
 
   btn.disabled = true; btn.textContent = '신청 중...';
   let reqId = null;
@@ -1593,6 +1618,46 @@ function askConfirm(reqId, aprId, action) {
   document.getElementById('confirm-modal').classList.add('open');
 }
 function closeConfirm() { document.getElementById('confirm-modal').classList.remove('open'); }
+
+/* ── 신청 확인 모달 ──────────────────────────────────────────────
+   내용 확인 + 주의사항. 확인을 누르면 true, 취소·바깥 클릭·ESC 면 false 를 돌려준다. */
+let _scResolve = null;
+function closeSubmitConfirm() {
+  document.getElementById('submit-modal').classList.remove('open');
+  if (_scResolve) { const r = _scResolve; _scResolve = null; r(false); }
+}
+function askSubmitConfirm(o) {
+  const row = (k, v, en, strong) => '<tr>'
+    + '<td style="width:120px;padding:7px 10px 7px 0;color:#8a8886;vertical-align:top;border-bottom:1px solid #f3f2f1;white-space:nowrap">'
+    + esc(k) + (en ? '<span class="en" style="margin-left:4px">' + esc(en) + '</span>' : '') + '</td>'
+    + '<td style="padding:7px 0;color:#323130;border-bottom:1px solid #f3f2f1' + (strong ? ';font-weight:600' : '') + '">' + v + '</td></tr>';
+  const days = (() => { const a = new Date(o.start.replace(' ', 'T')), b = new Date(o.end.replace(' ', 'T'));
+    const d = Math.floor((b - a) / 86400000); return d >= 1 ? ' <span style="color:#8a8886;font-weight:400">(' + (d + 1) + '일간)</span>' : ''; })();
+  document.getElementById('sc-rows').innerHTML =
+      row('위임자', esc(o.dg.name) + ' <span style="color:#8a8886">' + esc(o.dg.email) + '</span>'
+            + (o.proxy ? ' <span style="background:#eef4fb;color:#2b5c9e;border-radius:4px;padding:1px 6px;font-size:.72rem;margin-left:4px">대신 신청</span>' : ''), 'Delegator', true)
+    + row('대리인', esc(o.deputy.name) + ' <span style="color:#8a8886">' + esc(o.deputy.email) + '</span>', 'Deputy', true)
+    + row('기간', esc(o.start) + ' ~ ' + esc(o.end) + days, 'Period')
+    + row('대상 시스템', esc(scopeLabel(o.scope)), 'Scope')
+    + row('사유', '<span style="white-space:pre-wrap">' + esc(String(o.reason || '').slice(0, 200)) + (String(o.reason || '').length > 200 ? ' …' : '') + '</span>', 'Reason')
+    + row('결재', '대리인 <b>' + esc(o.deputy.name) + '</b> 님의 수락으로 확정됩니다'
+        + (o.proxy ? '<br><span style="color:#8a8886">대신 신청이므로 위임자 <b>' + esc(o.dg.name) + '</b> 님의 확인이 먼저 필요합니다.</span>' : ''), 'Approval');
+  document.getElementById('sc-warn').innerHTML =
+      '<div>· 대리인으로 지정된 <b>' + esc(o.deputy.name) + '</b> 님은 이 기간에 <b>자기 결재를 다시 다른 사람에게 넘길 수 없습니다</b> (재위임 불가 · 신청 자체가 막힙니다).</div>'
+    + '<div>· 기간 중에 올라오는 결재만 대리인에게 갑니다. <b>이미 대기 중인 결재는 넘어가지 않습니다</b> — 급한 건은 직접 처리하거나 IT팀에 문의해 주세요.</div>'
+    + '<div>· 대리인이 처리한 건은 <b>대리인 본인의 결재로 기록</b>되며, 원래 결재자가 누구였는지도 함께 남습니다.</div>'
+    + '<div>· 기간이 끝나면 <b>자동으로 해제</b>됩니다. 먼저 끝내려면 [내 신청 내역]에서 철회하세요.</div>'
+    + '<div>· 같은 기간에 두 건을 지정할 수 없습니다. 기간이 겹치면 신청이 막힙니다.</div>'
+    + '<div class="en-line" style="color:#a08050;margin-top:6px">The deputy cannot re-delegate during this period. Only approvals created within the period are routed to the deputy; items already pending are not moved. Items handled by the deputy are recorded as the deputy\'s own approval, with the original approver kept. The delegation expires automatically.</div>';
+  document.getElementById('submit-modal').classList.add('open');
+  return new Promise(res => {
+    _scResolve = res;
+    document.getElementById('sc-ok').onclick = () => {
+      document.getElementById('submit-modal').classList.remove('open');
+      const r = _scResolve; _scResolve = null; if (r) r(true);
+    };
+  });
+}
 
 async function doConfirm() {
   if (!_cfAction) return;
