@@ -1241,17 +1241,19 @@ function resetForm() {
    잠금 자체가 통제이므로 실패로 신청을 못 하게 하면 업무가 멈춘다.                       */
 async function activeDeputyOf(email) {
   const e = (email || '').trim().toLowerCase(); if (!e) return [];
-  const today = kstToday();
   const res = await apiAll('/sites/' + siteId + '/lists/' + LIST_REQ + '/items?$expand=fields&$top=500'
     + "&$filter=fields/Status eq '승인완료' and fields/DeputyEmail eq '" + e.replace(/'/g, "''") + "'");
-  return (res.value || []).map(x => x.fields).filter(f => kstStr(f.EndDate).slice(0, 10) >= today && kstStr(f.StartDate).slice(0, 10) <= today);
+  // 판정은 isActive() 하나로만 한다. 예전에는 여기서 날짜만(slice(0,10)) 비교해서,
+  // 20:54 에 끝난 지정이 그날 23:59 까지 잠금을 걸었다. effStatus() 는 같은 건을
+  // 이미 「만료」로 표시하고 있었으므로 화면과 잠금이 서로 다른 말을 했다.
+  return (res.value || []).map(x => x.fields).filter(isActive);
 }
 function lockText(f) {
   return '지금 <b>' + esc(f.RequesterName || f.RequesterEmail || '') + '</b> 님의 대리인으로 지정되어 있습니다 '
-    + '(<b>' + esc(kstStr(f.StartDate).slice(0, 10)) + ' ~ ' + esc(kstStr(f.EndDate).slice(0, 10)) + '</b> · ' + esc(f.Title || '') + '). '
+    + '(<b>' + esc(fmtDay(f.StartDate)) + ' ~ ' + esc(fmtDay(f.EndDate)) + '</b> · ' + esc(f.Title || '') + '). '
     + '이 기간에는 결재를 다른 사람에게 다시 넘길 수 없어 <b>새 대리 지정을 신청할 수 없습니다</b>.'
     + '<span class="en-line" style="display:block;margin-top:4px;color:#8a5a00;font-size:.9em">You are currently acting as a deputy for '
-    + esc(f.RequesterName || f.RequesterEmail || '') + ' (' + esc(kstStr(f.StartDate).slice(0, 10)) + ' – ' + esc(kstStr(f.EndDate).slice(0, 10)) + '). '
+    + esc(f.RequesterName || f.RequesterEmail || '') + ' (' + esc(fmtDay(f.StartDate)) + ' – ' + esc(fmtDay(f.EndDate)) + '). '
     + 'A deputy cannot delegate their own approvals during that period, so a new request cannot be submitted.</span>';
 }
 // 신청 화면을 열 때·위임자를 바꿀 때 호출 — 잠금이면 안내 띠와 버튼 비활성
@@ -1510,6 +1512,17 @@ function effStatus(f) {
   if (s === '승인완료' && en && (en.length <= 10 ? en + ' 23:59' : en) < now) return '만료';
   return s;
 }
+/* 철회 가능 여부 — 버튼 표시와 doConfirm 의 서버측 가드가 같은 규칙을 쓰게 한다.
+   예전에는 두 곳이 달랐다. 버튼은 f.Status 가 '대기'·'승인완료' 면 떴는데
+   doConfirm 은 '대기' 만 통과시켜, 승인완료·만료 건에서는 사유를 필수로 입력해도
+   「이미 승인완료 상태인 신청입니다」로 반드시 실패하는 막다른 길이었다.
+   또 버튼이 f.Status(저장값)를 읽어, 화면에 「만료」로 표시된 건도 저장값이
+   '승인완료' 라서 버튼이 떴다 — effStatus() 로 판정해 만료를 제외한다.
+   규칙은 실제로 동작하는 것(대기)에 맞춘다. 효력이 생긴 대리를 기간 중간에
+   거두는 것(승인완료 철회)을 허용할지는 별건이며, 그때 이 함수만 고치면 된다. */
+function canWithdraw(f) {
+  return effStatus(f) === '대기';
+}
 // 대신 신청인지 — 신청 화면에서 누른 사람과 위임자가 다르면 대신 신청이다
 function isProxyReq(f) {
   const a = (f.SubmittedByEmail || '').trim().toLowerCase();
@@ -1691,8 +1704,8 @@ async function openDetail(id) {
              '<button class="btn btn-primary" style="margin-left:6px" onclick="askConfirm(' + id + ',' + mine.id + ',\'승인\')">' +
              (isDeputy ? '수락' : '승인') + '</button>';
     }
-    // 신청자 본인은 대기·승인완료 상태에서 철회할 수 있다
-    if (isMe(f.RequesterEmail) && ['대기', '승인완료'].includes((f.Status || '').trim())) {
+    // 신청자 본인은 아직 수락 전(대기)인 건을 철회할 수 있다 — canWithdraw() 참고
+    if (isMe(f.RequesterEmail) && canWithdraw(f)) {
       btns = '<button class="btn btn-secondary" onclick="askConfirm(' + id + ',0,\'철회\')">철회</button>' + (btns ? ' ' + btns : '');
     }
     if (btns) html += '<div style="text-align:right;margin-top:16px">' + btns + '</div>';
@@ -1704,12 +1717,19 @@ async function openDetail(id) {
   }
 }
 function drow(l, v) { return '<div class="det-row"><div class="det-label">' + esc(l) + '</div><div class="det-value">' + v + '</div></div>'; }
+// 기간 길이 — 신청 폼의 onPeriodChange 와 같은 규칙으로 표시한다.
+// 예전에는 날짜 차이만 세서 20:52~20:54 짜리 지정도 「1일」로 보였다.
 function dayCount(f) {
   if (!f.StartDate || !f.EndDate) return '-';
-  const s = new Date(kstStr(f.StartDate).slice(0, 10) + 'T00:00:00');
-  const e = new Date(kstStr(f.EndDate).slice(0, 10) + 'T00:00:00');
+  const _t = v => { const x = kstStr(v); return x.length <= 10 ? x + ' 00:00' : x; };
+  const s = new Date(_t(f.StartDate).replace(' ', 'T') + ':00');
+  const e = new Date(_t(f.EndDate).replace(' ', 'T') + ':00');
   if (isNaN(s) || isNaN(e) || e < s) return '-';
-  return (Math.round((e - s) / 86400000) + 1) + '일';
+  const mins = Math.round((e - s) / 60000);
+  const h = Math.floor(mins / 60), m = mins % 60;
+  return mins < 60 ? mins + '분'
+    : mins < 1440 ? (h + '시간' + (m ? ' ' + m + '분' : ''))
+    : (Math.floor(mins / 1440) + '일' + (mins % 1440 ? ' ' + Math.floor((mins % 1440) / 60) + '시간' : ''));
 }
 function closeDetail() { document.getElementById('detail-modal').classList.remove('open'); }
 
@@ -1799,8 +1819,8 @@ async function doConfirm() {
     if (action === '철회') {
       // 철회 전 신청서 상태를 서버에서 다시 본다. 다른 창에서 이미 결재가 끝났으면 되돌리지 않는다.
       const _req = await api('/sites/' + siteId + '/lists/' + LIST_REQ + '/items/' + reqId + '?$expand=fields');
-      const _rs = (_req.fields.Status || '').trim();
-      if (_rs !== '대기') {
+      const _rs = effStatus(_req.fields);
+      if (!canWithdraw(_req.fields)) {
         closeConfirm(); closeDetail();
         alert('이미 ' + _rs + ' 상태인 신청입니다.\n다른 창에서 처리되었거나 이미 끝난 건입니다.');
         myData = []; aprData = []; adminData = []; switchTab(document.querySelector('.tab-btn.active')?.dataset.tab || 'my'); refreshBadge();
