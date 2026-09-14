@@ -254,6 +254,16 @@ label .en{margin-left:4px}
 .st-만료{background:#f3f2f1;color:#a19f9d;border-color:#e1dfdd}
 /* stClass() 가 돌려주지만 규칙이 없던 두 가지 — 색 없이 기본 테두리만 나왔다.
    진행중 = 효력이 있는 상태라 승인완료와 같은 초록, st-lock = 그 밖(잠김)이라 회색. */
+/* 결과 알림 모달 — IT(#it-alert-modal)·GW(#gw-alert-modal)와 같은 값, 접두사만 aac-.
+   입력 검증(필수값 누락 등)은 IT·GW 와 마찬가지로 기본 alert() 를 그대로 쓴다. */
+#aac-alert-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:2000;align-items:center;justify-content:center}
+#aac-alert-modal.show{display:flex}
+.aac-alert-box{background:#fff;border-radius:12px;padding:28px 32px;max-width:380px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,.18);text-align:center}
+.aac-alert-icon{font-size:2rem;margin-bottom:10px}
+.aac-alert-title{font-size:1rem;font-weight:700;color:#1e293b;margin-bottom:6px;line-height:1.6}
+.aac-alert-sub{font-size:.8rem;color:#64748b;margin-bottom:20px;word-break:break-all;white-space:pre-line}
+.aac-alert-btn{background:#0078d4;color:#fff;border:none;border-radius:8px;padding:9px 32px;font-size:.88rem;font-weight:600;cursor:pointer;font-family:inherit}
+.aac-alert-btn:hover{background:#0062b1}
 .st-진행중{background:#dff6dd;color:#107c10;border-color:#bfe6bd}
 .st-lock{background:#f3f2f1;color:#a19f9d;border-color:#e1dfdd}
 
@@ -537,6 +547,15 @@ label .en{margin-left:4px}
 </div>
 
 <!-- 상세 모달 -->
+<div id="aac-alert-modal" onclick="if(event.target===this)closeAacAlert()">
+  <div class="aac-alert-box">
+    <div class="aac-alert-icon" id="aac-alert-icon">&#9989;</div>
+    <div class="aac-alert-title" id="aac-alert-title"></div>
+    <div class="aac-alert-sub" id="aac-alert-sub"></div>
+    <button class="aac-alert-btn" onclick="closeAacAlert()">확인</button>
+  </div>
+</div>
+
 <div class="modal-overlay" id="detail-modal" onclick="if(event.target===this)closeDetail()">
   <div class="modal-box" style="max-width:640px;padding:0">
     <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 22px 13px;border-bottom:1px solid #edebe9">
@@ -1493,7 +1512,8 @@ async function submitForm() {
     }
     if (cnt > line.length) {
       console.warn('[AAC] 결재선 중복 생성 감지:', cnt, '/', line.length);
-      alert('신청은 접수되었으나 결재선이 예상보다 많이 생성되었습니다 (' + cnt + '건).\nIT팀에 ' + title + ' 을 알려주세요.');
+      showAlert('신청은 접수되었으나 결재선이 예상보다 많이 생성되었습니다.',
+        cnt + '건이 생성되었습니다. IT팀에 ' + title + ' 을 알려주세요.', '\u26A0\uFE0F');
     }
 
     if (selfNote) {
@@ -1502,13 +1522,14 @@ async function submitForm() {
         await patchFields(LIST_REQ, reqId, { ClosedComment: '[자동 기록] ' + selfNote });
       } catch (e) { console.warn('[AAC] 생략 사유 기록 실패:', e.message); }
     }
-    alert('신청이 접수되었습니다.\n\n' + title + '\n\n' + _selDeputy.name + ' 님의 수락을 기다립니다.'
-          + (selfNote ? '\n\n※ ' + selfNote : ''));
+    showAlert('신청이 접수되었습니다.',
+      title + '\n' + _selDeputy.name + ' 님의 수락을 기다립니다.'
+      + (selfNote ? '\n\n※ ' + selfNote : ''));
     resetForm();
     myData = []; switchTab('my');
   } catch (e) {
     console.error('[AAC] 신청 실패:', e);
-    alert('신청에 실패했습니다.\n\n' + e.message + (reqId ? '\n\n신청번호 참고: ' + reqId : ''));
+    showAlert('신청에 실패했습니다.', e.message + (reqId ? '\n신청번호 참고: ' + reqId : ''), '\u274C');
   } finally {
     btn.disabled = false; btn.textContent = '신청';
   }
@@ -1541,6 +1562,18 @@ function effStatus(f) {
    '승인완료' 라서 버튼이 떴다 — effStatus() 로 판정해 만료를 제외한다.
    규칙은 실제로 동작하는 것(대기)에 맞춘다. 효력이 생긴 대리를 기간 중간에
    거두는 것(승인완료 철회)을 허용할지는 별건이며, 그때 이 함수만 고치면 된다. */
+/* 결과 알림 — IT(showAlert)·GW 와 같은 형태. title 은 한 줄 요약, sub 는 부가 정보.
+   기본 alert() 와 달리 브라우저 도메인 머리말이 붙지 않고 APS 계열 화면 톤과 맞는다. */
+function showAlert(title, sub = '', icon = '\u2705') {
+  document.getElementById('aac-alert-icon').textContent = icon;
+  document.getElementById('aac-alert-title').textContent = title;
+  document.getElementById('aac-alert-sub').textContent = sub;
+  document.getElementById('aac-alert-modal').classList.add('show');
+}
+function closeAacAlert() {
+  document.getElementById('aac-alert-modal').classList.remove('show');
+}
+
 function canWithdraw(f) {
   return effStatus(f) === '대기';
 }
@@ -1766,7 +1799,7 @@ async function openDetail(id) {
     document.getElementById('detail-body').innerHTML = html;
     document.getElementById('detail-modal').classList.add('open');
   } catch (e) {
-    alert('상세를 불러오지 못했습니다.\n\n' + e.message);
+    showAlert('상세를 불러오지 못했습니다.', e.message, '\u274C');
   }
 }
 function drow(l, v) { return '<div class="det-row"><div class="det-label">' + esc(l) + '</div><div class="det-value">' + v + '</div></div>'; }
@@ -1875,7 +1908,7 @@ async function doConfirm() {
       const _rs = effStatus(_req.fields);
       if (!canWithdraw(_req.fields)) {
         closeConfirm(); closeDetail();
-        alert('이미 ' + _rs + ' 상태인 신청입니다.\n다른 창에서 처리되었거나 이미 끝난 건입니다.');
+        showAlert('이미 ' + _rs + ' 상태인 신청입니다.', '다른 창에서 처리되었거나 이미 끝난 건입니다.', '\u26A0\uFE0F');
         myData = []; aprData = []; adminData = []; switchTab(document.querySelector('.tab-btn.active')?.dataset.tab || 'my'); refreshBadge();
         return;
       }
@@ -1893,7 +1926,7 @@ async function doConfirm() {
       const _cur = await api('/sites/' + siteId + '/lists/' + LIST_APR + '/items/' + aprId + '?$expand=fields');
       if ((_cur.fields.Status || '').trim() !== '대기') {
         closeConfirm(); closeDetail();
-        alert('이미 처리된 결재 항목입니다.\n다른 창에서 처리되었거나 이미 완료된 항목입니다.');
+        showAlert('이미 처리된 결재 항목입니다.', '다른 창에서 처리되었거나 이미 완료된 항목입니다.', '\u26A0\uFE0F');
         myData = []; aprData = []; adminData = []; switchTab(document.querySelector('.tab-btn.active')?.dataset.tab || 'my'); refreshBadge();
         return;
       }
@@ -1929,14 +1962,14 @@ async function doConfirm() {
     }
 
     closeConfirm(); closeDetail();
-    alert(action + ' 처리되었습니다.');
+    showAlert(action + ' 처리되었습니다.', '', action === '반려' ? '\u274C' : '\u2705');
     myData = []; aprData = []; adminData = [];
     const cur = document.querySelector('.tab-btn.active')?.dataset.tab || 'my';
     switchTab(cur);
     refreshBadge();
   } catch (e) {
     console.error('[AAC] 처리 실패:', e);
-    alert('처리에 실패했습니다.\n\n' + e.message);
+    showAlert('처리에 실패했습니다.', e.message, '\u274C');
   } finally {
     ok.disabled = false; ok.textContent = _cfAction ? _cfAction.action : '확인';
   }
@@ -1964,7 +1997,7 @@ function exportExcel() {
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, '결재대리');
     XLSX.writeFile(wb, 'AAC_결재대리_' + kstToday() + '.xlsx');
-  } catch (e) { alert('Excel 내보내기에 실패했습니다.\n\n' + e.message); }
+  } catch (e) { showAlert('Excel 내보내기에 실패했습니다.', e.message, '\u274C'); }
 }
 
 /* ── 배지 ───────────────────────────────────────────────── */
@@ -2011,7 +2044,7 @@ async function boot(account) {
     setInterval(refreshBadge, 60000);
   } catch (e) {
     console.error('[AAC] 부팅 실패:', e);
-    alert('초기화에 실패했습니다.\n\n' + e.message + '\n\n새로고침 후에도 계속되면 IT팀에 알려주세요.');
+    showAlert('초기화에 실패했습니다.', e.message + '\n새로고침 후에도 계속되면 IT팀에 알려주세요.', '\u274C');
   }
 }
 
