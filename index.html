@@ -263,7 +263,7 @@ label .en{margin-left:4px}
 .tbl-wrap{overflow-x:auto}
 
 /* 결재 이력 — ACC 와 동일 */
-.appr-box{background:#fff;border:1px solid #edebe9;border-radius:8px;margin-top:8px;overflow:hidden}
+.appr-box{background:#f9f9f9;border:1px solid #edebe9;border-radius:4px;margin-top:8px;overflow:hidden}
 
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:900;
   align-items:center;justify-content:center;padding:20px}
@@ -695,8 +695,11 @@ function apprClass(s) {
   const t = String(s || '').trim();
   if (t === '대기') return 'status-대기';
   if (t === '승인' || t === '승인완료') return 'status-승인';
-  if (t === '반려') return 'status-반려';
-  return 'status-잠김';
+  if (t === '반려' || t === '철회') return 'status-반려';
+  // 이전에는 'status-잠김' 을 돌려줬는데 그런 CSS 규칙이 없어
+  // 대기(잠김)·철회(잠김)·만료 행이 색 없이 검은 글자로 나왔다.
+  // ACC 의 stClsMap 과 같게 회색(.status-대기잠김)으로 맞춘다.
+  return 'status-대기잠김';
 }
 function isMe(e)  { return (e || '').trim().toLowerCase() === (user?.email || user?.username || '').trim().toLowerCase(); }
 function isAdmin(){ return adminEmails.includes((user?.email || user?.username || '').trim().toLowerCase()); }
@@ -1716,16 +1719,20 @@ function askConfirm(reqId, aprId, action) {
   _cfAction = { reqId, aprId, action };
   const isRej = action === '반려', isWd = action === '철회', need = isRej || isWd;
   document.getElementById('cf-title').textContent =
-    isWd ? '↩\uFE0F 철회 확인' : isRej ? '\u274C 반려 확인' : '\u2705 승인 확인';
+    isWd ? '철회 확인' : isRej ? '\u274C 반려 확인' : '\u2705 승인 확인';
   document.getElementById('cf-sub').textContent =
     isWd ? '철회 사유를 입력해주세요. (필수) — 철회하면 되돌릴 수 없습니다.'
     : isRej ? '반려 사유를 입력해주세요. (필수)'
     : '이 대리 지정을 수락하시겠습니까? 수락하면 기간 동안 효력이 생깁니다.';
-  const f = (_curDetail && _curDetail.fields) || {};
+  const f = (_curDetail && (_curDetail.f || _curDetail.fields)) || {};
   const who = (f.RequesterName || f.RequesterEmail || '');
-  document.getElementById('cf-msg').innerHTML = who
+  const _cfMsg = document.getElementById('cf-msg');
+  _cfMsg.innerHTML = who
     ? '<b>' + esc(f.Title || '') + '</b><br>위임자 ' + esc(who) + ' · 기간 ' + esc(fmtDay(f.StartDate)) + ' ~ ' + esc(fmtDay(f.EndDate))
     : '';
+  // 내용이 없으면 상자를 숨긴다. background·border·padding 이 걸려 있어
+  // 비어 있으면 회색 테두리 막대만 덩그러니 남는다.
+  _cfMsg.style.display = who ? '' : 'none';
   document.getElementById('cf-req').style.display = need ? '' : 'none';
   const cm = document.getElementById('cf-comment');
   cm.value = ''; cm.placeholder = need ? (action + ' 사유 입력 (필수)') : '의견 입력 (선택사항)';
