@@ -399,21 +399,19 @@ button.is-busy:hover{opacity:.72}
 .file-none{background:#f9f9f9;border:1px solid #edebe9;border-radius:4px;
   padding:12px;margin-top:8px;text-align:center;color:#a19f9d;font-size:.78rem}
 /* 대신 신청 담당자 — 한 줄로 잇는다. 잠김이면 노랑, 가능하면 회색으로 톤만 바꾼다. */
-.pv-lock{display:inline-flex;align-items:center;flex-wrap:wrap;gap:3px 8px;
-  background:#fffaf0;border:1px solid #f2d68c;border-radius:5px;
-  padding:4px 10px;font-size:11px;line-height:1.5;cursor:help}
-.pv-lock.ok{background:#fafafa;border-color:#e8e6e4}
-.pv-lock-t{flex-shrink:0;font-weight:700;color:#8a5a00;letter-spacing:.02em;
-  font-size:9.5px;text-transform:uppercase;background:#fff4ce;border:1px solid #f2d68c;
-  border-radius:8px;padding:0 6px}
-.pv-lock.ok .pv-lock-t{color:#605e5c;background:#f3f2f1;border-color:#e1dfdd}
-.pv-lock-l{color:#5c4200}
-.pv-lock.ok .pv-lock-l{color:#323130}
-.pv-who{font-weight:600;cursor:help;border-bottom:1px dotted #d9a419}
-.pv-lock.ok .pv-who{border-bottom-color:#c8c6c4}
-.pv-lock-l i{font-style:normal;color:#c8b48a;margin:0 4px}
-.pv-none{color:#a4262c;font-weight:600}
-.pv-who{white-space:nowrap}
+.pv-lock{display:inline-flex;align-items:center;flex-wrap:wrap;gap:4px 8px;
+  background:transparent;border:1px solid transparent;border-radius:6px;
+  padding:3px 2px;font-size:11px;line-height:1.5;cursor:help}
+.pv-lock.ok{background:transparent;border-color:transparent}
+.pv-lock-t{flex-shrink:0;font-weight:600;color:#8a5a00;font-size:10.5px;letter-spacing:.01em}
+.pv-lock-t::before{content:'\24D8';margin-right:4px;font-weight:400;opacity:.8}
+.pv-lock.ok .pv-lock-t{color:#8a8886}
+.pv-lock-l{display:inline-flex;flex-wrap:wrap;gap:4px}
+/* 이름을 칩으로 띄워 놓는다. 가운뎃점으로 이어 붙이면 6명에서 한 덩어리로 뭉쳐 보인다. */
+.pv-who{white-space:nowrap;font-weight:500;font-size:10.5px;cursor:help;
+  background:#fffaf0;border:1px solid #f0dcae;border-radius:9px;padding:1px 8px;color:#8a5a00}
+.pv-lock.ok .pv-who{background:#f7f9fb;border-color:#e1dfdd;color:#605e5c}
+.pv-none{color:#a4262c;font-weight:600;font-size:10.5px}
 .pgbar{display:flex;gap:4px;justify-content:center;flex-wrap:wrap;margin-top:12px}
 .pgbar:empty{display:none;margin:0}
 .ext-tag{display:inline-block;margin-left:5px;background:#fff4ce;border:1px solid #f2d68c;
@@ -2044,16 +2042,18 @@ function renderProxyLock(allowed) {
   if (!box) return;
   // 이름만 한 줄로 잇고 메일은 title 로 넘긴다. 이름+메일 칩으로 나열하면
   // 담당자가 6~10명일 때 두세 줄을 먹어 폼 흐름을 끊는다.
-  // 이름이 영문 표기라 라벨·안내도 영문으로 맞춘다. 메일은 title 로 넘겨 한 줄을 유지한다.
+  /* 라벨을 'Proxy' 로 줄였더니 뜻이 통하지 않았다. 세그먼트 알약의 'On behalf of' 와
+     같은 말로 풀어 쓰고, 이름은 메일을 title 로 가진 항목으로 띄워 놓는다.
+     이름이 영문 표기라 문구도 영문으로 맞춘다. */
   const names = proxyPeople.length
     ? proxyPeople.map(p => '<span class="pv-who" title="' + esc(p.email) + '">' +
-        esc(p.name || p.email) + '</span>').join('<i>&middot;</i>')
-    : '<span class="pv-none">none registered</span>';
+        esc(p.name || p.email) + '</span>').join('')
+    : '<span class="pv-none">no one registered yet</span>';
   box.className = 'pv-lock' + (allowed ? ' ok' : '');
   box.title = (allowed ? 'You may submit on behalf of others. ' : 'Only these people may submit on behalf of others. ')
     + 'Admins included. To change, contact ' + contactEmail;
   box.innerHTML =
-    '<span class="pv-lock-t">Proxy' + (allowed ? '' : ' only') + '</span>' +
+    '<span class="pv-lock-t">' + (allowed ? 'Can submit on behalf' : 'Only these can submit on behalf') + '</span>' +
     '<span class="pv-lock-l">' + names + '</span>';
 }
 
