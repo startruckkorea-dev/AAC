@@ -417,6 +417,12 @@ button.is-busy:hover{opacity:.72}
 .pv-lock.ok .pv-who{background:#f7f9fb;border-color:#e1dfdd;color:#605e5c}
 .pv-lock.ok .pv-who:hover{background:#f0f6ff;border-color:#0078d4;color:#0b5fa5}
 .pv-none{color:#a4262c;font-weight:600;font-size:10.5px}
+.pv-copy{margin-left:2px;font-family:inherit;font-size:10px;font-weight:600;cursor:pointer;
+  background:#fff;border:1px solid #d2d0ce;border-radius:9px;padding:1px 9px;color:#605e5c;
+  white-space:nowrap;transition:all .12s}
+.pv-copy:hover{border-color:#0078d4;color:#0b5fa5;background:#f0f6ff}
+.pv-copy:disabled{border-color:#bfe6bd;background:#dff6dd;color:#107c10;cursor:default}
+.pv-copy::before{content:'\1F4CB';margin-right:4px;font-weight:400}
 .pgbar{display:flex;gap:4px;justify-content:center;flex-wrap:wrap;margin-top:12px}
 .pgbar:empty{display:none;margin:0}
 .ext-tag{display:inline-block;margin-left:5px;background:#fff4ce;border:1px solid #f2d68c;
@@ -2091,7 +2097,9 @@ function renderProxyLock(allowed) {
     + 'Admins included. To change, contact ' + contactEmail;
   box.innerHTML =
     '<span class="pv-lock-t">' + (allowed ? 'Can submit on behalf' : 'Only these can submit on behalf') + '</span>' +
-    '<span class="pv-lock-l">' + names + '</span>';
+    '<span class="pv-lock-l">' + names + '</span>' +
+    (proxyPeople.length ? '<button type="button" class="pv-copy" onclick="copyProxyTemplate(this)"' +
+      ' title="요청 양식을 복사합니다. 메일 본문에 붙여넣기(Ctrl+V) 하세요.">Copy request form</button>' : '');
 }
 
 /* ── 첨부파일 ───────────────────────────────────────────────────────
@@ -2192,6 +2200,55 @@ async function bindFileLinks(root) {
       } finally { a.innerHTML = old; }
     });
   });
+}
+
+/* 요청 양식 복사 — mailto 본문으로는 표를 넣을 수 없다(스킴이 평문만 받고,
+   Outlook 은 한글 퍼센트 인코딩도 복원하지 못한다). 그래서 클립보드에 넣는다.
+   text/html 과 text/plain 을 함께 담으므로 Outlook·OWA 에는 표로,
+   메모장 같은 평문 편집기에는 글자로 붙는다. 메일 클라이언트를 거치지 않아 깨지지 않는다. */
+async function copyProxyTemplate(btn) {
+  const me = user ? (user.name || '') : '';
+  const myMail = user ? (user.email || user.username || '') : '';
+  const rows = [
+    ['위임자', esc(me) + (myMail ? ' &lt;' + esc(myMail) + '&gt;' : '')],
+    ['대리인', ''], ['기간', ''], ['대상 시스템', ''], ['사유', '']
+  ];
+  const html = '<p style="margin:0 0 10px;font-family:\'Malgun Gothic\',sans-serif;font-size:10pt">'
+    + '결재 대리 지정을 대신 신청해 주시기를 요청합니다.</p>'
+    + '<table style="border-collapse:collapse;font-family:\'Malgun Gothic\',sans-serif;font-size:10pt">'
+    + rows.map(([k, v]) =>
+        '<tr>'
+        + '<td style="border:1px solid #d0d0d0;background:#f2f2f2;padding:5px 12px;font-weight:bold;white-space:nowrap">' + k + '</td>'
+        + '<td style="border:1px solid #d0d0d0;padding:5px 12px;min-width:260px">' + v + '</td>'
+        + '</tr>').join('')
+    + '</table>'
+    + '<p style="margin:10px 0 0;font-family:\'Malgun Gothic\',sans-serif;font-size:9pt;color:#666">'
+    + 'STK 결재 대리 지정 시스템 &nbsp;<a href="' + window.location.href + '">' + window.location.href + '</a></p>';
+  const text = [
+    '결재 대리 지정을 대신 신청해 주시기를 요청합니다.', '',
+    '위임자      : ' + me + (myMail ? ' <' + myMail + '>' : ''),
+    '대리인      : ', '기간        : ', '대상 시스템 : ', '사유        : ', '',
+    window.location.href
+  ].join('\r\n');
+  const done = t => { if (!btn) return; const o = btn.textContent;
+    btn.textContent = t; btn.disabled = true;
+    setTimeout(() => { btn.textContent = o; btn.disabled = false; }, 1800); };
+  try {
+    if (navigator.clipboard && window.ClipboardItem) {
+      await navigator.clipboard.write([new ClipboardItem({
+        'text/html': new Blob([html], { type: 'text/html' }),
+        'text/plain': new Blob([text], { type: 'text/plain' })
+      })]);
+    } else if (navigator.clipboard) {
+      await navigator.clipboard.writeText(text);   // 표 없이 글자만
+    } else {
+      throw new Error('클립보드를 쓸 수 없습니다.');
+    }
+    done('Copied');
+  } catch (e) {
+    console.error('[AAC] 양식 복사 실패:', e);
+    showAlert('복사하지 못했습니다.', (e.message || '') + '\n메일 본문에 직접 입력해 주세요.', '\u274C');
+  }
 }
 
 function showNoAuth() { document.getElementById('aac-noauth-modal').classList.add('show'); }
