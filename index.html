@@ -926,19 +926,28 @@ const LIST_REQ = 'AAC_Requests';
 const LIST_APR = 'AAC_Approvals';
 
 // 대리 지정을 걸 수 있는 시스템. 값은 APS 가 쓰는 시스템 키와 맞춘다.
+/* 키는 aps 통합 결재함(aps/index.html 의 SYSTEMS)과 반드시 같아야 한다.
+   각 시스템이 AAC_SYS_KEY 로 이 키와 Scope 를 비교해 대리 적용 여부를 정하므로,
+   키가 하나라도 어긋나면 그 시스템은 부분 선택 시 조용히 제외된다.
+   예전에는 CTR(→CTR_PR), GA 하나(→GA_STN/GA_BC/GA_IDC 셋)로 어긋나 있었고
+   RR 은 항목 자체가 없어 'ALL' 일 때만 동작했다.
+   SSC(Shared Service Center)는 aps 연동 시스템이 아니라 제외한다.
+   ACO 는 배포 전이지만 aps 에 등록될 예정이라 미리 넣어 둔다. */
 const SYSTEMS = [
-  { key: 'ACC', label: 'ACC Voucher' },
-  { key: 'GW',  label: 'Goodwill Approval' },
-  { key: 'SSC', label: 'Shared Service Center' },
-  { key: 'SCC', label: 'Contract Checklist' },
-  { key: 'IT',  label: 'IT Ticket' },
-  { key: 'FA',  label: 'Fixed Asset' },
-  { key: 'BP',  label: 'BP Master Data' },
-  { key: 'MC',  label: 'Mobility Car' },
-  { key: 'GA',  label: 'General Affairs' },
-  { key: 'LTR', label: 'LTR-PC' },
-  { key: 'CTR', label: 'Purchase Requisition' },
-  { key: 'ACO', label: 'Accounting Others' },
+  { key: 'ACC',    label: 'ACC Voucher' },
+  { key: 'GW',     label: 'Goodwill Approval' },
+  { key: 'SCC',    label: 'Contract Checklist' },
+  { key: 'IT',     label: 'IT Ticket' },
+  { key: 'FA',     label: 'Fixed Asset' },
+  { key: 'BP',     label: 'BP Master Data' },
+  { key: 'MC',     label: 'Mobility Car' },
+  { key: 'RR',     label: 'Repair Report' },
+  { key: 'GA_STN', label: 'GA Stationery' },
+  { key: 'GA_BC',  label: 'GA Business Card' },
+  { key: 'GA_IDC', label: 'GA ID Card' },
+  { key: 'LTR',    label: 'LTR-PC' },
+  { key: 'CTR_PR', label: 'Purchase Requisition' },
+  { key: 'ACO',    label: 'Accounting Others' },
   /* 아래 셋은 APS 가 아니라 자동 연동이 되지 않는다(ext:true).
      신청은 여기서 받되 실제 권한 이관은 각 시스템 담당자가 수동으로 처리한다.
      관리자 화면에서 담당자가 골라 볼 수 있도록 같은 목록에 둔다. */
@@ -1514,12 +1523,23 @@ function hasExtScope(v) {
   const keys = String(v || '').split(',').map(x => x.trim());
   return EXT_KEYS.some(k => keys.includes(k));
 }
+/* 옛 키로 저장된 값도 읽어 준다 — 키를 aps 기준으로 맞추기 전에 저장된 건이 있으면
+   라벨이 원시 키로 노출된다. 지금 데이터는 전부 'ALL' 이라 해당이 없지만
+   나중에 이력을 볼 때를 위해 둔다. */
+const SCOPE_ALIAS = { CTR: 'CTR_PR', GA: 'GA_STN', SSC: null };
 function scopeLabel(v) {
   const s = (v || '').trim();
   if (!s) return 'APS 전체 시스템';
   const keys = s.split(',').map(x => x.trim()).filter(Boolean);
-  const out = keys.map(k => k === 'ALL' ? 'APS 전체 시스템'
-    : ((SYSTEMS.find(x => x.key === k) || {}).label || k));
+  const out = keys.map(k => {
+    if (k === 'ALL') return 'APS 전체 시스템';
+    if (k in SCOPE_ALIAS) {
+      const a = SCOPE_ALIAS[k];
+      if (!a) return k + ' (지원 종료)';
+      return ((SYSTEMS.find(x => x.key === a) || {}).label || a) + ' (옛 키 ' + k + ')';
+    }
+    return (SYSTEMS.find(x => x.key === k) || {}).label || k;
+  });
   return out.join(' · ');
 }
 
