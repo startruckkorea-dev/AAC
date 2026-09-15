@@ -355,10 +355,28 @@ button.is-busy:hover{opacity:.72}
    노란 계열로 「손이 더 가는 쪽」임을 표시한다. */
 /* 연동 외(수동 처리) — 큰 상자를 두면 폼 흐름이 끊긴다. 라벨 옆 한 줄 힌트로 두고,
    성격 구분은 격자 항목의 노란 톤으로만 한다. */
-.ext-hint{font-size:11.5px;color:#8a6f3a;line-height:1.5}
-.ext-hint b{color:#8a5a00;font-weight:700}
-.ext-hint .en{color:#b3a07a}
-.ext-grid{grid-template-columns:repeat(4,1fr)}
+/* 대상 시스템 두 그룹 — 자동은 파란 계열, 수동은 노란 계열.
+   격자는 그룹 상자 안에 들어가므로 기본 .sysgrid 의 margin-left:94px 를 0 으로 되돌린다. */
+.scope-grp{border-radius:8px;padding:12px 14px 14px;margin-top:10px}
+.sg-hd{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.sg-badge{flex-shrink:0;font-size:10px;font-weight:700;letter-spacing:.04em;
+  border-radius:9px;padding:2px 9px;line-height:1.5}
+.sg-t{font-size:12.5px;font-weight:700}
+.sg-t .en{font-size:.76em;font-weight:400;margin-left:4px;opacity:.75}
+.sg-d{font-size:11.5px;line-height:1.5;margin-left:2px}
+.sg-d b{font-weight:700}
+.sg-grid{margin:9px 0 0 0}
+.sg-auto{background:#f7fbff;border:1px solid #cfe3f5;border-left:3px solid #0078d4}
+.sg-auto .sg-badge{background:#0078d4;color:#fff}
+.sg-auto .sg-t{color:#004578}
+.sg-auto .sg-d{color:#5f7d99}
+.sg-auto .sg-d b{color:#0b5fa5}
+.sg-manual{background:#fffaf0;border:1px solid #f2d68c;border-left:3px solid #d9a419}
+.sg-manual .sg-badge{background:#d9a419;color:#fff}
+.sg-manual .sg-t{color:#8a5a00}
+.sg-manual .sg-d{color:#8a6f3a}
+.sg-manual .sg-d b{color:#8a5a00}
+.ext-grid{grid-template-columns:repeat(3,1fr)}
 .ext-grid .chk{background:#fffdf7;border-color:#f0dcae;color:#5c4200}
 .ext-grid .chk:hover{border-color:#d9a419;background:#fffaf0}
 .ext-grid .chk .sub{color:#8a5a00;font-weight:600;margin-left:auto;font-size:10.5px}
@@ -555,21 +573,29 @@ button.is-busy:hover{opacity:.72}
       <div id="period-msg"></div>
 
       <div class="section-title">3. 대상 시스템 (Scope)</div>
-      <div class="row-lbl">
-        <span class="rl">범위<span class="en">Scope</span></span>
+
+      <!-- 「범위 / 연동 외」 로는 두 그룹의 차이가 읽히지 않았다. 신청자가 알아야 할
+           것은 시스템 분류가 아니라 「내가 신청하면 언제 반영되는가」이므로
+           자동 적용 / 수동 적용 으로 대비시킨다. 용어와 색은 접속 안내 모달과 같다. -->
+      <div class="scope-grp sg-auto">
+        <div class="sg-hd">
+          <span class="sg-badge">자동</span>
+          <span class="sg-t">자동 적용<span class="en">Automatic</span></span>
+          <span class="sg-d">대리인이 수락하면 <b>즉시 반영</b>됩니다</span>
+        </div>
         <label class="chk-all"><input type="checkbox" id="f-all" checked onchange="onScopeAll()">
           APS 전체 시스템<span class="sub">All APS systems</span></label>
+        <div class="sysgrid sg-grid" id="f-syslist"></div>
       </div>
-      <div class="sysgrid" id="f-syslist"></div>
 
-      <!-- APS 격자와 같은 구조로 둔다. 중첩 래퍼 안에 넣으면 .sysgrid 의
-           margin-left:94px 가 래퍼 오프셋에 더해져 두 번 밀린다. -->
-      <div class="row-lbl" style="margin-top:12px">
-        <span class="rl">연동 외<span class="en">Manual</span></span>
-        <span class="ext-hint">자동 연동이 아닙니다 &mdash; 담당자가 확인해 <b>수동으로 이관</b>합니다
-          <span class="en">Applied manually by each owner</span></span>
+      <div class="scope-grp sg-manual">
+        <div class="sg-hd">
+          <span class="sg-badge">수동</span>
+          <span class="sg-t">수동 적용<span class="en">Manual</span></span>
+          <span class="sg-d">신청은 여기서 접수되고, <b>각 담당자가 확인해 직접 이관</b>합니다</span>
+        </div>
+        <div class="sysgrid sg-grid ext-grid" id="f-extlist"></div>
       </div>
-      <div class="sysgrid ext-grid" id="f-extlist"></div>
 
       <div class="section-title">4. 사유 (Reason)</div>
       <div class="form-row full">
