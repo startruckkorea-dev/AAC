@@ -716,10 +716,10 @@ tr:hover .reqno{text-decoration:underline}
            길어져 「무엇을 해야 하는지」가 묻힌다. 그 구분은 목록에서 항목별
            배지로 보여주고, 수동을 고를 때만 안내를 띄운다. -->
       <label class="sc-all"><input type="checkbox" id="f-all" checked onchange="onScopeAll()">
-        <span class="sc-all-t">전체 시스템에 맡기기<span class="en">Delegate all systems</span></span></label>
+        <span class="sc-all-t">모든 시스템 위임<span class="en">All systems</span></span></label>
 
       <details class="sc-pick">
-        <summary class="sc-pick-h">일부만 맡기기<span class="sc-cnt">직접 선택</span></summary>
+        <summary class="sc-pick-h">일부만 위임<span class="sc-cnt">직접 선택</span></summary>
         <div class="sc-body">
           <div class="sc-grid" id="f-syslist"></div>
           <div class="sc-noti" id="sc-noti"></div>
@@ -886,25 +886,22 @@ tr:hover .reqno{text-decoration:underline}
     <div class="scope-hd">
       <h3>적용 범위 안내<span class="en">Scope of this system</span></h3>
     </div>
+    <!-- 목록을 적어 두지 않는다. 예전에는 「APS 12개 시스템」과 이름을 하드코딩해
+         SYSTEMS 가 14개로 늘고 SSC 가 빠진 뒤에도 옛 목록이 그대로 떠 있었다.
+         initScopeNotice() 가 SYSTEMS 에서 만들어 넣는다. -->
     <div class="scope-bd">
-      <p style="margin:0">이 화면에서 <b>모든 시스템</b>의 결재 대리를 신청합니다.
-      다만 적용되는 방식이 다르니 아래를 확인해 주세요.</p>
+      <p style="margin:0">한 번 신청하면 <b>모든 시스템</b>에 적용됩니다.
+      반영되는 시점만 두 가지로 나뉩니다.</p>
       <div class="scope-list sl-auto">
-        <div class="t">자동 적용 &middot; AUTOMATIC</div>
-        <div class="scope-row"><span class="sys">APS 12개 시스템</span><span class="own">수락 즉시 적용</span></div>
-        <div class="sl-note">ACC Voucher &middot; Goodwill &middot; SSC &middot; Contract Checklist &middot; IT Ticket &middot; Fixed Asset &middot;
-          BP Master &middot; Mobility Car &middot; General Affairs &middot; LTR-PC &middot; Purchase Requisition &middot; Accounting Others</div>
+        <div class="scope-row"><span class="sys" id="sn-auto-n"></span><span class="own">수락 즉시 반영</span></div>
+        <div class="sl-note" id="sn-auto-l"></div>
       </div>
       <div class="scope-list sl-manual">
-        <div class="t">수동 적용 &middot; APPLIED MANUALLY</div>
-        <div class="scope-row"><span class="sys">Flex</span><span class="own">HR Team</span></div>
-        <div class="scope-row"><span class="sys">Concur</span><span class="own">Accounting Team</span></div>
-        <div class="scope-row"><span class="sys">SAP-Be1</span><span class="own">IT Team</span></div>
-        <div class="sl-note">신청은 여기서 접수되고, 각 담당자가 확인해 직접 이관합니다.</div>
+        <div class="scope-row"><span class="sys">Flex &middot; Concur &middot; SAP-Be1</span><span class="own">담당팀이 직접 반영</span></div>
+        <div class="sl-note" id="sn-man-l"></div>
       </div>
-      <p class="en-p">All systems are requested here.
-      <b>APS systems apply automatically</b> once the deputy accepts,
-      while <b>Flex, Concur and SAP-Be1 are applied manually</b> by each system owner.</p>
+      <p class="en-p">One request covers every system. APS systems apply as soon as the
+      deputy accepts; Flex, Concur and SAP-Be1 are applied by each owner team.</p>
     </div>
     <div class="scope-ft"><button onclick="closeScopeNotice()">확인 &middot; OK</button></div>
   </div>
@@ -2312,7 +2309,19 @@ async function bindFileLinks(root) {
 function showNoAuth() { document.getElementById('aac-noauth-modal').classList.add('show'); }
 function closeNoAuth()  { document.getElementById('aac-noauth-modal').classList.remove('show'); }
 
+/* 모달의 시스템 목록을 SYSTEMS 에서 만들어 넣는다. 적어 두면 목록이 바뀔 때 같이
+   고쳐야 하는데, 실제로 12→14개가 되고 SSC 가 빠진 뒤에도 옛 값이 남아 있었다. */
+function initScopeNotice() {
+  const auto = SYSTEMS.filter(x => !x.ext), man = SYSTEMS.filter(x => x.ext);
+  const n = document.getElementById('sn-auto-n');
+  if (n) n.textContent = 'APS ' + auto.length + '개 시스템';
+  const al = document.getElementById('sn-auto-l');
+  if (al) al.textContent = auto.map(x => x.label).join(' · ');
+  const ml = document.getElementById('sn-man-l');
+  if (ml) ml.textContent = man.map(x => x.label + ' ' + x.owner).join(' · ');
+}
 function showScopeNotice() {
+  initScopeNotice();
   document.getElementById('aac-scope-modal').classList.add('show');
 }
 function closeScopeNotice() {
