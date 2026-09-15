@@ -270,16 +270,22 @@ label .en{margin-left:4px}
 .line-step{display:inline-flex;align-items:center;margin:2px 0}
 .line-step-badge{display:inline-block;background:#0078d4;color:#fff;border-radius:10px;
   padding:1px 8px;font-size:.68rem;font-weight:700;margin-right:5px}
-.line-step-badge.fixed{background:#8a6116}
+.line-step-badge.fixed{background:#605e5c}   /* 자동 지정 — GW 와 같은 회색 */
 .line-arrow{color:#a19f9d;margin:0 7px}
 .appr-block{background:#f9f9f9;border:1px solid #edebe9;border-radius:6px;padding:12px;margin-bottom:8px}
 .appr-block.appr-fixed{background:#f0f6ff;border:1px solid #c7e0f4}
-.appr-title{font-size:.78rem;font-weight:600;color:#323130;margin-bottom:7px}
+/* GW(Goodwill-Approval)와 같은 값. 자동 지정 결재자는 파란 톤(.appr-fixed)에
+   제목을 갈색(#b45309)으로 둬 「사용자가 고를 수 없는 자리」임을 색으로 알린다. */
+.appr-title{font-size:.78rem;font-weight:600;color:#323130;margin-bottom:8px}
+.appr-block.appr-fixed .appr-title{color:#b45309}
 .appr-title .hint{font-weight:400;color:#a19f9d;font-size:.72rem}
+.appr-miss{font-size:.72rem;color:#a4262c;margin-top:6px}
 .appr-info{display:grid;grid-template-columns:1fr 1.4fr;gap:7px}
 @media(max-width:640px){.appr-info{grid-template-columns:1fr}}
-.appr-info input{width:100%;padding:6px 9px;border:1px solid #e1dfdd;border-radius:4px;
-  font-size:12px;font-family:inherit;color:#605e5c;background:#fff}
+ /* readonly 라는 것을 배경으로 알린다 — GW 와 같은 #f3f2f1. 흰 배경이면 입력할 수
+    있는 칸으로 보인다. */
+.appr-info input{width:100%;padding:6px 9px;border:1px solid #d2d0ce;border-radius:4px;
+  font-size:12px;font-family:inherit;color:#605e5c;background:#f3f2f1}
 .appr-skip{background:#fdf6e3;border:1px solid #f0d9a0;border-radius:6px;padding:10px 13px;
   font-size:.72rem;color:#8a6116;margin-bottom:8px}
 .appr-skip .as-t{font-weight:600;margin-bottom:6px;font-size:.72rem}
@@ -1604,9 +1610,11 @@ function renderApprPreview() {
 
   // 결재선(09-14 변경): 대리인 수락만으로 확정한다. 대신 신청이면 위임자 본인 확인을 먼저 둔다.
   // 위임자·대리인의 직속상사/부서장 단계(buildHeads)는 더 이상 결재선에 넣지 않는다.
+  // fixed:true — 두 단계 모두 사용자가 결재자를 고르는 자리가 아니라 자동으로 정해진다.
+  // GW 는 자동 지정 결재자를 appr-fixed(파란 톤)로 구분한다(GW 1190행). 같은 방식으로 맞춘다.
   const line = [];
-  if (proxy) line.push({ role: '위임자 확인', p: dg, fixed: false });
-  line.push({ role: '대리인 수락', p: _selDeputy, fixed: false });
+  if (proxy) line.push({ role: '위임자 확인', p: dg, fixed: true });
+  line.push({ role: '대리인 수락', p: _selDeputy, fixed: true });
   const notes = [];
 
   // ① 한 줄 요약
@@ -1623,9 +1631,11 @@ function renderApprPreview() {
     '<div class="appr-block' + (x.fixed ? ' appr-fixed' : '') + '">' +
     '<div class="appr-title">' + (i + 1) + '차 결재자 <span class="hint">&mdash; ' + esc(x.role) + ' (자동 지정)</span></div>' +
     '<div class="appr-info">' +
-    '<input type="text" value="' + esc(x.p.name || '') + '" readonly>' +
-    '<input type="text" value="' + esc(x.p.email || '') + '" readonly>' +
-    '</div></div>').join('')
+    '<input type="text" value="' + esc(x.p.name || '') + '" readonly placeholder="이름">' +
+    '<input type="email" value="' + esc(x.p.email || '') + '" readonly placeholder="이메일">' +
+    '</div>' +
+    (x.p.email ? '' : '<div class="appr-miss">담당자 정보를 찾을 수 없습니다. IT팀(' + esc(contactEmail) + ')에 알려주세요.</div>') +
+    '</div>').join('')
     + (notes.length
         ? '<div class="appr-skip"><div class="as-t">생략된 단계 ' + notes.length + '건</div>' +
           notes.map(k =>
