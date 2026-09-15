@@ -452,6 +452,12 @@ button.is-busy:hover{opacity:.72}
 /* 기간 칸 — 다른 칸이 .mini(11.5px)인데 기간만 표 기본 13px 이라 글꼴이 달라
    보였다. 크기는 맞추고 색은 본문색으로 둔다(중요한 정보라 흐리게 하지 않는다). */
 .perd{font-size:11.5px;color:#323130;font-variant-numeric:tabular-nums}
+/* 신청번호 — 기간과 같은 이유로 크기를 맞춘다(표 기본 13px 이면 옆의 .mini 와 글꼴이
+   달라 보인다). 링크처럼 보여야 하므로 색과 굵기는 유지하고, 숫자 폭을 고정해
+   행마다 'AAC-2026-09-15_ID-5' 의 자리가 어긋나지 않게 한다. */
+.reqno{font-size:11.5px;font-weight:600;color:#0078d4;font-variant-numeric:tabular-nums;
+  letter-spacing:.01em}
+tr:hover .reqno{text-decoration:underline}
 .cfgwarn{display:none;background:#fdf6e3;border:1px solid #f0d9a0;border-radius:6px;
   padding:10px 13px;font-size:12px;color:#8a6116;margin-bottom:16px}
 .tbl-wrap{overflow-x:auto}
@@ -722,7 +728,7 @@ button.is-busy:hover{opacity:.72}
       <div class="card-title">내가 위임받은 권한<span class="en">Delegated to me</span></div>
       <div class="fld-hint" style="margin:0 0 16px;padding-top:7px">나를 대리인으로 지정해 내가 수락한 건입니다. 진행중 &middot; 예정이 위에 옵니다.</div>
       <div class="tbl-wrap"><table class="voucher-table">
-        <thead><tr><th style="width:50px">번호</th><th>신청번호</th><th>위임자</th><th>기간</th><th>대상 시스템</th><th style="width:90px">효력</th></tr></thead>
+        <thead><tr><th style="width:50px">번호</th><th>신청번호</th><th>위임자</th><th>기간</th><th>대상 시스템</th><th style="width:96px">적용 상태</th></tr></thead>
         <tbody id="dtm-body"><tr><td colspan="6" class="list-empty">불러오는 중...</td></tr></tbody>
       </table></div>
     </div>
@@ -761,7 +767,7 @@ button.is-busy:hover{opacity:.72}
       <div class="card-title">진행중 &middot; 예정 대리 지정<span class="en">Active &amp; Upcoming</span></div>
       <div class="fld-hint" style="margin:0 0 16px;padding-top:7px">수락이 끝난 건 중 <b>지금 효력이 있거나 아직 시작하지 않은</b> 건입니다. 시각 기준으로 판정하며, 진행중이 위에 옵니다.</div>
       <div class="tbl-wrap"><table class="voucher-table">
-        <thead><tr><th>신청번호</th><th>원래 결재자</th><th>대리인</th><th>기간</th><th>대상 시스템</th><th style="width:90px">효력</th></tr></thead>
+        <thead><tr><th>신청번호</th><th>원래 결재자</th><th>대리인</th><th>기간</th><th>대상 시스템</th><th style="width:96px">적용 상태</th></tr></thead>
         <tbody id="ad-active"><tr><td colspan="6" class="list-empty">-</td></tr></tbody>
       </table></div>
     </div>
@@ -2195,7 +2201,7 @@ async function loadMy(force) {
       const f = r.fields, st = effStatus(f);
       return '<tr style="cursor:pointer" onclick="openDetail(' + r.id + ')">' +
         '<td>' + no + '</td>' +
-        '<td style="color:#0078d4;font-weight:600">' + esc(f.Title || '') + '</td>' +
+        '<td class="reqno">' + esc(f.Title || '') + '</td>' +
         '<td class="mini">' + esc(f.DeputyEmail || '') + '</td>' +
         '<td class="perd">' + fmtDay(f.StartDate) + ' ~ ' + fmtDay(f.EndDate) + '</td>' +
         '<td class="mini">' + esc(scopeLabel(f.Scope)) +
@@ -2235,7 +2241,7 @@ function renderDelegatedToMe(reqs) {
     const f = x.r.fields;
     return '<tr style="cursor:pointer" onclick="openDetail(' + x.r.id + ')">' +
       '<td>' + (rows.length - i) + '</td>' +
-      '<td style="color:#0078d4;font-weight:600">' + esc(f.Title || '') + '</td>' +
+      '<td class="reqno">' + esc(f.Title || '') + '</td>' +
       '<td class="mini">' + esc(f.RequesterEmail || '') + '</td>' +
       '<td>' + fmtDay(f.StartDate) + ' ~ ' + fmtDay(f.EndDate) +
         ' <span class="dayspan">' + dayCount(f) + '</span></td>' +
@@ -2262,7 +2268,7 @@ async function loadApr(force) {
       const f = x.req.fields;
       return '<tr style="cursor:pointer" onclick="openDetail(' + x.req.id + ')">' +
         '<td>' + no + '</td>' +
-        '<td style="color:#0078d4;font-weight:600">' + esc(f.Title || '') + '</td>' +
+        '<td class="reqno">' + esc(f.Title || '') + '</td>' +
         '<td class="mini">' + esc(f.RequesterEmail || '') + '</td>' +
         '<td class="mini">' + esc(f.DeputyEmail || '') + '</td>' +
         '<td class="perd">' + fmtDay(f.StartDate) + ' ~ ' + fmtDay(f.EndDate) + '</td>' +
@@ -2315,7 +2321,7 @@ function renderAdmin() {
     const f = r.fields, st = effStatus(f);
     return '<tr style="cursor:pointer" onclick="openDetail(' + r.id + ')">' +
       '<td>' + no + '</td>' +
-      '<td style="color:#0078d4;font-weight:600">' + esc(f.Title || '') + '</td>' +
+      '<td class="reqno">' + esc(f.Title || '') + '</td>' +
       '<td class="mini">' + esc(f.RequesterEmail || '') + '</td>' +
       '<td class="mini">' + esc(f.DeputyEmail || '') + '</td>' +
       '<td class="perd">' + fmtDay(f.StartDate) + ' ~ ' + fmtDay(f.EndDate) + '</td>' +
@@ -2339,7 +2345,7 @@ function renderAdmin() {
   document.getElementById('ad-active').innerHTML = act.length ? act.map(x => {
     const f = x.r.fields;
     return '<tr style="cursor:pointer" onclick="openDetail(' + x.r.id + ')">' +
-      '<td style="color:#0078d4;font-weight:600">' + esc(f.Title || '') + '</td>' +
+      '<td class="reqno">' + esc(f.Title || '') + '</td>' +
       '<td class="mini">' + esc(f.RequesterEmail || '') + '</td>' +
       '<td class="mini">' + esc(f.DeputyEmail || '') + '</td>' +
       '<td>' + fmtDay(f.StartDate) + ' ~ ' + fmtDay(f.EndDate) +
