@@ -1082,11 +1082,14 @@ function apprClass(s) {
 }
 function isMe(e)  { return (e || '').trim().toLowerCase() === (user?.email || user?.username || '').trim().toLowerCase(); }
 function isAdmin(){ return adminEmails.includes((user?.email || user?.username || '').trim().toLowerCase()); }
-// 대신 신청 가능 여부 — 관리자 또는 설정 파일에 등록된 담당자
-function canProxy(){
-  const me = (user?.email || user?.username || '').trim().toLowerCase();
-  return isAdmin() || proxyEmails.includes(me);
-}
+/* 대신 신청 가능 여부 — 이 시스템에 접근하는 사람 전원.
+   예전에는 관리자 또는 설정 파일(AAC_PROXY_1~10) 등록자만 가능했다. 남의 결재
+   권한을 넘기는 일이라 제한을 뒀지만, 실제 통제는 결재선이 하고 있다:
+   대신 신청은 1차 「위임자 확인」이 반드시 앞에 붙으므로 위임자 본인이 승인하지
+   않으면 효력이 없고, SubmittedByEmail 에 올린 사람이 남아 추적된다.
+   앞단에서 한 번 더 막는 것은 통제에 보태는 게 없고 부탁·등록 절차만 늘렸다.
+   proxyEmails/proxyPeople 은 「누구에게 부탁하면 되는지」 안내용으로만 남긴다. */
+function canProxy(){ return true; }
 function isProxyMode(){
   const el = document.querySelector('input[name="pv-mode"]:checked');
   return !!el && el.value === 'other';
@@ -1790,7 +1793,8 @@ async function submitForm() {
   const proxy = isProxyMode();
   const pReason = (document.getElementById('p-reason').value || '').trim();
   if (proxy) {
-    if (!canProxy())      { alert('대신 신청 권한이 없습니다.'); return; }
+    // 권한 검사는 없다 — 누구나 대신 신청할 수 있고, 통제는 결재선의
+    // 1차 「위임자 확인」이 한다(위임자가 승인하지 않으면 효력이 없다).
     if (!_selDelegator)   { alert('위임자를 선택하세요.'); return; }
     if (isMe(_selDelegator.email)) { alert('본인이 위임자라면 「본인」을 선택해 주세요.'); return; }
     if (!pReason)         { alert('대신 신청하는 사유를 입력하세요.'); return; }
@@ -2105,6 +2109,8 @@ function proxyCell(f) {
 
 /* 대신 신청 잠금 안내 — 등록된 담당자 명단을 함께 보여준다.
    관리자는 별도 등록 없이도 가능하므로 그 사실도 한 줄로 적는다. */
+/* 명단 안내 — 대신 신청은 누구나 할 수 있게 됐으므로(canProxy 참고) 이 줄은
+   「권한자 목록」이 아니라 「대신 신청을 부탁할 수 있는 담당자」 안내다. */
 function renderProxyLock(allowed) {
   const box = document.getElementById('pv-locked');
   if (!box) return;
@@ -2129,11 +2135,11 @@ function renderProxyLock(allowed) {
         '?subject=' + subj + '" title="' + esc(p.email) + ' — 메일 보내기">' +
         esc(p.name || p.email) + '</a>').join('')
     : '<span class="pv-none">no one registered yet</span>';
-  box.className = 'pv-lock' + (allowed ? ' ok' : '');
-  box.title = (allowed ? 'You may submit on behalf of others. ' : 'Only these people may submit on behalf of others. ')
-    + 'Admins included. To change, contact ' + contactEmail;
+  box.className = 'pv-lock ok';   // 잠김이 없으므로 항상 옅은 톤
+  box.title = 'Anyone can submit on behalf of others. These staff can help if you need it. '
+    + 'To change the list, contact ' + contactEmail;
   box.innerHTML =
-    '<span class="pv-lock-t">' + (allowed ? 'Can submit on behalf' : 'Only these can submit on behalf') + '</span>' +
+    '<span class="pv-lock-t">Ask for help</span>' +
     '<span class="pv-lock-l">' + names + '</span>' +
     (proxyPeople.length ? '<button type="button" class="pv-copy" onclick="copyProxyTemplate(this)"' +
       ' title="요청 양식을 복사합니다. 메일 본문에 붙여넣기(Ctrl+V) 하세요.">Copy request form</button>' : '');
