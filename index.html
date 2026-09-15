@@ -140,8 +140,12 @@ label .en{margin-left:4px}
 .aac-box .mm{font-size:11.5px;color:#a19f9d;margin-top:3px}
 
 /* 기간 배지 — ACC 의 .line-step-badge 와 같은 규격 */
-.dayspan{display:inline-block;background:#0078d4;color:#fff;border-radius:10px;
-  padding:3px 12px;font-size:11px;font-weight:700;white-space:nowrap}
+/* 기간 길이 — 표·상세에서 기간 뒤에 붙는 작은 표식.
+   예전에는 솔리드 파랑 + 700 + padding 3px 12px 라 날짜보다 먼저 눈에 들어왔다.
+   신청 폼의 .pr-d 와 같은 옅은 윤곽선 톤으로 낮춘다(주역은 날짜다). */
+.dayspan{display:inline-block;background:#f0f6ff;border:1px solid #cfe3f5;color:#0b5fa5;
+  border-radius:9px;padding:1px 7px;font-size:10px;font-weight:600;
+  white-space:nowrap;margin-left:2px;vertical-align:1px;letter-spacing:.01em}
 
 /* 상태 메시지 — ACC 의 .sp-note 계열 */
 .msg-w{background:#fdf6e3;border:1px solid #f0d9a0;border-radius:6px;padding:9px 13px;
@@ -567,7 +571,7 @@ label .en{margin-left:4px}
          Scope 도 없고 첫 건만 보여 준다. 그래서 여기에 따로 둔다. -->
     <div class="card">
       <div class="card-title">내가 위임받은 권한<span class="en">Delegated to me</span></div>
-      <div class="fld-hint" style="margin:0 0 10px">나를 대리인으로 지정해 내가 수락한 건입니다. 진행중 · 예정이 위에 옵니다.</div>
+      <div class="fld-hint" style="margin:0 0 16px;padding-top:7px">나를 대리인으로 지정해 내가 수락한 건입니다. 진행중 &middot; 예정이 위에 옵니다.</div>
       <div class="tbl-wrap"><table class="voucher-table">
         <thead><tr><th style="width:50px">번호</th><th>신청번호</th><th>위임자</th><th>기간</th><th>대상 시스템</th><th style="width:90px">효력</th></tr></thead>
         <tbody id="dtm-body"><tr><td colspan="6" class="list-empty">불러오는 중...</td></tr></tbody>
