@@ -338,6 +338,20 @@ button.is-busy:hover{opacity:.72}
   padding:9px 30px;font-size:.88rem;font-weight:600;cursor:pointer;font-family:inherit}
 .scope-ft button:hover{background:#0062b1}
 
+/* 연동 외(수동 처리) 시스템 — 자동 연동되는 APS 와 섞이면 오해하므로 따로 묶고
+   노란 계열로 「손이 더 가는 쪽」임을 표시한다. */
+.ext-note{background:#fffaf0;border:1px solid #f2d68c;border-left:3px solid #d9a419;
+  border-radius:6px;padding:10px 13px;font-size:11.5px;line-height:1.7;color:#5c4200}
+.ext-note b{color:#8a5a00;font-weight:700}
+.ext-tag{display:inline-block;margin-left:5px;background:#fff4ce;border:1px solid #f2d68c;
+  color:#8a5a00;border-radius:9px;padding:0 6px;font-size:9.5px;font-weight:700;
+  white-space:nowrap;vertical-align:1px}
+.ext-note .en-line{display:block;margin-top:7px;padding-top:7px;
+  border-top:1px dashed #edd3a8;color:#8a6f3a}
+#f-extlist .chk{background:#fffdf7;border-color:#f0dcae}
+#f-extlist .chk .sub{color:#8a5a00;font-weight:600}
+#f-extlist input:checked+span,#f-extlist .chk:has(input:checked){border-color:#d9a419}
+
 /* 접근 권한 없음 — GW 와 같은 값. 아이콘은 붉은 원 안의 경고 표시. */
 #aac-noauth-modal{display:none;position:fixed;inset:0;z-index:2200;
   background:rgba(15,39,68,.45);align-items:center;justify-content:center;padding:20px}
@@ -533,6 +547,16 @@ button.is-busy:hover{opacity:.72}
       </div>
       <div class="sysgrid" id="f-syslist"></div>
 
+      <div class="row-lbl" style="margin-top:14px;align-items:flex-start">
+        <span class="rl">연동 외<span class="en">Manual</span></span>
+        <div style="flex:1">
+          <div class="ext-note">아래 시스템은 <b>자동 연동이 되지 않습니다.</b> 신청은 여기서 접수되고,
+            각 시스템 담당자가 관리자 화면에서 확인해 <b>수동으로 권한을 이관</b>합니다.
+            <span class="en-line">These are not integrated. The request is received here and each system owner applies it manually.</span></div>
+          <div class="sysgrid" id="f-extlist" style="margin-top:8px"></div>
+        </div>
+      </div>
+
       <div class="section-title">4. 사유 (Reason)</div>
       <div class="form-row full">
         <div class="form-group">
@@ -617,6 +641,12 @@ button.is-busy:hover{opacity:.72}
           <option value="">전체 상태</option><option>대기</option><option>승인완료</option>
           <option>반려</option><option>철회</option><option>만료</option>
         </select>
+        <!-- 연동 외 시스템은 담당자가 수동으로 이관해야 하므로, 자기 시스템 건만
+             골라 볼 수 있는 필터가 필요하다. 옵션은 renderSystems 에서 채운다. -->
+        <select id="ad-scope" onchange="renderAdmin()" style="border:1px solid #d2d0ce;border-radius:4px;padding:6px 10px;font-size:.72rem;font-family:inherit;background:#fff;color:#323130">
+          <option value="">전체 대상</option>
+          <option value="__EXT__">수동 처리 건만</option>
+        </select>
         <input type="text" id="ad-search" oninput="renderAdmin()" placeholder="위임자 · 대리인 · 신청번호"
                style="border:1px solid #d2d0ce;border-radius:4px;padding:6px 10px;font-size:.72rem;font-family:inherit;background:#fff;color:#323130;min-width:190px">
         <div style="margin-left:auto;display:flex;align-items:center;gap:10px">
@@ -674,16 +704,19 @@ button.is-busy:hover{opacity:.72}
       <h3>적용 범위 안내<span class="en">Scope of this system</span></h3>
     </div>
     <div class="scope-bd">
-      <p style="margin:0">이 시스템은 <b>APS 결재 시스템에 한하여</b> 결재 대리를 지정하는 시스템입니다.
-      <b>Flex &middot; Concur &middot; SAP-Be1</b> 등 그 밖의 시스템은 각 시스템 담당자에게 별도로 확인&middot;안내를 받으셔야 합니다.</p>
+      <p style="margin:0"><b>APS 결재 시스템은 자동으로</b> 대리가 적용됩니다.
+      <b>Flex &middot; Concur &middot; SAP-Be1</b> 도 이 화면에서 함께 신청하실 수 있지만,
+      자동 연동이 아니라 <b>각 시스템 담당자가 확인해 수동으로 이관</b>합니다.
+      대상 시스템에서 해당 항목을 선택해 주세요.</p>
       <div class="scope-list">
-        <div class="t">다른 시스템 문의처 &middot; OTHER SYSTEMS</div>
+        <div class="t">수동 처리 시스템 &middot; APPLIED MANUALLY</div>
         <div class="scope-row"><span class="sys">Flex</span><span class="own">HR팀</span></div>
         <div class="scope-row"><span class="sys">Concur</span><span class="own">Accounting팀</span></div>
         <div class="scope-row"><span class="sys">SAP-Be1</span><span class="own">IT팀</span></div>
       </div>
-      <p class="en-p">This system assigns approval deputies <b>for APS systems only</b>.
-      For other systems such as Flex, Concur and SAP-Be1, please contact the owner of each system directly.</p>
+      <p class="en-p">APS systems are handled <b>automatically</b>.
+      Flex, Concur and SAP-Be1 can also be requested here, but each system owner
+      <b>applies them manually</b> — select them under Scope.</p>
     </div>
     <div class="scope-ft"><button onclick="closeScopeNotice()">확인 &middot; OK</button></div>
   </div>
@@ -796,8 +829,16 @@ const SYSTEMS = [
   { key: 'GA',  label: 'General Affairs' },
   { key: 'LTR', label: 'LTR-PC' },
   { key: 'CTR', label: 'Purchase Requisition' },
-  { key: 'ACO', label: 'Accounting Others' }
+  { key: 'ACO', label: 'Accounting Others' },
+  /* 아래 셋은 APS 가 아니라 자동 연동이 되지 않는다(ext:true).
+     신청은 여기서 받되 실제 권한 이관은 각 시스템 담당자가 수동으로 처리한다.
+     관리자 화면에서 담당자가 골라 볼 수 있도록 같은 목록에 둔다. */
+  { key: 'FLEX',   label: 'Flex',      ext: true, owner: 'HR팀' },
+  { key: 'CONCUR', label: 'Concur',    ext: true, owner: 'Accounting팀' },
+  { key: 'SAPBE1', label: 'SAP-Be1',   ext: true, owner: 'IT팀' }
 ];
+const EXT_KEYS = SYSTEMS.filter(s => s.ext).map(s => s.key);
+const APS_KEYS = SYSTEMS.filter(s => !s.ext).map(s => s.key);
 
 const MSAL_CONFIG = {
   auth: { clientId: CLIENT_ID, authority: 'https://login.microsoftonline.com/' + TENANT_ID,
@@ -1299,12 +1340,28 @@ function onPeriodChange() {
 
 /* ── 대상 시스템 ────────────────────────────────────────── */
 function renderSystems() {
-  document.getElementById('f-syslist').innerHTML = SYSTEMS.map(s =>
+  // APS 는 「APS 전체 시스템」에 포함되므로 전체를 켜면 잠긴다(.sys-chk).
+  // 외부 시스템은 전체와 무관하게 개별로 고르므로 잠그지 않는다(.ext-chk).
+  document.getElementById('f-syslist').innerHTML = SYSTEMS.filter(s => !s.ext).map(s =>
     '<label class="chk dim"><input type="checkbox" class="sys-chk" value="' + esc(s.key) + '" disabled onchange="onScopeOne()"> ' + esc(s.label) + '</label>'
+  ).join('');
+  const adSc = document.getElementById('ad-scope');
+  if (adSc && adSc.options.length <= 2) {
+    SYSTEMS.forEach(s => {
+      const o = document.createElement('option');
+      o.value = s.key; o.textContent = s.label + (s.ext ? ' (' + s.owner + ')' : '');
+      adSc.appendChild(o);
+    });
+  }
+  document.getElementById('f-extlist').innerHTML = SYSTEMS.filter(s => s.ext).map(s =>
+    '<label class="chk"><input type="checkbox" class="ext-chk" value="' + esc(s.key) + '" onchange="onScopeOne()"> ' +
+    esc(s.label) + '<span class="sub">' + esc(s.owner) + '</span></label>'
   ).join('');
 }
 function onScopeAll() {
   // 전체를 켜면 개별 선택을 잠근다. 잠긴 항목은 흐리게 보여 상태를 알 수 있게 한다.
+  // 「APS 전체 시스템」은 APS 12개만 덮는다. 외부 3개(.ext-chk)는 별도 선택이므로
+  // 잠그지 않는다 — 자동 연동이 아니라 담당자 수동 처리라 의도적으로 골라야 한다.
   const all = document.getElementById('f-all').checked;
   document.querySelectorAll('.sys-chk').forEach(c => {
     c.disabled = all; if (all) c.checked = false;
@@ -1312,16 +1369,30 @@ function onScopeAll() {
   });
 }
 function onScopeOne() { /* 개별 선택 시 별도 처리 없음 — 제출 시 검증 */ }
+/* 저장 형식 — 쉼표 구분 키 목록. 'ALL' 토큰은 「APS 전체」를 뜻한다.
+   예) 'ALL'            APS 전체
+       'ALL,FLEX'       APS 전체 + Flex
+       'GW,IT,CONCUR'   GW·IT·Concur
+   GW·IT 의 판정도 목록에 'ALL' 이 있으면 통과하도록 함께 맞췄다. */
 function getScope() {
-  if (document.getElementById('f-all').checked) return 'ALL';
-  const on = [...document.querySelectorAll('.sys-chk')].filter(c => c.checked).map(c => c.value);
-  return on.join(',');
+  const parts = [];
+  if (document.getElementById('f-all').checked) parts.push('ALL');
+  else parts.push(...[...document.querySelectorAll('.sys-chk')].filter(c => c.checked).map(c => c.value));
+  parts.push(...[...document.querySelectorAll('.ext-chk')].filter(c => c.checked).map(c => c.value));
+  return parts.join(',');
+}
+// 이 신청에 외부(수동 처리) 시스템이 들어 있는지
+function hasExtScope(v) {
+  const keys = String(v || '').split(',').map(x => x.trim());
+  return EXT_KEYS.some(k => keys.includes(k));
 }
 function scopeLabel(v) {
   const s = (v || '').trim();
-  if (!s || s === 'ALL') return '전체 시스템';
+  if (!s) return 'APS 전체 시스템';
   const keys = s.split(',').map(x => x.trim()).filter(Boolean);
-  return keys.map(k => (SYSTEMS.find(x => x.key === k) || {}).label || k).join(' · ');
+  const out = keys.map(k => k === 'ALL' ? 'APS 전체 시스템'
+    : ((SYSTEMS.find(x => x.key === k) || {}).label || k));
+  return out.join(' · ');
 }
 
 // 생략 사유를 한 줄로. 기록(ClosedComment)에 쓴다.
@@ -1875,10 +1946,18 @@ async function loadAdmin(force) {
 }
 function renderAdmin() {
   const fs = document.getElementById('ad-status').value;
+  const sc = (document.getElementById('ad-scope') || {}).value || '';
   const q = (document.getElementById('ad-search').value || '').trim().toLowerCase();
   const list = adminData.filter(r => {
     const f = r.fields;
     if (fs && effStatus(f) !== fs) return false;
+    if (sc) {
+      const keys = String(f.Scope || '').split(',').map(x => x.trim());
+      if (sc === '__EXT__') { if (!hasExtScope(f.Scope)) return false; }
+      // APS 키는 'ALL' 에도 포함된다. 외부 키는 'ALL' 에 포함되지 않는다.
+      else if (EXT_KEYS.includes(sc)) { if (!keys.includes(sc)) return false; }
+      else if (!keys.includes(sc) && !keys.includes('ALL')) return false;
+    }
     if (!q) return true;
     return [f.Title, f.RequesterName, f.RequesterEmail, f.DeputyName, f.DeputyEmail, f.SubmittedByName]
       .some(v => (v || '').toString().toLowerCase().includes(q));
@@ -1893,7 +1972,8 @@ function renderAdmin() {
       '<td class="mini">' + esc(f.RequesterEmail || '') + (isProxyReq(f) ? '<span class="proxy-tag">대신</span>' : '') + '</td>' +
       '<td class="mini">' + esc(f.DeputyEmail || '') + '</td>' +
       '<td>' + fmtDay(f.StartDate) + ' ~ ' + fmtDay(f.EndDate) + '</td>' +
-      '<td class="mini">' + esc(scopeLabel(f.Scope)) + '</td>' +
+      '<td class="mini">' + esc(scopeLabel(f.Scope)) +
+        (hasExtScope(f.Scope) ? '<span class="ext-tag" title="자동 연동 아님 — 담당자 수동 이관">수동</span>' : '') + '</td>' +
       '<td><span class="st ' + stClass(st) + '">' + esc(st) + '</span></td>' +
       '<td class="mini">' + fmtDate(f.RequestDate) + '</td></tr>';
   }).join('') : '<tr><td colspan="8" class="list-empty">해당하는 신청이 없습니다.</td></tr>';
