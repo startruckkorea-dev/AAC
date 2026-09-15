@@ -386,6 +386,23 @@ button.is-busy:hover{opacity:.72}
 .sg-d{font-size:11.5px;line-height:1.5;margin-left:2px}
 .sg-d b{font-weight:700}
 .sg-grid{margin:9px 0 0 0}
+/* 개별 선택 접기 — 기본은 접힘. 전체 선택 상태에서는 열어도 항목이 잠겨 있어
+   흐리게 보이므로, 잠긴 상태임을 요약 줄에서도 알 수 있게 색을 낮춘다. */
+.sg-fold{margin-top:10px}
+.sg-fold-h{cursor:pointer;list-style:none;list-style-type:none;
+  display:inline-flex;align-items:center;gap:5px;
+  font-size:11.5px;font-weight:600;color:#0b5fa5;user-select:none;padding:1px 0}
+.sg-fold-h::-webkit-details-marker{display:none}
+.sg-fold-h::before{content:'\25BE';font-size:.85em;color:#7aa7d4;
+  transform:rotate(-90deg);transition:transform .15s}
+.sg-fold[open] > .sg-fold-h::before{transform:rotate(0)}
+.sg-fold-h:hover{color:#0078d4}
+.sg-fold.locked > .sg-fold-h{color:#8a95a5}
+.sg-fold.locked > .sg-fold-h::before{color:#c8c6c4}
+.sg-fold.locked .sg-cnt{background:#f3f2f1;color:#8a95a5}
+.sg-cnt{background:#e3eef9;color:#0b5fa5;border-radius:8px;padding:0 6px;
+  font-size:9.5px;font-weight:700}
+.sg-fold-h .en{font-size:.72rem;font-weight:400;color:#a7c3d8;margin-left:2px}
 .sg-auto{background:#f7fbff;border:1px solid #cfe3f5;border-left:3px solid #0078d4}
 .sg-auto .sg-badge{background:#0078d4;color:#fff}
 .sg-auto .sg-t{color:#004578}
@@ -423,33 +440,8 @@ button.is-busy:hover{opacity:.72}
 .file-dl.off{color:#a19f9d;cursor:default}
 .file-none{background:#f9f9f9;border:1px solid #edebe9;border-radius:4px;
   padding:12px;margin-top:8px;text-align:center;color:#a19f9d;font-size:.78rem}
-/* 대신 신청 담당자 — 한 줄로 잇는다. 잠김이면 노랑, 가능하면 회색으로 톤만 바꾼다. */
-.pv-lock{display:inline-flex;align-items:center;flex-wrap:wrap;gap:4px 8px;
-  background:transparent;border:1px solid transparent;border-radius:6px;
-  padding:3px 2px;font-size:11px;line-height:1.5;cursor:help}
-.pv-lock.ok{background:transparent;border-color:transparent}
-.pv-lock-t{flex-shrink:0;font-weight:600;color:#8a5a00;font-size:10.5px;letter-spacing:.01em}
-.pv-lock-t::before{content:'\24D8';margin-right:4px;font-weight:400;opacity:.8}
-.pv-lock.ok .pv-lock-t{color:#8a8886}
-.pv-lock-l{display:inline-flex;flex-wrap:wrap;gap:4px}
-/* 이름을 칩으로 띄워 놓는다. 가운뎃점으로 이어 붙이면 6명에서 한 덩어리로 뭉쳐 보인다. */
-.pv-who{white-space:nowrap;font-weight:500;font-size:10.5px;cursor:pointer;
-  text-decoration:none;transition:all .12s;
-  background:#fffaf0;border:1px solid #f0dcae;border-radius:9px;padding:1px 8px;color:#8a5a00}
-.pv-who:hover{background:#fff4ce;border-color:#d9a419;text-decoration:none}
-.pv-who::after{content:'\2709';margin-left:4px;font-size:.92em;opacity:.55}
-.pv-who:hover::after{opacity:1}
-.pv-lock.ok .pv-who{background:#f7f9fb;border-color:#e1dfdd;color:#605e5c}
-.pv-lock.ok .pv-who:hover{background:#f0f6ff;border-color:#0078d4;color:#0b5fa5}
-.pv-none{color:#a4262c;font-weight:600;font-size:10.5px}
  /* 요청 양식 복사 — 눈에 걸려야 쓰이므로 명단 칩보다 강하게 둔다(파란 채움).
     이모지는 쓰지 않는다. */
-.pv-copy{margin-left:4px;font-family:inherit;font-size:10.5px;font-weight:700;cursor:pointer;
-  background:#0078d4;border:1px solid #0078d4;border-radius:9px;padding:2px 12px;color:#fff;
-  white-space:nowrap;letter-spacing:.01em;transition:all .12s;
-  box-shadow:0 1px 3px rgba(0,120,212,.3)}
-.pv-copy:hover{background:#0062b1;border-color:#0062b1;box-shadow:0 2px 6px rgba(0,120,212,.38)}
-.pv-copy:disabled{background:#107c10;border-color:#107c10;color:#fff;cursor:default;box-shadow:none}
 .pgbar{display:flex;gap:4px;justify-content:center;flex-wrap:wrap;margin-top:12px}
 .pgbar:empty{display:none;margin:0}
 .ext-tag{display:inline-block;margin-left:5px;background:#fff4ce;border:1px solid #f2d68c;
@@ -604,7 +596,6 @@ tr:hover .reqno{text-decoration:underline}
         <!-- 설정 파일(AAC_PROXY_1~10)에 등록된 명단. 「사전에 지정된 담당자만」 이라고만
              하면 누구에게 부탁해야 할지 알 수 없다. 세그먼트와 같은 행 오른쪽에 둬
              폼 흐름을 끊지 않는다. 이름은 영문 표기라 라벨도 영문으로 맞췄다. -->
-        <span id="pv-locked" class="pv-lock" style="display:none"></span>
       </div>
 
       <div class="row-lbl" id="pv-row" style="display:none">
@@ -670,7 +661,14 @@ tr:hover .reqno{text-decoration:underline}
         </div>
         <label class="chk-all"><input type="checkbox" id="f-all" checked onchange="onScopeAll()">
           APS 전체 시스템<span class="sub">All APS systems</span></label>
-        <div class="sysgrid sg-grid" id="f-syslist"></div>
+        <!-- 14개 체크박스는 접어 둔다. 기본값이 「APS 전체 시스템」이라 대부분은 펼칠
+             일이 없고, 펼쳐 두면 격자가 화면 절반을 차지해 아래 항목이 밀린다.
+             일부만 맡기려는 사람만 열어 쓰면 된다. -->
+        <details class="sg-fold">
+          <summary class="sg-fold-h">개별 선택<span class="sg-cnt">14</span>
+            <span class="en">Pick individual systems</span></summary>
+          <div class="sysgrid sg-grid" id="f-syslist"></div>
+        </details>
       </div>
 
       <div class="scope-grp sg-manual">
@@ -1416,13 +1414,9 @@ function onProxyMode(){
   renderApprPreview();
 }
 function initProxy(){
-  // 대신 신청은 누구나 할 수 있다(canProxy 참고). 잠금 처리(radio.disabled·.off)는
-  // 더 이상 걸리지 않으므로 없앴다 — 남겨 두면 읽는 사람이 제한이 있다고 오해한다.
-  // 담당자 안내는 「부탁할 수 있는 사람」 목록이라 항상 보여준다.
-  renderProxyLock();
-  // display 를 지워 CSS 의 inline-flex 가 살아나게 한다. 'flex' 로 덮으면
-  // 블록이 되어 세그먼트와 같은 행에 있지 못하고 아래로 떨어진다.
-  document.getElementById('pv-locked').style.display = '';
+  // 대신 신청은 누구나 할 수 있다(canProxy 참고). 잠금 처리도, 담당자 명단 안내도
+  // 없앴다 — 전원이 직접 할 수 있으면 「누구에게 부탁하라」는 안내가 필요 없고,
+  // 그 줄이 신청 유형 바로 아래를 차지해 폼 흐름만 끊었다.
   onProxyMode();   // 본인 신청 상태로 표 왼쪽을 채운다
 }
 function onPDeptChange(){
@@ -1533,6 +1527,12 @@ function onScopeAll() {
     c.disabled = all; if (all) c.checked = false;
     c.closest('.chk').classList.toggle('dim', all);
   });
+  // 전체 선택이면 개별 선택을 열 이유가 없으므로 접고, 요약 줄도 흐리게 한다.
+  const fold = document.querySelector('.sg-fold');
+  if (fold) {
+    if (all) fold.open = false;
+    fold.classList.toggle('locked', all);
+  }
 }
 function onScopeOne() { /* 개별 선택 시 별도 처리 없음 — 제출 시 검증 */ }
 function clearFilePick() {
@@ -2104,35 +2104,6 @@ function proxyCell(f) {
    관리자는 별도 등록 없이도 가능하므로 그 사실도 한 줄로 적는다. */
 /* 명단 안내 — 대신 신청은 누구나 할 수 있게 됐으므로(canProxy 참고) 이 줄은
    「권한자 목록」이 아니라 「대신 신청을 부탁할 수 있는 담당자」 안내다. */
-/* 「대신 신청을 부탁할 수 있는 담당자」 안내 한 줄.
-   · 이름만 잇고 메일은 title 로 넘긴다 — 이름+메일을 함께 쓰면 6~10명에서 두세 줄을
-     먹어 폼 흐름을 끊는다.
-   · 이름을 누르면 그 담당자에게 메일이 열린다(받는 사람 + 제목만).
-     mailto 본문은 넣지 않는다 — Outlook 이 본문의 UTF-8 퍼센트 인코딩을 복원하지 못해
-     한글 사이에 폰트 태그 조각을 끼워 넣는다. CRLF 로 바꿔도 줄 나눔만 고쳐졌다.
-     제목은 같은 조건에서도 정상이라 제목만 채우고, 요청 양식은 클립보드 복사로 제공한다
-     (copyProxyTemplate — 메일 클라이언트를 거치지 않아 깨질 여지가 없다).
-   · canProxy() 가 항상 true 이므로 잠김 상태는 없다. 인자를 받지 않는다. */
-function renderProxyLock() {
-  const box = document.getElementById('pv-locked');
-  if (!box) return;
-  const subj = encodeURIComponent('[STK 결재 대리 지정] 대신 신청 요청');
-  const names = proxyPeople.length
-    ? proxyPeople.map(p => '<a class="pv-who" href="mailto:' + esc(p.email) +
-        '?subject=' + subj + '" title="' + esc(p.email) + ' — 메일 보내기">' +
-        esc(p.name || p.email) + '</a>').join('')
-    : '<span class="pv-none">no one registered yet</span>';
-  box.className = 'pv-lock ok';   // 잠김이 없으므로 항상 옅은 톤
-  box.title = 'Anyone can submit on behalf of others. These staff can help if you need it. '
-    + 'To change the list, contact ' + contactEmail;
-  box.innerHTML =
-    '<span class="pv-lock-t">Ask for help</span>' +
-    '<span class="pv-lock-l">' + names + '</span>' +
-    (proxyPeople.length ? '<button type="button" class="pv-copy" onclick="copyProxyTemplate(this)"' +
-      ' title="요청 양식을 복사합니다. 메일 본문에 붙여넣기(Ctrl+V) 하세요.">Copy request form</button>' : '');
-
-}
-
 /* ── 첨부파일 ───────────────────────────────────────────────────────
    저장 형식은 GW 와 같다: '파일명||ENC||base64(driveId###itemId)' 를 ';' 로 이음.
    다른 APS 시스템과 형식을 맞춰 뒀으므로 통합 결재함에서도 같은 파서로 읽힌다. */
@@ -2233,55 +2204,6 @@ async function bindFileLinks(root) {
       } finally { a.innerHTML = old; }
     });
   });
-}
-
-/* 요청 양식 복사 — mailto 본문으로는 표를 넣을 수 없다(스킴이 평문만 받고,
-   Outlook 은 한글 퍼센트 인코딩도 복원하지 못한다). 그래서 클립보드에 넣는다.
-   text/html 과 text/plain 을 함께 담으므로 Outlook·OWA 에는 표로,
-   메모장 같은 평문 편집기에는 글자로 붙는다. 메일 클라이언트를 거치지 않아 깨지지 않는다. */
-async function copyProxyTemplate(btn) {
-  const me = user ? (user.name || '') : '';
-  const myMail = user ? (user.email || user.username || '') : '';
-  const rows = [
-    ['위임자', esc(me) + (myMail ? ' &lt;' + esc(myMail) + '&gt;' : '')],
-    ['대리인', ''], ['기간', ''], ['대상 시스템', ''], ['사유', '']
-  ];
-  const html = '<p style="margin:0 0 10px;font-family:\'Malgun Gothic\',sans-serif;font-size:10pt">'
-    + '결재 대리 지정을 대신 신청해 주시기를 요청합니다.</p>'
-    + '<table style="border-collapse:collapse;font-family:\'Malgun Gothic\',sans-serif;font-size:10pt">'
-    + rows.map(([k, v]) =>
-        '<tr>'
-        + '<td style="border:1px solid #d0d0d0;background:#f2f2f2;padding:5px 12px;font-weight:bold;white-space:nowrap">' + k + '</td>'
-        + '<td style="border:1px solid #d0d0d0;padding:5px 12px;min-width:260px">' + v + '</td>'
-        + '</tr>').join('')
-    + '</table>'
-    + '<p style="margin:10px 0 0;font-family:\'Malgun Gothic\',sans-serif;font-size:9pt;color:#666">'
-    + 'STK 결재 대리 지정 시스템 &nbsp;<a href="' + window.location.href + '">' + window.location.href + '</a></p>';
-  const text = [
-    '결재 대리 지정을 대신 신청해 주시기를 요청합니다.', '',
-    '위임자      : ' + me + (myMail ? ' <' + myMail + '>' : ''),
-    '대리인      : ', '기간        : ', '대상 시스템 : ', '사유        : ', '',
-    window.location.href
-  ].join('\r\n');
-  const done = t => { if (!btn) return; const o = btn.textContent;
-    btn.textContent = t; btn.disabled = true;
-    setTimeout(() => { btn.textContent = o; btn.disabled = false; }, 1800); };
-  try {
-    if (navigator.clipboard && window.ClipboardItem) {
-      await navigator.clipboard.write([new ClipboardItem({
-        'text/html': new Blob([html], { type: 'text/html' }),
-        'text/plain': new Blob([text], { type: 'text/plain' })
-      })]);
-    } else if (navigator.clipboard) {
-      await navigator.clipboard.writeText(text);   // 표 없이 글자만
-    } else {
-      throw new Error('클립보드를 쓸 수 없습니다.');
-    }
-    done('Copied');
-  } catch (e) {
-    console.error('[AAC] 양식 복사 실패:', e);
-    showAlert('복사하지 못했습니다.', (e.message || '') + '\n메일 본문에 직접 입력해 주세요.', '\u274C');
-  }
 }
 
 function showNoAuth() { document.getElementById('aac-noauth-modal').classList.add('show'); }
