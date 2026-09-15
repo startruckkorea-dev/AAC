@@ -107,8 +107,18 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
 .aac-note{background:#f7fbff;border:1px solid #cfe3f5;border-left:3px solid #0078d4;
   border-radius:6px;padding:14px 18px;margin-bottom:16px}
 /* 제목 — 카드 제목과 같은 구성(한글 + 옅은 영문). .card-title / .en 규칙을 따른다. */
-.aac-note-h{font-size:.82rem;font-weight:700;color:#004578;margin-bottom:9px;
-  padding-bottom:8px;border-bottom:1px solid #e3eef9}
+.aac-note-h{font-size:.82rem;font-weight:700;color:#004578;
+  cursor:pointer;list-style:none;list-style-type:none;
+  display:flex;align-items:center;gap:5px;
+  padding:0;margin:0;user-select:none}
+.aac-note-h::-webkit-details-marker{display:none}   /* 사파리 기본 삼각형 제거 */
+/* 접힘/펼침 화살표 — 펼치면 아래를 향한다 */
+.aac-note-h::before{content:'\25BE';font-size:.8em;color:#7aa7d4;
+  transform:rotate(-90deg);transition:transform .15s;flex-shrink:0}
+.aac-note[open] > .aac-note-h::before{transform:rotate(0)}
+.aac-note[open] > .aac-note-h{margin-bottom:9px;padding-bottom:8px;border-bottom:1px solid #e3eef9}
+.aac-note:not([open]){padding:9px 16px}
+.aac-note-h:hover{color:#0078d4}
 .aac-note-h span{font-size:.76em;font-weight:400;color:#7aa7d4;margin-left:5px;letter-spacing:.01em}
 /* 본문 — 한글·영문 같은 크기(12px). 예전에는 영문만 .86em 이라 잔글씨로 보였다.
    word-break:keep-all 로 한글 단어가 중간에서 잘리지 않게 한다. */
@@ -358,6 +368,9 @@ button.is-busy:hover{opacity:.72}
    성격 구분은 격자 항목의 노란 톤으로만 한다. */
 /* 대상 시스템 두 그룹 — 자동은 파란 계열, 수동은 노란 계열.
    격자는 그룹 상자 안에 들어가므로 기본 .sysgrid 의 margin-left:94px 를 0 으로 되돌린다. */
+/* 기간 안내 — 상자 없이 빨간 한 줄. 앞에 * 를 붙여 주의임을 표시한다. */
+.pnote{font-size:11.5px;line-height:1.6;color:#a4262c;margin:2px 0 0 94px}
+.pnote::before{content:'* ';font-weight:700}
 .scope-note{font-size:11.5px;line-height:1.6;color:#605e5c;margin:0 0 2px}
 .scope-note b{color:#0b5fa5;font-weight:700}
 .scope-note .en{color:#a19f9d;margin-left:4px}
@@ -563,8 +576,10 @@ tr:hover .reqno{text-decoration:underline}
       <div id="aac-lock" class="aac-lock" style="display:none"></div>
       <div id="cfg-warn" class="cfgwarn">설정 파일(system_config_final.xlsx)을 불러오지 못했습니다. 관리자 정보가 비어 있을 수 있으니 IT팀에 알려주세요.</div>
 
-      <div class="aac-note">
-        <div class="aac-note-h">결재 대리 지정이란<span>What is Approval Delegation?</span></div>
+      <!-- 접어 둔다. 처음 쓰는 사람에게는 필요한 설명이지만 매번 보면 폼 위를
+           길게 차지한다. details 를 쓰면 상태 기억이나 토글 코드가 필요 없다. -->
+      <details class="aac-note">
+        <summary class="aac-note-h">결재 대리 지정이란<span>What is Approval Delegation?</span></summary>
         <p>출장 &middot; 휴가 등으로 자리를 비우는 기간 동안, 내가 처리해야 할 결재를 다른 직원이 대신 볼 수 있도록 미리 지정하는 기능입니다.
         지정된 기간에만 적용되며, 기간이 지나면 자동으로 해제됩니다.
         <b>원래 결재자 기록은 그대로 남고</b>, 대리인이 처리한 건은 대리 처리로 표시됩니다.
@@ -573,7 +588,7 @@ tr:hover .reqno{text-decoration:underline}
         It applies only for the period you set and expires automatically.
         <b>Your own approval history is kept</b>, and items handled by the deputy are marked as delegated.
         <b>The request is confirmed by the deputy's acceptance alone</b>, and a person acting as a deputy cannot pass their approvals on to someone else during that period.</p>
-      </div>
+      </details>
 
       <div class="section-title">1. 위임 (Delegation)</div>
 
@@ -1470,7 +1485,9 @@ function onPeriodChange() {
   if (!s || !e) { box.textContent = '-'; return; }
   const ds = new Date(s.replace(' ', 'T') + ':00'), de = new Date(e.replace(' ', 'T') + ':00');
   if (isNaN(ds) || isNaN(de)) { box.textContent = '-'; return; }
-  if (de <= ds) { box.textContent = '-'; msg.innerHTML = '<div class="msg-e">종료가 시작보다 빠르거나 같습니다.</div>'; return; }
+  // 기간 안내는 상자 대신 기간 줄 바로 아래 빨간 한 줄로 둔다(.pnote).
+  // 주황 상자로 감싸면 폼 흐름이 끊기고, 경고 수준이 과하게 읽혔다.
+  if (de <= ds) { box.textContent = '-'; msg.innerHTML = '<div class="pnote">종료가 시작보다 빠르거나 같습니다.</div>'; return; }
   // 하루를 넘지 않으면 시간으로, 넘으면 일수로 보여준다
   const mins = Math.round((de - ds) / 60000);
   const _h = Math.floor(mins / 60), _m = mins % 60;
@@ -1478,9 +1495,9 @@ function onPeriodChange() {
     : mins < 1440 ? (_h + '시간' + (_m ? ' ' + _m + '분' : ''))
     : (Math.floor(mins / 1440) + '일' + (mins % 1440 ? ' ' + Math.floor((mins % 1440) / 60) + '시간' : ''));
   const now = kstNow().toISOString().slice(0, 16).replace('T', ' ');
-  if (e < now) msg.innerHTML = '<div class="msg-e">이미 지난 기간입니다. 종료를 지금 이후로 지정해 주세요.</div>';
-  else if (mins > 90 * 1440) msg.innerHTML = '<div class="msg-w">90일을 넘는 장기 지정입니다. 필요한 기간만 지정하는 것을 권장합니다.</div>';
-  else if (s < now) msg.innerHTML = '<div class="msg-w">시작이 현재보다 이전입니다. 승인 시점부터 효력이 생깁니다.</div>';
+  if (e < now) msg.innerHTML = '<div class="pnote">이미 지난 기간입니다. 종료를 지금 이후로 지정해 주세요.</div>';
+  else if (mins > 90 * 1440) msg.innerHTML = '<div class="pnote">90일을 넘는 장기 지정입니다. 필요한 기간만 지정하는 것을 권장합니다.</div>';
+  else if (s < now) msg.innerHTML = '<div class="pnote">시작이 현재보다 이전입니다. 승인 시점부터 효력이 생깁니다.</div>';
 }
 
 /* ── 대상 시스템 ────────────────────────────────────────── */
