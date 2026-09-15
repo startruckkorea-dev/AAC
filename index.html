@@ -382,6 +382,8 @@ button.is-busy:hover{opacity:.72}
 .ext-grid .chk:hover{border-color:#d9a419;background:#fffaf0}
 .ext-grid .chk .sub{color:#8a5a00;font-weight:600;margin-left:auto;font-size:10.5px}
 .ext-grid .chk:has(input:checked){border-color:#d9a419;background:#fff8e8}
+.pgbar{display:flex;gap:4px;justify-content:center;flex-wrap:wrap;margin-top:12px}
+.pgbar:empty{display:none;margin:0}
 .ext-tag{display:inline-block;margin-left:5px;background:#fff4ce;border:1px solid #f2d68c;
   color:#8a5a00;border-radius:9px;padding:0 6px;font-size:9.5px;font-weight:700;
   white-space:nowrap;vertical-align:1px}
@@ -412,6 +414,9 @@ button.is-busy:hover{opacity:.72}
   padding:1px 7px;font-size:10px;font-weight:700;margin-left:6px;vertical-align:1px}
 
 .mini{font-size:11.5px;color:#a19f9d;margin-top:2px}
+/* 기간 칸 — 다른 칸이 .mini(11.5px)인데 기간만 표 기본 13px 이라 글꼴이 달라
+   보였다. 크기는 맞추고 색은 본문색으로 둔다(중요한 정보라 흐리게 하지 않는다). */
+.perd{font-size:11.5px;color:#323130;font-variant-numeric:tabular-nums}
 .cfgwarn{display:none;background:#fdf6e3;border:1px solid #f0d9a0;border-radius:6px;
   padding:10px 13px;font-size:12px;color:#8a6116;margin-bottom:16px}
 .tbl-wrap{overflow-x:auto}
@@ -637,9 +642,10 @@ button.is-busy:hover{opacity:.72}
         </span>
       </div>
       <div class="tbl-wrap"><table class="voucher-table">
-        <thead><tr><th style="width:50px">번호</th><th>신청번호</th><th>대리인</th><th>기간</th><th>대상</th><th style="width:90px">상태</th><th style="width:140px">신청일</th></tr></thead>
-        <tbody id="my-body"><tr><td colspan="7" class="list-empty">불러오는 중...</td></tr></tbody>
+        <thead><tr><th style="width:50px">번호</th><th>신청번호</th><th>대리인</th><th>기간</th><th>대상</th><th style="width:150px">대신 신청자</th><th style="width:90px">상태</th><th style="width:140px">신청일</th></tr></thead>
+        <tbody id="my-body"><tr><td colspan="8" class="list-empty">불러오는 중...</td></tr></tbody>
       </table></div>
+      <div class="pgbar" id="my-pagination"></div>
     </div>
   </div>
 
@@ -653,9 +659,10 @@ button.is-busy:hover{opacity:.72}
         </span>
       </div>
       <div class="tbl-wrap"><table class="voucher-table">
-        <thead><tr><th style="width:50px">번호</th><th>신청번호</th><th>신청자</th><th>대리인</th><th>기간</th><th style="width:120px">내 역할</th><th style="width:140px">신청일</th></tr></thead>
-        <tbody id="apr-body"><tr><td colspan="7" class="list-empty">불러오는 중...</td></tr></tbody>
+        <thead><tr><th style="width:50px">번호</th><th>신청번호</th><th>신청자</th><th>대리인</th><th>기간</th><th style="width:150px">대신 신청자</th><th style="width:120px">내 역할</th><th style="width:140px">신청일</th></tr></thead>
+        <tbody id="apr-body"><tr><td colspan="8" class="list-empty">불러오는 중...</td></tr></tbody>
       </table></div>
+      <div class="pgbar" id="apr-pagination"></div>
     </div>
 
     <!-- 위임받은 사람이 「내가 언제까지 무엇을 위임받았는지」 볼 곳이 없었다.
@@ -697,9 +704,10 @@ button.is-busy:hover{opacity:.72}
         </div>
       </div>
       <div class="tbl-wrap"><table class="voucher-table">
-        <thead><tr><th style="width:50px">번호</th><th>신청번호</th><th>신청자</th><th>대리인</th><th>기간</th><th>대상</th><th style="width:90px">상태</th><th style="width:140px">신청일</th></tr></thead>
-        <tbody id="ad-body"><tr><td colspan="8" class="list-empty">불러오는 중...</td></tr></tbody>
+        <thead><tr><th style="width:50px">번호</th><th>신청번호</th><th>신청자</th><th>대리인</th><th>기간</th><th>대상</th><th style="width:150px">대신 신청자</th><th style="width:90px">상태</th><th style="width:140px">신청일</th></tr></thead>
+        <tbody id="ad-body"><tr><td colspan="9" class="list-empty">불러오는 중...</td></tr></tbody>
       </table></div>
+      <div class="pgbar" id="ad-pagination"></div>
     </div>
     <div class="card">
       <div class="card-title">진행중 &middot; 예정 대리 지정<span class="en">Active &amp; Upcoming</span></div>
@@ -1853,6 +1861,67 @@ function setBusy(btn, label) {
   }
 }
 
+/* ── 페이지 이동 (APS 공통) ──────────────────────────────────────────
+   GW(Goodwill-Approval 1456행)의 apsPagerHtml 과 같은 구현·같은 모양.
+   최대 7칸을 이어서 보이는 창으로, 끝에 가까워도 7칸을 채워 버튼 위치가 흔들리지 않는다.
+   처음(«)·마지막(») 버튼을 둔다 — 페이지가 많으면 › 를 여러 번 눌러야 끝에 닿는다.
+   PAGE_SIZE 는 GW 가 20 인데 AAC 는 건수가 적어 10 으로 둔다. */
+const PAGE_SIZE = 10, _pgState = {};
+function apsPagerHtml(cur, pages, mk) {
+  if (!pages || pages <= 1) return '';
+  cur = Math.max(0, Math.min(cur, pages - 1));
+  const b = (on, act, label, page, title) =>
+    '<button ' + (on ? 'onclick="' + mk(page) + '"' : 'disabled') +
+    (title ? ' title="' + title + '"' : '') +
+    ' style="min-width:30px;padding:4px 9px;border-radius:4px;font-size:.8rem;font-family:inherit;' +
+    'border:1px solid ' + (act ? '#0078d4' : on ? '#d2d0ce' : '#edebe9') + ';' +
+    'background:' + (act ? '#0078d4' : on ? '#fff' : '#f3f2f1') + ';' +
+    'color:' + (act ? '#fff' : on ? '#323130' : '#a19f9d') + ';' +
+    'font-weight:' + (act ? '700' : '400') + ';' +
+    'cursor:' + (on ? 'pointer' : 'default') + '">' + label + '</button>';
+  const start = Math.max(0, Math.min(cur - 3, pages - 7));
+  const end   = Math.min(pages, start + 7);
+  let h = b(cur > 0, false, '&laquo;',  0,       '처음으로')
+        + b(cur > 0, false, '&lsaquo;', cur - 1, '이전');
+  for (let p = start; p < end; p++) h += b(true, p === cur, String(p + 1), p, '');
+  h += b(cur < pages - 1, false, '&rsaquo;', cur + 1,   '다음')
+     + b(cur < pages - 1, false, '&raquo;',  pages - 1, '마지막으로');
+  return h;
+}
+/* items: 원본 배열(최신순), renderer(item, 화면번호) — 번호는 전체 기준으로 매긴다. */
+function pgSet(id, items, renderer, empty, cols) {
+  _pgState[id] = { items, page: 0, renderer, empty, cols };
+  pgRender(id);
+}
+function pgRender(id) {
+  const st = _pgState[id]; if (!st) return;
+  const body = document.getElementById(id + '-body'); if (!body) return;
+  const total = st.items.length;
+  const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const cur = Math.min(st.page, pages - 1); st.page = cur;
+  const slice = st.items.slice(cur * PAGE_SIZE, (cur + 1) * PAGE_SIZE);
+  body.innerHTML = slice.length
+    ? slice.map((it, i) => st.renderer(it, total - (cur * PAGE_SIZE + i))).join('')
+    : '<tr><td colspan="' + st.cols + '" class="list-empty">' + st.empty + '</td></tr>';
+  const pg = document.getElementById(id + '-pagination');
+  if (pg) pg.innerHTML = apsPagerHtml(cur, pages, p => "pgGo('" + id + "'," + p + ")");
+}
+function pgGo(id, p) {
+  const st = _pgState[id]; if (!st) return;
+  const pages = Math.ceil(st.items.length / PAGE_SIZE);
+  if (p < 0 || p >= pages) return;
+  st.page = p; pgRender(id);
+  // scrollIntoView 가 없는 환경(구형·일부 임베드)에서 페이지 이동 자체가 죽지 않게 감싼다.
+  const _tb = document.getElementById(id + '-body')?.closest('table');
+  if (_tb && typeof _tb.scrollIntoView === 'function') _tb.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+/* 대신 신청자 칸 — 대신 신청이 아니면 '-' 로 둔다(열 위치가 흔들리지 않게). */
+function proxyCell(f) {
+  if (!isProxyReq(f)) return '<td class="mini" style="color:#c8c6c4">-</td>';
+  return '<td class="mini">' + esc(f.SubmittedByEmail || '') +
+    '<span class="proxy-tag">대신</span></td>';
+}
+
 function showNoAuth() { document.getElementById('aac-noauth-modal').classList.add('show'); }
 function closeNoAuth()  { document.getElementById('aac-noauth-modal').classList.remove('show'); }
 
@@ -1894,21 +1963,23 @@ async function loadMy(force) {
     // 내가 위임자인 건 + 내가 대신 신청해 준 건 모두 보여준다
     myData = rows.filter(r => isMe(r.fields.RequesterEmail) || isMe(r.fields.SubmittedByEmail));
     document.getElementById('my-count').textContent = '총 ' + myData.length + '건';
-    document.getElementById('my-body').innerHTML = myData.length ? myData.map((r, i) => {
+    pgSet('my', myData, (r, no) => {
       const f = r.fields, st = effStatus(f);
       return '<tr style="cursor:pointer" onclick="openDetail(' + r.id + ')">' +
-        '<td>' + (myData.length - i) + '</td>' +
+        '<td>' + no + '</td>' +
         '<td style="color:#0078d4;font-weight:600">' + esc(f.Title || '') + '</td>' +
         '<td class="mini">' + esc(f.DeputyEmail || '') + '</td>' +
-        '<td>' + fmtDay(f.StartDate) + ' ~ ' + fmtDay(f.EndDate) +
-          (isProxyReq(f) ? '<div class="mini">위임자 ' + esc(f.RequesterName || '') + '</div>' : '') + '</td>' +
-        '<td class="mini">' + esc(scopeLabel(f.Scope)) + '</td>' +
+        '<td class="perd">' + fmtDay(f.StartDate) + ' ~ ' + fmtDay(f.EndDate) + '</td>' +
+        '<td class="mini">' + esc(scopeLabel(f.Scope)) +
+          (hasExtScope(f.Scope) ? '<span class="ext-tag">수동</span>' : '') + '</td>' +
+        proxyCell(f) +
         '<td><span class="st ' + stClass(st) + '">' + esc(st) + '</span></td>' +
         '<td class="mini">' + fmtDate(f.RequestDate) + '</td></tr>';
-    }).join('') : '<tr><td colspan="7" class="list-empty">신청 내역이 없습니다.</td></tr>';
+    }, '신청 내역이 없습니다.', 8);
   } catch (e) {
     if (seq !== _loadSeq.my) return;
-    document.getElementById('my-body').innerHTML = '<tr><td colspan="7" class="list-empty">불러오지 못했습니다. ' + esc(e.message) + '</td></tr>';
+    document.getElementById('my-body').innerHTML = '<tr><td colspan="8" class="list-empty">불러오지 못했습니다. ' + esc(e.message) + '</td></tr>';
+    const _pm = document.getElementById('my-pagination'); if (_pm) _pm.innerHTML = '';
   }
 }
 
@@ -1959,20 +2030,22 @@ async function loadApr(force) {
     const badge = document.getElementById('apr-badge');
     badge.textContent = n; badge.style.display = n ? '' : 'none';
     renderDelegatedToMe(reqs);
-    document.getElementById('apr-body').innerHTML = n ? aprData.map((x, i) => {
+    pgSet('apr', aprData, (x, no) => {
       const f = x.req.fields;
       return '<tr style="cursor:pointer" onclick="openDetail(' + x.req.id + ')">' +
-        '<td>' + (n - i) + '</td>' +
+        '<td>' + no + '</td>' +
         '<td style="color:#0078d4;font-weight:600">' + esc(f.Title || '') + '</td>' +
         '<td class="mini">' + esc(f.RequesterEmail || '') + '</td>' +
         '<td class="mini">' + esc(f.DeputyEmail || '') + '</td>' +
-        '<td>' + fmtDay(f.StartDate) + ' ~ ' + fmtDay(f.EndDate) + '</td>' +
+        '<td class="perd">' + fmtDay(f.StartDate) + ' ~ ' + fmtDay(f.EndDate) + '</td>' +
+        proxyCell(f) +
         '<td><span class="st st-대기">' + esc(x.apr.fields.ApproverRole || '') + '</span></td>' +
         '<td class="mini">' + fmtDate(f.RequestDate) + '</td></tr>';
-    }).join('') : '<tr><td colspan="7" class="list-empty">처리할 결재가 없습니다.</td></tr>';
+    }, '처리할 결재가 없습니다.', 8);
   } catch (e) {
     if (seq !== _loadSeq.apr) return;
-    document.getElementById('apr-body').innerHTML = '<tr><td colspan="7" class="list-empty">불러오지 못했습니다. ' + esc(e.message) + '</td></tr>';
+    document.getElementById('apr-body').innerHTML = '<tr><td colspan="8" class="list-empty">불러오지 못했습니다. ' + esc(e.message) + '</td></tr>';
+    const _pa = document.getElementById('apr-pagination'); if (_pa) _pa.innerHTML = '';
   }
 }
 
@@ -2010,19 +2083,20 @@ function renderAdmin() {
   });
   document.getElementById('ad-count').textContent = '총 ' + list.length + '건'
     + (list.length !== adminData.length ? ' / 전체 ' + adminData.length + '건' : '');
-  document.getElementById('ad-body').innerHTML = list.length ? list.map((r, i) => {
+  pgSet('ad', list, (r, no) => {
     const f = r.fields, st = effStatus(f);
     return '<tr style="cursor:pointer" onclick="openDetail(' + r.id + ')">' +
-      '<td>' + (list.length - i) + '</td>' +
+      '<td>' + no + '</td>' +
       '<td style="color:#0078d4;font-weight:600">' + esc(f.Title || '') + '</td>' +
-      '<td class="mini">' + esc(f.RequesterEmail || '') + (isProxyReq(f) ? '<span class="proxy-tag">대신</span>' : '') + '</td>' +
+      '<td class="mini">' + esc(f.RequesterEmail || '') + '</td>' +
       '<td class="mini">' + esc(f.DeputyEmail || '') + '</td>' +
-      '<td>' + fmtDay(f.StartDate) + ' ~ ' + fmtDay(f.EndDate) + '</td>' +
+      '<td class="perd">' + fmtDay(f.StartDate) + ' ~ ' + fmtDay(f.EndDate) + '</td>' +
       '<td class="mini">' + esc(scopeLabel(f.Scope)) +
         (hasExtScope(f.Scope) ? '<span class="ext-tag" title="자동 연동 아님 — 담당자 수동 이관">수동</span>' : '') + '</td>' +
+      proxyCell(f) +
       '<td><span class="st ' + stClass(st) + '">' + esc(st) + '</span></td>' +
       '<td class="mini">' + fmtDate(f.RequestDate) + '</td></tr>';
-  }).join('') : '<tr><td colspan="8" class="list-empty">해당하는 신청이 없습니다.</td></tr>';
+  }, '해당하는 신청이 없습니다.', 9);
 
   /* 예전에는 isActive() 만 걸러 「진행중」만 보여줬다. 그러면 수락이 끝났는데 아직
      시작하지 않은 건(예: 오늘 22:00 시작)이 어디에도 나오지 않아, 위임자가
