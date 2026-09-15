@@ -612,11 +612,11 @@ button.is-busy:hover{opacity:.72}
       </table></div>
     </div>
     <div class="card">
-      <div class="card-title">현재 유효한 대리 지정<span class="en">Active Delegations</span></div>
-      <div class="fld-hint" style="margin:0 0 10px">오늘 날짜 기준으로 효력이 있는 건입니다.</div>
+      <div class="card-title">진행중 &middot; 예정 대리 지정<span class="en">Active &amp; Upcoming</span></div>
+      <div class="fld-hint" style="margin:0 0 16px;padding-top:7px">수락이 끝난 건 중 <b>지금 효력이 있거나 아직 시작하지 않은</b> 건입니다. 시각 기준으로 판정하며, 진행중이 위에 옵니다.</div>
       <div class="tbl-wrap"><table class="voucher-table">
-        <thead><tr><th>신청번호</th><th>원래 결재자</th><th>대리인</th><th>기간</th><th>대상 시스템</th></tr></thead>
-        <tbody id="ad-active"><tr><td colspan="5" class="list-empty">-</td></tr></tbody>
+        <thead><tr><th>신청번호</th><th>원래 결재자</th><th>대리인</th><th>기간</th><th>대상 시스템</th><th style="width:90px">효력</th></tr></thead>
+        <tbody id="ad-active"><tr><td colspan="6" class="list-empty">-</td></tr></tbody>
       </table></div>
     </div>
   </div>
@@ -1852,15 +1852,27 @@ function renderAdmin() {
       '<td class="mini">' + fmtDate(f.RequestDate) + '</td></tr>';
   }).join('') : '<tr><td colspan="8" class="list-empty">해당하는 신청이 없습니다.</td></tr>';
 
-  const act = adminData.filter(r => isActive(r.fields));
-  document.getElementById('ad-active').innerHTML = act.length ? act.map(r => {
-    const f = r.fields;
-    return '<tr><td style="color:#0078d4;font-weight:600">' + esc(f.Title || '') + '</td>' +
+  /* 예전에는 isActive() 만 걸러 「진행중」만 보여줬다. 그러면 수락이 끝났는데 아직
+     시작하지 않은 건(예: 오늘 22:00 시작)이 어디에도 나오지 않아, 위임자가
+     「내가 누구에게 대리를 줬는지」 확인할 수 없었다. 예정도 함께 보여준다.
+     효력 판정은 결재함의 「내가 위임받은 권한」과 같은 delegatedEffect() 를 쓴다. */
+  const act = adminData
+    .filter(r => (r.fields.Status || '').trim() === '승인완료')
+    .map(r => ({ r, e: delegatedEffect(r.fields) }))
+    .filter(x => x.e.rank <= 1)            // 0=진행중, 1=예정 (2=만료 제외)
+    .sort((a, b) => a.e.rank - b.e.rank ||
+      String(kstStr(a.r.fields.StartDate)).localeCompare(String(kstStr(b.r.fields.StartDate))));
+  document.getElementById('ad-active').innerHTML = act.length ? act.map(x => {
+    const f = x.r.fields;
+    return '<tr style="cursor:pointer" onclick="openDetail(' + x.r.id + ')">' +
+      '<td style="color:#0078d4;font-weight:600">' + esc(f.Title || '') + '</td>' +
       '<td class="mini">' + esc(f.RequesterEmail || '') + '</td>' +
       '<td class="mini">' + esc(f.DeputyEmail || '') + '</td>' +
-      '<td>' + fmtDay(f.StartDate) + ' ~ ' + fmtDay(f.EndDate) + '</td>' +
-      '<td class="mini">' + esc(scopeLabel(f.Scope)) + '</td></tr>';
-  }).join('') : '<tr><td colspan="5" class="list-empty">현재 유효한 대리 지정이 없습니다.</td></tr>';
+      '<td>' + fmtDay(f.StartDate) + ' ~ ' + fmtDay(f.EndDate) +
+        ' <span class="dayspan">' + dayCount(f) + '</span></td>' +
+      '<td class="mini">' + esc(scopeLabel(f.Scope)) + '</td>' +
+      '<td><span class="st ' + x.e.cls + '">' + x.e.label + '</span></td></tr>';
+  }).join('') : '<tr><td colspan="6" class="list-empty">진행중이거나 예정된 대리 지정이 없습니다.</td></tr>';
 }
 
 /* ── 상세 · 결재 처리 ───────────────────────────────────── */
