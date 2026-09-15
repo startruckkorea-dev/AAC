@@ -755,9 +755,9 @@ button.is-busy:hover{opacity:.72}
       </div>
       <div class="scope-list sl-manual">
         <div class="t">수동 적용 &middot; APPLIED MANUALLY</div>
-        <div class="scope-row"><span class="sys">Flex</span><span class="own">HR팀</span></div>
-        <div class="scope-row"><span class="sys">Concur</span><span class="own">Accounting팀</span></div>
-        <div class="scope-row"><span class="sys">SAP-Be1</span><span class="own">IT팀</span></div>
+        <div class="scope-row"><span class="sys">Flex</span><span class="own">HR Team</span></div>
+        <div class="scope-row"><span class="sys">Concur</span><span class="own">Accounting Team</span></div>
+        <div class="scope-row"><span class="sys">SAP-Be1</span><span class="own">IT Team</span></div>
         <div class="sl-note">신청은 여기서 접수되고, 각 담당자가 확인해 직접 이관합니다.</div>
       </div>
       <p class="en-p">All systems are requested here.
@@ -879,9 +879,9 @@ const SYSTEMS = [
   /* 아래 셋은 APS 가 아니라 자동 연동이 되지 않는다(ext:true).
      신청은 여기서 받되 실제 권한 이관은 각 시스템 담당자가 수동으로 처리한다.
      관리자 화면에서 담당자가 골라 볼 수 있도록 같은 목록에 둔다. */
-  { key: 'FLEX',   label: 'Flex',      ext: true, owner: 'HR팀' },
-  { key: 'CONCUR', label: 'Concur',    ext: true, owner: 'Accounting팀' },
-  { key: 'SAPBE1', label: 'SAP-Be1',   ext: true, owner: 'IT팀' }
+  { key: 'FLEX',   label: 'Flex',      ext: true, owner: 'HR Team' },
+  { key: 'CONCUR', label: 'Concur',    ext: true, owner: 'Accounting Team' },
+  { key: 'SAPBE1', label: 'SAP-Be1',   ext: true, owner: 'IT Team' }
 ];
 const EXT_KEYS = SYSTEMS.filter(s => s.ext).map(s => s.key);
 const APS_KEYS = SYSTEMS.filter(s => !s.ext).map(s => s.key);
