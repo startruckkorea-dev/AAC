@@ -450,6 +450,28 @@ button.is-busy:hover{opacity:.72}
     이모지는 쓰지 않는다. */
 .pgbar{display:flex;gap:4px;justify-content:center;flex-wrap:wrap;margin-top:12px}
 .pgbar:empty{display:none;margin:0}
+/* 수동 이관 패널 — 상세 아래쪽. 남은 건이 있으면 옅은 빨강 윤곽, 다 끝나면 초록. */
+.xd-box{margin-top:16px;border:1px solid #f0c8c8;border-radius:7px;background:#fdf7f7;padding:11px 14px}
+.xd-box.ok{border-color:#bfe0cc;background:#f4fbf5}
+.xd-t{font-size:12px;font-weight:700;color:#a4262c;margin-bottom:8px}
+.xd-box.ok .xd-t{color:#107c10}
+.xd-t .en{font-size:.76em;font-weight:400;color:#b39a9a;margin-left:5px}
+.xd-box.ok .xd-t .en{color:#9ac0a4}
+.xd-row{display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:5px 0;font-size:11.5px}
+.xd-row + .xd-row{border-top:1px dotted #efdada}
+.xd-box.ok .xd-row + .xd-row{border-top-color:#d6ecd9}
+.xd-sys{font-weight:600;color:#323130}
+.xd-sys i{font-style:normal;font-weight:400;font-size:10.5px;color:#8a8886;margin-left:6px}
+.xd-at{font-size:10.5px;color:#107c10;font-weight:600;font-variant-numeric:tabular-nums}
+.xd-todo{font-size:10.5px;color:#a4262c;font-weight:700}
+.xd-btn{font-family:inherit;font-size:10.5px;font-weight:700;cursor:pointer;color:#fff;
+  background:#0078d4;border:1px solid #0078d4;border-radius:9px;padding:2px 11px;white-space:nowrap}
+.xd-btn:hover{background:#0062b1;border-color:#0062b1}
+.xd-btn:disabled{background:#c8c6c4;border-color:#c8c6c4;cursor:default}
+.xd-note{font-size:10.5px;color:#8a8886;margin-top:7px;padding-top:6px;border-top:1px dotted #efdada}
+.ext-tag.todo{background:#fde7e9;border-color:#f0c8c8;color:#a4262c}
+.ext-tag.done{background:#dff6dd;border-color:#bfe0cc;color:#107c10}
 .ext-tag{display:inline-block;margin-left:5px;background:#fff4ce;border:1px solid #f2d68c;
   color:#8a5a00;border-radius:9px;padding:0 6px;font-size:9.5px;font-weight:700;
   white-space:nowrap;vertical-align:1px}
@@ -796,6 +818,7 @@ tr:hover .reqno{text-decoration:underline}
         <select id="ad-scope" onchange="renderAdmin()" style="border:1px solid #d2d0ce;border-radius:4px;padding:6px 10px;font-size:.72rem;font-family:inherit;background:#fff;color:#323130">
           <option value="">전체 대상</option>
           <option value="__EXT__">수동 처리 건만</option>
+          <option value="__EXTTODO__">수동 — 미처리만</option>
         </select>
         <input type="text" id="ad-search" oninput="renderAdmin()" placeholder="위임자 · 대리인 · 신청번호"
                style="border:1px solid #d2d0ce;border-radius:4px;padding:6px 10px;font-size:.72rem;font-family:inherit;background:#fff;color:#323130;min-width:190px">
@@ -998,9 +1021,15 @@ const SYSTEMS = [
   /* 아래 셋은 APS 가 아니라 자동 연동이 되지 않는다(ext:true).
      신청은 여기서 받되 실제 권한 이관은 각 시스템 담당자가 수동으로 처리한다.
      관리자 화면에서 담당자가 골라 볼 수 있도록 같은 목록에 둔다. */
-  { key: 'FLEX',   label: 'Flex',      ext: true, owner: 'HR Team' },
-  { key: 'CONCUR', label: 'Concur',    ext: true, owner: 'Accounting Team' },
-  { key: 'SAPBE1', label: 'SAP-Be1',   ext: true, owner: 'IT Team' }
+  /* 수동 시스템은 담당팀이 직접 반영하므로 처리 여부를 기록할 열이 필요하다.
+     doneCol  날짜 및 시간   — 처리 시각
+     byCol    한 줄 텍스트   — 처리한 사람 (없어도 동작한다. patchFields 가 없는 열을 뺀다) */
+  { key: 'FLEX',   label: 'Flex',      ext: true, owner: 'HR Team',
+    doneCol: 'ExtDoneFlex',   byCol: 'ExtDoneByFlex' },
+  { key: 'CONCUR', label: 'Concur',    ext: true, owner: 'Accounting Team',
+    doneCol: 'ExtDoneConcur', byCol: 'ExtDoneByConcur' },
+  { key: 'SAPBE1', label: 'SAP-Be1',   ext: true, owner: 'IT Team',
+    doneCol: 'ExtDoneSapbe1', byCol: 'ExtDoneBySapbe1' }
 ];
 const EXT_KEYS = SYSTEMS.filter(s => s.ext).map(s => s.key);
 const APS_KEYS = SYSTEMS.filter(s => !s.ext).map(s => s.key);
@@ -1591,6 +1620,26 @@ function hasExtScope(v) {
   const keys = String(v || '').split(',').map(x => x.trim());
   return EXT_KEYS.some(k => keys.includes(k));
 }
+/* ── 수동 이관 처리 기록 ───────────────────────────────────────────────
+   Flex·Concur·SAP-Be1 은 담당팀이 각 시스템에 들어가 직접 반영한다.
+   그 처리 여부를 남기지 않으면 담당자가 이미 한 건과 남은 건을 구분할 수 없고,
+   위임자도 반영됐는지 확인할 방법이 없다. 시스템별 열에 시각과 처리자를 적는다. */
+const EXT_SYS = SYSTEMS.filter(s => s.ext);
+// 이 신청이 대상으로 삼은 수동 시스템 목록
+function extTargets(f) {
+  const keys = String(f.Scope || '').split(',').map(x => x.trim());
+  return EXT_SYS.filter(s => keys.includes(s.key));
+}
+// 남은(아직 처리 안 한) 수동 시스템
+function extPending(f) {
+  return extTargets(f).filter(s => !String(f[s.doneCol] || '').trim());
+}
+/* 수동 처리를 기다리는 상태인지 — 수락이 끝나 효력이 있는(승인완료) 건만 대상이다.
+   대기는 아직 확정되지 않았고, 반려·철회는 취소된 것이며,
+   만료는 기간이 끝나 이제 반영할 의미가 없다. */
+function extNeedsWork(f) {
+  return effStatus(f) === '승인완료' && extPending(f).length > 0;
+}
 /* 옛 키로 저장된 값도 읽어 준다 — 키를 aps 기준으로 맞추기 전에 저장된 건이 있으면
    라벨이 원시 키로 노출된다. 지금 데이터는 전부 'ALL' 이라 해당이 없지만
    나중에 이력을 볼 때를 위해 둔다. */
@@ -2127,6 +2176,22 @@ function pgGo(id, p) {
   if (_tb && typeof _tb.scrollIntoView === 'function') _tb.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 /* 대신 신청자 칸 — 대신 신청이 아니면 '-' 로 둔다(열 위치가 흔들리지 않게). */
+/* 수동 표식 — 대상 시스템 칸 뒤에 붙는다. 승인완료 건은 진행 상태까지 보여준다.
+     대기 등     「수동」        아직 담당자가 손댈 단계가 아니다
+     일부 처리   「수동 1/3」    괄호 툴팁에 남은 시스템을 적는다
+     전부 처리   「수동 완료」    초록 */
+function extTag(f) {
+  if (!hasExtScope(f.Scope)) return '';
+  const all = extTargets(f), pend = extPending(f);
+  if (effStatus(f) !== '승인완료') {
+    return '<span class="ext-tag" title="자동 연동 아님 — 승인 완료 후 담당자가 수동 반영">수동</span>';
+  }
+  if (!pend.length) {
+    return '<span class="ext-tag done" title="' + esc(all.map(s => s.label).join(' · ')) + ' 반영 완료">수동 완료</span>';
+  }
+  return '<span class="ext-tag todo" title="남은 시스템: ' + esc(pend.map(s => s.label + '(' + s.owner + ')').join(' · ')) + '">수동 '
+    + (all.length - pend.length) + '/' + all.length + '</span>';
+}
 function proxyCell(f) {
   if (!isProxyReq(f)) return '<td class="mini" style="color:#c8c6c4">-</td>';
   return '<td class="mini">' + esc(f.SubmittedByEmail || '') +
@@ -2396,6 +2461,8 @@ function renderAdmin() {
     if (sc) {
       const keys = String(f.Scope || '').split(',').map(x => x.trim());
       if (sc === '__EXT__') { if (!hasExtScope(f.Scope)) return false; }
+      // 담당자가 자기 할 일만 보는 필터 — 효력 있는 건 중 아직 반영 안 한 것
+      else if (sc === '__EXTTODO__') { if (!extNeedsWork(f)) return false; }
       // APS 키는 'ALL' 에도 포함된다. 외부 키는 'ALL' 에 포함되지 않는다.
       else if (EXT_KEYS.includes(sc)) { if (!keys.includes(sc)) return false; }
       else if (!keys.includes(sc) && !keys.includes('ALL')) return false;
@@ -2414,8 +2481,7 @@ function renderAdmin() {
       '<td class="mini">' + esc(f.RequesterEmail || '') + '</td>' +
       '<td class="mini">' + esc(f.DeputyEmail || '') + '</td>' +
       '<td class="perd">' + fmtDay(f.StartDate) + ' ~ ' + fmtDay(f.EndDate) + '</td>' +
-      '<td class="mini">' + esc(scopeLabel(f.Scope)) +
-        (hasExtScope(f.Scope) ? '<span class="ext-tag" title="자동 연동 아님 — 담당자 수동 이관">수동</span>' : '') + '</td>' +
+      '<td class="mini">' + esc(scopeLabel(f.Scope)) + extTag(f) + '</td>' +
       proxyCell(f) +
       '<td><span class="st ' + stClass(st) + '">' + esc(st) + '</span></td>' +
       '<td class="mini">' + fmtDate(f.RequestDate) + '</td></tr>';
@@ -2506,6 +2572,10 @@ async function openDetail(id) {
              '\u274C ' + (isDeputy ? '거절' : '반려') + '</button>' +
              '</div>';
     }
+    // 수동 이관 처리 — 관리자만 기록할 수 있다(담당팀 구분은 두지 않았다. 팀별로
+    // 나누려면 설정 파일에 담당자 메일을 받아야 하는데, 지금은 관리자 3명이 대행한다).
+    html += extPanel(id, f);
+
     /* 철회·반납 — 결재 버튼과 성격이 달라(진행을 되돌리는 것) 한 줄에 두지 않고
        위에 따로 오른쪽 정렬로 둔다.
          위임자  내가 낸 신청을 거둔다. 수락 전이든 효력 중이든 가능하다.
@@ -2528,6 +2598,53 @@ async function openDetail(id) {
     document.getElementById('detail-modal').classList.add('open');
   } catch (e) {
     showAlert('상세를 불러오지 못했습니다.', e.message, '\u274C');
+  }
+}
+/* 수동 이관 처리 패널 — 승인완료이고 수동 대상이 있을 때만 나온다.
+   관리자에게는 「처리 완료」 버튼을, 그 밖에는 진행 상태만 보여준다.
+   위임자도 반영됐는지 볼 수 있어야 하므로 읽기는 누구에게나 열어 둔다. */
+function extPanel(id, f) {
+  const all = extTargets(f);
+  if (!all.length || effStatus(f) !== '승인완료') return '';
+  const adm = isAdmin();
+  const rows = all.map(sysx => {
+    const at = String(f[sysx.doneCol] || '').trim();
+    const by = String(f[sysx.byCol] || '').trim();
+    const right = at
+      ? '<span class="xd-at">' + esc(kstStr(at)) + (by ? ' &middot; ' + esc(by) : '') + '</span>'
+      : (adm
+          ? '<button type="button" class="xd-btn" onclick="markExtDone(' + id + ',\'' + sysx.key + '\',this)">처리 완료</button>'
+          : '<span class="xd-todo">미처리</span>');
+    return '<div class="xd-row">' +
+      '<span class="xd-sys">' + esc(sysx.label) + '<i>' + esc(sysx.owner) + '</i></span>' + right + '</div>';
+  }).join('');
+  const pend = extPending(f).length;
+  return '<div class="xd-box' + (pend ? '' : ' ok') + '">' +
+    '<div class="xd-t">수동 이관' + (pend ? ' &mdash; ' + pend + '건 남음' : ' &mdash; 완료') +
+    '<span class="en">Manual transfer</span></div>' + rows +
+    (adm ? '' : '<div class="xd-note">담당팀이 각 시스템에 직접 반영합니다. 기록은 관리자가 남깁니다.</div>') +
+    '</div>';
+}
+/* 처리 완료 기록 — 되돌릴 수 있게 두지 않았다. 잘못 눌렀으면 SharePoint 에서
+   해당 열을 지우면 된다(건수가 드물어 화면에 취소를 두면 오히려 오조작이 늘어난다). */
+async function markExtDone(reqId, key, btn) {
+  const sysx = EXT_SYS.find(x => x.key === key);
+  if (!sysx) return;
+  if (!confirm(sysx.label + ' 반영을 완료로 기록합니다.\n(' + sysx.owner + ')\n\n되돌리려면 IT팀에 요청해야 합니다. 계속할까요?')) return;
+  const idle = btn.textContent; btn.disabled = true; btn.textContent = '기록 중…';
+  try {
+    await ensureSite();
+    const who = (myInfo()?.name || user?.name || user?.email || '');
+    const patch = {}; patch[sysx.doneCol] = new Date().toISOString(); patch[sysx.byCol] = who;
+    await patchFields(LIST_REQ, reqId, patch);
+    adminData = []; myData = [];
+    await openDetail(reqId);            // 패널을 새 값으로 다시 그린다
+    renderAdmin();
+  } catch (e) {
+    console.error('[AAC] 수동 이관 기록 실패:', e);
+    btn.disabled = false; btn.textContent = idle;
+    showAlert('기록하지 못했습니다.', (e.message || '') +
+      '\n\nAAC_Requests 목록에 ' + sysx.doneCol + ' 열이 있는지 확인해 주세요.', '\u274C');
   }
 }
 function drow(l, v) { return '<div class="det-row"><div class="det-label">' + esc(l) + '</div><div class="det-value">' + v + '</div></div>'; }
