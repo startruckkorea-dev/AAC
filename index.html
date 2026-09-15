@@ -369,13 +369,32 @@ button.is-busy:hover{opacity:.72}
    노란 계열로 「손이 더 가는 쪽」임을 표시한다. */
 /* 연동 외(수동 처리) — 큰 상자를 두면 폼 흐름이 끊긴다. 라벨 옆 한 줄 힌트로 두고,
    성격 구분은 격자 항목의 노란 톤으로만 한다. */
-/* 대상 시스템 — 상자 하나에 자동·수동 두 줄. 색으로 나누지 않고 배지와
-   구분선만으로 구분한다. 예전에는 파란 상자·노란 상자로 갈라 둬서 같은 성격의
-   선택이 서로 다른 규칙처럼 읽혔다. */
-.scope-grp{border:1px solid #cfe3f5;border-radius:8px;background:#f7fbff;
+/* 기간 안내 — 상자 없이 빨간 한 줄. 앞에 * 를 붙여 주의임을 표시한다.
+   (대상 시스템 CSS 를 정규식으로 교체할 때 함께 지워졌던 규칙을 복원했다.) */
+.pnote{font-size:11.5px;line-height:1.6;color:#a4262c;margin:2px 0 0 94px}
+.pnote::before{content:'* ';font-weight:700}
+.scope-note{font-size:11.5px;line-height:1.6;color:#605e5c;margin:0 0 2px}
+.scope-note b{color:#0b5fa5;font-weight:700}
+.scope-note .en{color:#a19f9d;margin-left:4px}
+
+/* 대상 시스템 — 상자 하나 안에 자동·수동을 한 행 두 칸으로 나란히 둔다.
+   위아래로 쌓으면 같은 성격의 선택인데 순서가 있는 것처럼 읽히고 높이도 두 배가 된다.
+   색으로 나누지 않고 배지와 가운데 구분선만으로 구분한다. */
+.scope-grp{display:grid;grid-template-columns:1fr 1fr;gap:0;
+  border:1px solid #cfe3f5;border-radius:8px;background:#f7fbff;
   padding:14px 16px;margin-top:10px}
-.sg-row + .sg-row{margin-top:14px;padding-top:14px;border-top:1px dashed #d8e8f6}
-.sg-hd{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.sg-row{padding-right:16px}
+.sg-row + .sg-row{padding-right:0;padding-left:16px;border-left:1px dashed #d8e8f6}
+@media(max-width:860px){
+  .scope-grp{grid-template-columns:1fr}
+  .sg-row{padding-right:0}
+  .sg-row + .sg-row{padding-left:0;border-left:none;
+    margin-top:14px;padding-top:14px;border-top:1px dashed #d8e8f6}
+}
+/* 칸이 절반 폭이 되므로 배지·제목은 한 줄, 설명은 아래 줄로 내린다. */
+.sg-hd{display:grid;grid-template-columns:auto 1fr;gap:3px 8px;
+  align-items:center;margin-bottom:10px}
+.sg-hd .sg-d{grid-column:1 / -1}
 .sg-badge{flex-shrink:0;font-size:10px;font-weight:700;letter-spacing:.04em;
   border-radius:9px;padding:2px 9px;line-height:1.5;color:#fff}
 .sg-b-auto{background:#0078d4}
