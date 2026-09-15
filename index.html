@@ -2075,13 +2075,25 @@ function renderProxyLock(allowed) {
      제목·본문에 신청자 정보를 미리 채워 둔다(받는 사람이 누가 보냈는지 바로 안다). */
   const me = user ? (user.name || '') : '';
   const myMail = user ? (user.email || user.username || '') : '';
+  /* mailto 본문 주의사항 — Outlook 에서 깨지는 조건을 피한다.
+     · 줄바꿈은 반드시 CRLF(%0D%0A). LF 단독(%0A)만 쓰면 Outlook 이 본문을 HTML 로
+       오해해 <FONT face="맑은 고딕"> 같은 태그를 본문 글자 사이에 끼워 넣는다.
+     · 가운뎃점(·)·em dash(—) 같은 기호도 같은 증상을 악화시켜 하이픈으로 바꿨다.
+     · 본문이 길수록 깨질 확률이 올라가므로 꼭 필요한 줄만 남겼다.
+     제목은 같은 조건에서도 정상이라 그대로 둔다. */
+  const CRLF = '\r\n';
   const subj = encodeURIComponent('[STK 결재 대리 지정] 대신 신청 요청');
-  const body = encodeURIComponent(
-    '안녕하세요.\n\n결재 대리 지정을 대신 신청해 주시기를 요청합니다.\n\n'
-    + '· 위임자 : ' + me + (myMail ? ' (' + myMail + ')' : '') + '\n'
-    + '· 대리인 : \n· 기간   : \n· 대상 시스템 : \n· 사유   : \n\n'
-    + '감사합니다.\n\n— 이 메일은 STK 결재 대리 지정 시스템에서 작성되었습니다.\n'
-    + window.location.href + '\n');
+  const body = encodeURIComponent([
+    '결재 대리 지정을 대신 신청해 주시기를 요청합니다.',
+    '',
+    '- 위임자 : ' + me + (myMail ? ' (' + myMail + ')' : ''),
+    '- 대리인 : ',
+    '- 기간 : ',
+    '- 대상 시스템 : ',
+    '- 사유 : ',
+    '',
+    window.location.href
+  ].join(CRLF));
   const names = proxyPeople.length
     ? proxyPeople.map(p => '<a class="pv-who" href="mailto:' + esc(p.email) +
         '?subject=' + subj + '&body=' + body + '" title="' + esc(p.email) + ' — 메일 보내기">' +
