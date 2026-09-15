@@ -213,10 +213,7 @@ label .en{margin-left:4px}
 .seg-i input:checked + span{background:#0078d4;border-color:#0078d4;color:#fff;
   box-shadow:0 1px 3px rgba(0,120,212,.3)}
 .seg-i input:checked + span > .en{color:#d6ebff}
-.seg-i.off{cursor:not-allowed}
-.seg-i.off > span{color:#c8c6c4;background:#fafafa;border-color:#e8e6e4}
-.seg-i.off > span > .en{color:#d6d4d2}
-.seg-i.off:hover > span{background:#fafafa;border-color:#e8e6e4}
+/* .seg-i.off(대신 신청 잠금) 규칙은 제거했다 — canProxy 가 항상 true 라 붙지 않는다. */
 
 /* 부서 → 팀 → 이름 3단 선택 + 결과 */
 .pick{display:flex;align-items:center;gap:6px;flex-wrap:wrap;flex:1;min-width:0}
@@ -1419,14 +1416,10 @@ function onProxyMode(){
   renderApprPreview();
 }
 function initProxy(){
-  const allowed = canProxy();
-  const opt = document.getElementById('pv-opt-other');
-  const radio = opt.querySelector('input');
-  radio.disabled = !allowed;
-  opt.classList.toggle('off', !allowed);
-  // 권한이 있어도 「누가 가능한지」는 알아야 한다(다른 사람에게 부탁할 때).
-  // 잠겼을 때는 노란 상자, 가능할 때는 옅은 회색 한 줄로 톤을 낮춘다.
-  renderProxyLock(allowed);
+  // 대신 신청은 누구나 할 수 있다(canProxy 참고). 잠금 처리(radio.disabled·.off)는
+  // 더 이상 걸리지 않으므로 없앴다 — 남겨 두면 읽는 사람이 제한이 있다고 오해한다.
+  // 담당자 안내는 「부탁할 수 있는 사람」 목록이라 항상 보여준다.
+  renderProxyLock();
   // display 를 지워 CSS 의 inline-flex 가 살아나게 한다. 'flex' 로 덮으면
   // 블록이 되어 세그먼트와 같은 행에 있지 못하고 아래로 떨어진다.
   document.getElementById('pv-locked').style.display = '';
@@ -2111,24 +2104,18 @@ function proxyCell(f) {
    관리자는 별도 등록 없이도 가능하므로 그 사실도 한 줄로 적는다. */
 /* 명단 안내 — 대신 신청은 누구나 할 수 있게 됐으므로(canProxy 참고) 이 줄은
    「권한자 목록」이 아니라 「대신 신청을 부탁할 수 있는 담당자」 안내다. */
-function renderProxyLock(allowed) {
+/* 「대신 신청을 부탁할 수 있는 담당자」 안내 한 줄.
+   · 이름만 잇고 메일은 title 로 넘긴다 — 이름+메일을 함께 쓰면 6~10명에서 두세 줄을
+     먹어 폼 흐름을 끊는다.
+   · 이름을 누르면 그 담당자에게 메일이 열린다(받는 사람 + 제목만).
+     mailto 본문은 넣지 않는다 — Outlook 이 본문의 UTF-8 퍼센트 인코딩을 복원하지 못해
+     한글 사이에 폰트 태그 조각을 끼워 넣는다. CRLF 로 바꿔도 줄 나눔만 고쳐졌다.
+     제목은 같은 조건에서도 정상이라 제목만 채우고, 요청 양식은 클립보드 복사로 제공한다
+     (copyProxyTemplate — 메일 클라이언트를 거치지 않아 깨질 여지가 없다).
+   · canProxy() 가 항상 true 이므로 잠김 상태는 없다. 인자를 받지 않는다. */
+function renderProxyLock() {
   const box = document.getElementById('pv-locked');
   if (!box) return;
-  // 이름만 한 줄로 잇고 메일은 title 로 넘긴다. 이름+메일 칩으로 나열하면
-  // 담당자가 6~10명일 때 두세 줄을 먹어 폼 흐름을 끊는다.
-  /* 라벨을 'Proxy' 로 줄였더니 뜻이 통하지 않았다. 세그먼트 알약의 'On behalf of' 와
-     같은 말로 풀어 쓰고, 이름은 메일을 title 로 가진 항목으로 띄워 놓는다.
-     이름이 영문 표기라 문구도 영문으로 맞춘다. */
-  /* 이름을 누르면 그 담당자에게 메일이 열리게 한다 — 대신 신청을 부탁하려면
-     결국 메일을 보내야 하므로, 명단만 보여주고 주소를 따로 찾게 할 이유가 없다.
-     제목·본문에 신청자 정보를 미리 채워 둔다(받는 사람이 누가 보냈는지 바로 안다). */
-  /* mailto 에는 받는 사람과 제목만 넣는다 — 본문은 넣지 않는다.
-     Outlook 이 mailto 본문의 UTF-8 퍼센트 인코딩을 제대로 복원하지 못해,
-     한글 글자 사이에 <FONT face="맑은 고딕"> 같은 조각을 끼워 넣어 읽을 수 없게 된다.
-     줄바꿈을 CRLF 로 바꿔도(9d5c450) 줄 나눔만 고쳐지고 글자 깨짐은 남았다.
-     제목은 같은 조건에서도 정상이므로 제목만 채운다.
-     요청 문구가 필요하면 본문 대신 클립보드 복사로 제공하는 편이 안전하다
-     (메일 클라이언트를 거치지 않으므로 깨질 여지가 없다). */
   const subj = encodeURIComponent('[STK 결재 대리 지정] 대신 신청 요청');
   const names = proxyPeople.length
     ? proxyPeople.map(p => '<a class="pv-who" href="mailto:' + esc(p.email) +
