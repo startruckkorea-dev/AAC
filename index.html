@@ -408,9 +408,14 @@ button.is-busy:hover{opacity:.72}
 .pv-lock.ok .pv-lock-t{color:#8a8886}
 .pv-lock-l{display:inline-flex;flex-wrap:wrap;gap:4px}
 /* 이름을 칩으로 띄워 놓는다. 가운뎃점으로 이어 붙이면 6명에서 한 덩어리로 뭉쳐 보인다. */
-.pv-who{white-space:nowrap;font-weight:500;font-size:10.5px;cursor:help;
+.pv-who{white-space:nowrap;font-weight:500;font-size:10.5px;cursor:pointer;
+  text-decoration:none;transition:all .12s;
   background:#fffaf0;border:1px solid #f0dcae;border-radius:9px;padding:1px 8px;color:#8a5a00}
+.pv-who:hover{background:#fff4ce;border-color:#d9a419;text-decoration:none}
+.pv-who::after{content:'\2709';margin-left:4px;font-size:.92em;opacity:.55}
+.pv-who:hover::after{opacity:1}
 .pv-lock.ok .pv-who{background:#f7f9fb;border-color:#e1dfdd;color:#605e5c}
+.pv-lock.ok .pv-who:hover{background:#f0f6ff;border-color:#0078d4;color:#0b5fa5}
 .pv-none{color:#a4262c;font-weight:600;font-size:10.5px}
 .pgbar{display:flex;gap:4px;justify-content:center;flex-wrap:wrap;margin-top:12px}
 .pgbar:empty{display:none;margin:0}
@@ -2045,9 +2050,22 @@ function renderProxyLock(allowed) {
   /* 라벨을 'Proxy' 로 줄였더니 뜻이 통하지 않았다. 세그먼트 알약의 'On behalf of' 와
      같은 말로 풀어 쓰고, 이름은 메일을 title 로 가진 항목으로 띄워 놓는다.
      이름이 영문 표기라 문구도 영문으로 맞춘다. */
+  /* 이름을 누르면 그 담당자에게 메일이 열리게 한다 — 대신 신청을 부탁하려면
+     결국 메일을 보내야 하므로, 명단만 보여주고 주소를 따로 찾게 할 이유가 없다.
+     제목·본문에 신청자 정보를 미리 채워 둔다(받는 사람이 누가 보냈는지 바로 안다). */
+  const me = user ? (user.name || '') : '';
+  const myMail = user ? (user.email || user.username || '') : '';
+  const subj = encodeURIComponent('[STK 결재 대리 지정] 대신 신청 요청');
+  const body = encodeURIComponent(
+    '안녕하세요.\n\n결재 대리 지정을 대신 신청해 주시기를 요청합니다.\n\n'
+    + '· 위임자 : ' + me + (myMail ? ' (' + myMail + ')' : '') + '\n'
+    + '· 대리인 : \n· 기간   : \n· 대상 시스템 : \n· 사유   : \n\n'
+    + '감사합니다.\n\n— 이 메일은 STK 결재 대리 지정 시스템에서 작성되었습니다.\n'
+    + window.location.href + '\n');
   const names = proxyPeople.length
-    ? proxyPeople.map(p => '<span class="pv-who" title="' + esc(p.email) + '">' +
-        esc(p.name || p.email) + '</span>').join('')
+    ? proxyPeople.map(p => '<a class="pv-who" href="mailto:' + esc(p.email) +
+        '?subject=' + subj + '&body=' + body + '" title="' + esc(p.email) + ' — 메일 보내기">' +
+        esc(p.name || p.email) + '</a>').join('')
     : '<span class="pv-none">no one registered yet</span>';
   box.className = 'pv-lock' + (allowed ? ' ok' : '');
   box.title = (allowed ? 'You may submit on behalf of others. ' : 'Only these people may submit on behalf of others. ')
