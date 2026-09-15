@@ -122,10 +122,15 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
 .aac-note-h span{font-size:.76em;font-weight:400;color:#7aa7d4;margin-left:5px;letter-spacing:.01em}
 /* 본문 — 한글·영문 같은 크기(12px). 예전에는 영문만 .86em 이라 잔글씨로 보였다.
    word-break:keep-all 로 한글 단어가 중간에서 잘리지 않게 한다. */
-.aac-note p{margin:0;font-size:12px;line-height:1.75;color:#0b5fa5;
-  word-break:keep-all;overflow-wrap:break-word}
-.aac-note p + p{margin-top:9px;padding-top:9px;border-top:1px dashed #d8e8f6;color:#5f7d99}
-.aac-note b{color:#004578;font-weight:600}
+.aac-note b{color:#004578;font-weight:700}
+/* 네 가지를 한 줄씩. 라벨(b)을 앞에 세워 훑어 읽을 수 있게 한다. */
+.nt-list{margin:0;padding:0;list-style:none}
+.nt-list li{font-size:12px;line-height:1.6;color:#0b5fa5;
+  word-break:keep-all;overflow-wrap:break-word;padding:5px 0}
+.nt-list li + li{border-top:1px dashed #e3eef9}
+.nt-list b{display:inline-block;min-width:62px;color:#004578}
+.nt-list i{display:block;font-style:normal;font-size:10.5px;color:#7aa7d4;
+  margin-top:2px;margin-left:62px}
 /* 한/영 병기 — 영문은 한 단계 작은 회색 보조 글자. 버튼·세그먼트 안에서는 줄을 바꾸지 않는다. */
 .en{font-size:.76em;color:#8a8886;font-weight:400;margin-left:5px;letter-spacing:.01em;white-space:nowrap}
 .tab-btn .en{margin-left:4px}
@@ -377,24 +382,60 @@ button.is-busy:hover{opacity:.72}
 .scope-note b{color:#0b5fa5;font-weight:700}
 .scope-note .en{color:#a19f9d;margin-left:4px}
 
-/* 대상 시스템 — 상자 하나 안에 자동·수동을 한 행 두 칸으로 나란히 둔다.
-   위아래로 쌓으면 같은 성격의 선택인데 순서가 있는 것처럼 읽히고 높이도 두 배가 된다.
-   색으로 나누지 않고 배지와 가운데 구분선만으로 구분한다. */
-.scope-grp{display:grid;grid-template-columns:1fr 1fr;gap:0;
-  border:1px solid #cfe3f5;border-radius:8px;background:#f7fbff;
-  padding:14px 16px;margin-top:10px}
-.sg-row{padding-right:16px}
-.sg-row + .sg-row{padding-right:0;padding-left:16px;border-left:1px dashed #d8e8f6}
-@media(max-width:860px){
-  .scope-grp{grid-template-columns:1fr}
-  .sg-row{padding-right:0}
-  .sg-row + .sg-row{padding-left:0;border-left:none;
-    margin-top:14px;padding-top:14px;border-top:1px dashed #d8e8f6}
-}
-/* 칸이 절반 폭이 되므로 배지·제목은 한 줄, 설명은 아래 줄로 내린다. */
-.sg-hd{display:grid;grid-template-columns:auto 1fr;gap:3px 8px;
-  align-items:center;margin-bottom:10px}
-.sg-hd .sg-d{grid-column:1 / -1}
+/* 대상 시스템 — 신청자가 할 판단은 「전부 맡길지, 일부만 맡길지」 하나다.
+   마스터 체크박스를 크게 두고, 개별 선택은 필요할 때만 펼치게 한다.
+   예전에는 자동/수동 두 칸으로 갈라 각각 전체 토글과 접기를 뒀는데 절반 폭에
+   4열이 들어가 시스템 이름이 잘렸고 무엇을 해야 하는지도 읽히지 않았다. */
+.sc-all{display:grid;grid-template-columns:auto 1fr;gap:2px 11px;align-items:center;
+  border:1px solid #c7e0f4;border-radius:8px;background:#f0f6ff;
+  padding:12px 15px;cursor:pointer;transition:all .12s}
+.sc-all:hover{border-color:#0078d4}
+.sc-all input{width:18px;height:18px;margin:0;accent-color:#0078d4;cursor:pointer;
+  grid-row:1 / span 2}
+.sc-all-t{font-size:13.5px;font-weight:700;color:#004578}
+.sc-all-t .en{font-size:.74em;font-weight:400;color:#7aa7d4;margin-left:5px}
+.sc-all-d{font-size:11.5px;color:#5f7d99;line-height:1.5}
+.sc-all-d b{color:#0b5fa5;font-weight:700}
+
+/* 일부만 맡기기 — 기본은 접힘. 전체가 켜져 있으면 열어도 고를 수 없으므로
+   자동으로 접고 색을 낮춘다. */
+.sc-pick{margin-top:9px}
+.sc-pick-h{cursor:pointer;list-style:none;list-style-type:none;
+  display:inline-flex;align-items:center;gap:6px;padding:2px 0;user-select:none;
+  font-size:12px;font-weight:600;color:#0b5fa5}
+.sc-pick-h::-webkit-details-marker{display:none}
+.sc-pick-h::before{content:'\25BE';font-size:.85em;color:#7aa7d4;
+  transform:rotate(-90deg);transition:transform .15s}
+.sc-pick[open] > .sc-pick-h::before{transform:rotate(0)}
+.sc-pick-h:hover{color:#0078d4}
+.sc-cnt{font-size:10.5px;font-weight:400;color:#a19f9d}
+.sc-pick.locked > .sc-pick-h{color:#8a95a5}
+.sc-pick.locked > .sc-pick-h::before{color:#c8c6c4}
+
+.sc-body{margin-top:9px;border:1px solid #e1dfdd;border-radius:8px;
+  background:#fafafa;padding:12px 14px}
+.sc-legend{font-size:10.5px;color:#8a8886;margin-bottom:9px;
+  display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.sc-legend .sg-badge{margin-left:6px}
+.sc-legend .sg-badge:first-child{margin-left:0}
+
+/* 전체 폭을 쓰는 3열. 이름이 잘리지 않을 만큼 넓고, 좁은 화면에서는 줄어든다. */
+.sc-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+@media(max-width:900px){.sc-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:600px){.sc-grid{grid-template-columns:1fr}}
+.sc-item{display:flex;align-items:center;gap:8px;padding:8px 11px;
+  border:1px solid #e1dfdd;border-radius:6px;background:#fff;cursor:pointer;
+  font-size:12px;color:#323130;transition:all .12s;min-width:0}
+.sc-item:hover{border-color:#0078d4;background:#f7fbff}
+.sc-item input{width:16px;height:16px;margin:0;accent-color:#0078d4;
+  cursor:pointer;flex-shrink:0}
+.sc-item:has(input:checked){border-color:#0078d4;background:#eef6fd}
+.sc-nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sc-own{font-size:10px;color:#8a8886;flex-shrink:0}
+.sc-item.dim{background:#f7f7f7;border-color:#ececec;color:#b3b0ad;cursor:default}
+.sc-item.dim:hover{border-color:#ececec;background:#f7f7f7}
+.sc-item.dim .sg-badge{opacity:.45}
+.sc-item.dim .sc-own{color:#c8c6c4}
 .sg-badge{flex-shrink:0;font-size:10px;font-weight:700;letter-spacing:.04em;
   border-radius:9px;padding:2px 9px;line-height:1.5;color:#fff}
 .sg-b-auto{background:#0078d4}
@@ -403,25 +444,6 @@ button.is-busy:hover{opacity:.72}
 .sg-t .en{font-size:.76em;font-weight:400;margin-left:4px;opacity:.75}
 .sg-d{font-size:11.5px;line-height:1.5;margin-left:2px;color:#5f7d99}
 .sg-d b{font-weight:700;color:#0b5fa5}
-.sg-grid{margin:9px 0 0 0}
-/* 개별 선택 접기 — 기본은 접힘. 전체가 켜져 있으면 열어도 항목이 잠겨 있어
-   열 이유가 없으므로 자동으로 접고 요약 줄 색을 낮춘다(.locked).
-   자동·수동 두 줄이 같은 규칙·같은 색을 쓴다(색으로 구분하지 않는다). */
-.sg-fold{margin-top:10px}
-.sg-fold-h{cursor:pointer;list-style:none;list-style-type:none;
-  display:inline-flex;align-items:center;gap:5px;
-  font-size:11.5px;font-weight:600;color:#0b5fa5;user-select:none;padding:1px 0}
-.sg-fold-h::-webkit-details-marker{display:none}
-.sg-fold-h::before{content:'\25BE';font-size:.85em;color:#7aa7d4;
-  transform:rotate(-90deg);transition:transform .15s}
-.sg-fold[open] > .sg-fold-h::before{transform:rotate(0)}
-.sg-fold-h:hover{color:#0078d4}
-.sg-fold-h .en{font-size:.72rem;font-weight:400;color:#a7c3d8;margin-left:2px}
-.sg-cnt{background:#e3eef9;color:#0b5fa5;border-radius:8px;padding:0 6px;
-  font-size:9.5px;font-weight:700}
-.sg-fold.locked > .sg-fold-h{color:#8a95a5}
-.sg-fold.locked > .sg-fold-h::before{color:#c8c6c4}
-.sg-fold.locked .sg-cnt{background:#f3f2f1;color:#8a95a5}
 .ext-grid{grid-template-columns:repeat(3,1fr)}
 .ext-grid .chk .sub{margin-left:auto;font-size:10.5px;color:#5b8db8;font-weight:600}
 /* 대신 신청 잠금 안내 — 명단이 들어가므로 한 줄 경고띠가 아니라 상자로 둔다. */
@@ -603,14 +625,18 @@ tr:hover .reqno{text-decoration:underline}
            길게 차지한다. details 를 쓰면 상태 기억이나 토글 코드가 필요 없다. -->
       <details class="aac-note">
         <summary class="aac-note-h">결재 대리 지정이란<span>What is Approval Delegation?</span></summary>
-        <p>출장 &middot; 휴가 등으로 자리를 비우는 기간 동안, 내가 처리해야 할 결재를 다른 직원이 대신 볼 수 있도록 미리 지정하는 기능입니다.
-        지정된 기간에만 적용되며, 기간이 지나면 자동으로 해제됩니다.
-        <b>원래 결재자 기록은 그대로 남고</b>, 대리인이 처리한 건은 대리 처리로 표시됩니다.
-        <b>결재는 대리인의 수락만으로 확정</b>되며, 대리인으로 지정된 기간에는 그 사람이 다시 다른 사람에게 결재를 넘길 수 없습니다.</p>
-        <p>Assign a deputy to handle your approvals while you are away on a business trip or leave.
-        It applies only for the period you set and expires automatically.
-        <b>Your own approval history is kept</b>, and items handled by the deputy are marked as delegated.
-        <b>The request is confirmed by the deputy's acceptance alone</b>, and a person acting as a deputy cannot pass their approvals on to someone else during that period.</p>
+        <!-- 두 문단을 길게 늘어놓으면 펼쳐도 읽지 않는다. 알아야 할 네 가지만
+             한 줄씩 끊어 두고, 영문은 각 줄 아래 작은 글씨로 붙인다. -->
+        <ul class="nt-list">
+          <li><b>언제 쓰나</b> 출장 &middot; 휴가로 자리를 비울 때, 내 결재를 다른 직원이 대신 보게 합니다.
+            <i>Assign a deputy while you are away.</i></li>
+          <li><b>언제까지</b> 지정한 기간에만 적용되고, 기간이 지나면 자동으로 해제됩니다.
+            <i>Applies only for the period you set and expires automatically.</i></li>
+          <li><b>기록</b> 원래 결재자 기록은 그대로 남고, 대리인이 처리한 건은 대리 처리로 표시됩니다.
+            <i>Your approval history is kept; delegated items are marked.</i></li>
+          <li><b>제한</b> 대리인은 그 기간에 자기 결재를 다시 다른 사람에게 넘길 수 없습니다.
+            <i>The deputy cannot re-delegate during the period.</i></li>
+        </ul>
       </details>
 
       <div class="section-title">1. 위임 (Delegation)</div>
@@ -675,47 +701,26 @@ tr:hover .reqno{text-decoration:underline}
       <div id="period-msg"></div>
 
       <div class="section-title">3. 대상 시스템 (Scope)</div>
-      <div class="scope-note">기본값은 <b>전체 선택</b>입니다. 맡기지 않을 시스템만 해제해 주세요.
-        <span class="en">All systems are selected by default &mdash; clear the ones you don't want to delegate.</span></div>
 
-      <!-- 「범위 / 연동 외」 로는 두 그룹의 차이가 읽히지 않았다. 신청자가 알아야 할
-           것은 시스템 분류가 아니라 「내가 신청하면 언제 반영되는가」이므로
-           자동 적용 / 수동 적용 으로 대비시킨다. 용어와 색은 접속 안내 모달과 같다. -->
-      <!-- 자동·수동을 상자 하나에 두 줄로 담는다. 예전에는 파란 상자와 노란 상자로
-           갈라 둬서 같은 성격의 선택이 다른 규칙처럼 보였다. 색으로 나누지 않고
-           배지와 구분선만으로 구분한다. -->
-      <div class="scope-grp">
-        <div class="sg-row">
-          <div class="sg-hd">
-            <span class="sg-badge sg-b-auto">자동</span>
-            <span class="sg-t">자동 적용<span class="en">Automatic</span></span>
-            <span class="sg-d">승인 완료 후 <b>즉시 자동 반영</b>됩니다</span>
-          </div>
-          <label class="chk-all"><input type="checkbox" id="f-all" checked onchange="onScopeAll()">
-            APS 전체 &mdash; 14개 시스템<span class="sub">All APS systems</span></label>
-          <details class="sg-fold">
-            <summary class="sg-fold-h">개별 선택<span class="sg-cnt">14</span>
-              <span class="en">Pick individual systems</span></summary>
-            <div class="sysgrid sg-grid" id="f-syslist"></div>
-          </details>
-        </div>
+      <!-- 신청자가 할 판단은 하나뿐이다 — 「전부 맡길지, 일부만 맡길지」.
+           예전에는 자동/수동 두 칸으로 나눠 각각 전체 체크박스와 접기를 뒀는데,
+           절반 폭에 4열이 들어가 시스템 이름이 잘렸고 무엇을 해야 하는지도
+           읽히지 않았다. 마스터 체크박스 하나 + 필요할 때만 펼치는 목록으로 줄인다.
+           자동/수동 구분은 분류가 아니라 「언제 반영되는가」의 차이이므로
+           설명 한 줄과 항목별 배지로만 전한다. -->
+      <label class="sc-all"><input type="checkbox" id="f-all" checked onchange="onScopeAll()">
+        <span class="sc-all-t">전체 시스템에 맡기기<span class="en">Delegate all systems</span></span>
+        <span class="sc-all-d">자동 14개는 <b>승인 완료 후 즉시 반영</b> &middot;
+          Flex &middot; Concur &middot; SAP-Be1 은 <b>담당팀이 수동 반영</b></span></label>
 
-        <div class="sg-row">
-          <div class="sg-hd">
-            <span class="sg-badge sg-b-man">수동</span>
-            <span class="sg-t">수동 적용<span class="en">Manual</span></span>
-            <span class="sg-d">승인 완료 후 <b>담당자가 수동 변경해 반영</b>합니다</span>
-          </div>
-          <!-- 「수동 전체 시스템」만으로는 무엇인지 알 수 없어 세 시스템을 라벨에 적는다. -->
-          <label class="chk-all"><input type="checkbox" id="f-ext-all" checked onchange="onExtAll()">
-            Flex &middot; Concur &middot; SAP-Be1 전체<span class="sub">All manual systems</span></label>
-          <details class="sg-fold sg-fold-m">
-            <summary class="sg-fold-h">개별 선택<span class="sg-cnt">3</span>
-              <span class="en">Pick individual systems</span></summary>
-            <div class="sysgrid sg-grid ext-grid" id="f-extlist"></div>
-          </details>
+      <details class="sc-pick">
+        <summary class="sc-pick-h">일부만 맡기기<span class="sc-cnt">17개 중 선택</span></summary>
+        <div class="sc-body">
+          <div class="sc-legend"><span class="sg-badge sg-b-auto">자동</span> 승인 완료 후 즉시 반영
+            <span class="sg-badge sg-b-man">수동</span> 담당팀이 직접 반영</div>
+          <div class="sc-grid" id="f-syslist"></div>
         </div>
-      </div>
+      </details>
 
       <div class="section-title">4. 사유 (Reason)</div>
       <div class="form-row full">
@@ -1500,6 +1505,9 @@ function setDelegator(p){
 // 이번 신청에서 결재 권한을 넘기는 사람 (본인 또는 위임자)
 function delegator(){
   if (isProxyMode() && _selDelegator) return _selDelegator;
+  // 로그인 전에도 불릴 수 있다 — renderSystems 가 초기 잠금을 걸 때
+  // renderApprPreview 를 거치므로 user 가 없을 때 터지지 않게 막는다.
+  if (!user) return null;
   const me = myInfo();
   const email = (user.email || user.username || '').trim();
   return { name: me ? me.name : (user.name || email), email,
@@ -1545,53 +1553,29 @@ function onPeriodChange() {
    예전에는 자동 쪽만 마크업의 checked 로 처리되고 개별 항목은 disabled 속성을
    직접 달아 두었는데, 수동 쪽을 같은 구조로 맞추면서 한 곳에서 처리하도록 모았다. */
 function renderSystems() {
-  // APS 는 「APS 전체 시스템」에 포함되므로 전체를 켜면 잠긴다(.sys-chk).
-  // 외부 시스템은 전체와 무관하게 개별로 고르므로 잠그지 않는다(.ext-chk).
-  document.getElementById('f-syslist').innerHTML = SYSTEMS.filter(s => !s.ext).map(s =>
-    '<label class="chk dim"><input type="checkbox" class="sys-chk" value="' + esc(s.key) + '" disabled onchange="onScopeOne()"> ' + esc(s.label) + '</label>'
-  ).join('');
-  const adSc = document.getElementById('ad-scope');
-  if (adSc && adSc.options.length <= 2) {
-    SYSTEMS.forEach(s => {
-      const o = document.createElement('option');
-      o.value = s.key; o.textContent = s.label + (s.ext ? ' (' + s.owner + ')' : '');
-      adSc.appendChild(o);
-    });
-  }
-  // 초기값은 양쪽 모두 「전체」 켜짐. 개별 체크박스는 꺼진 상태로 두고
-  // 전체 토글(onExtAll)이 잠근다 — 자동 그룹과 같은 규칙이다.
-  document.getElementById('f-extlist').innerHTML = SYSTEMS.filter(s => s.ext).map(s =>
-    '<label class="chk"><input type="checkbox" class="ext-chk" value="' + esc(s.key) + '" onchange="onScopeOne()"> ' +
-    esc(s.label) + '<span class="sub">' + esc(s.owner) + '</span></label>'
-  ).join('');
-  onScopeAll(); onExtAll();   // 초기 잠금 적용
+  /* 17개를 한 목록으로 그린다. 자동·수동을 항목별 배지로 구분하므로 목록을
+     둘로 쪼갤 필요가 없고, 전체 폭을 쓰니 시스템 이름이 잘리지 않는다.
+     개별 체크박스는 꺼진 상태로 두고 마스터(f-all)가 잠근다. */
+  document.getElementById('f-syslist').innerHTML = SYSTEMS.map(sx =>
+    '<label class="sc-item"><input type="checkbox" class="' + (sx.ext ? 'ext-chk' : 'sys-chk') +
+      '" value="' + esc(sx.key) + '" onchange="onScopeOne()">' +
+    '<span class="sc-nm">' + esc(sx.label) + '</span>' +
+    '<span class="sg-badge ' + (sx.ext ? 'sg-b-man' : 'sg-b-auto') + '">' + (sx.ext ? '수동' : '자동') + '</span>' +
+    (sx.ext ? '<span class="sc-own">' + esc(sx.owner) + '</span>' : '') +
+    '</label>').join('');
+  onScopeAll();   // 초기 잠금
 }
 function onScopeAll() {
-  // 전체를 켜면 개별 선택을 잠근다. 잠긴 항목은 흐리게 보여 상태를 알 수 있게 한다.
-  // 「APS 전체 시스템」은 APS 12개만 덮는다. 외부 3개(.ext-chk)는 별도 선택이므로
-  // 잠그지 않는다 — 자동 연동이 아니라 담당자 수동 처리라 의도적으로 골라야 한다.
+  /* 마스터 체크박스 하나가 17개 전부를 덮는다. 켜져 있으면 개별 항목을 잠그고
+     목록도 접는다 — 열어도 고를 수 없으므로 열 이유가 없다. */
   const all = document.getElementById('f-all').checked;
-  document.querySelectorAll('.sys-chk').forEach(c => {
+  document.querySelectorAll('.sys-chk, .ext-chk').forEach(c => {
     c.disabled = all; if (all) c.checked = false;
-    c.closest('.chk').classList.toggle('dim', all);
+    c.closest('.sc-item').classList.toggle('dim', all);
   });
-  // 전체 선택이면 개별 선택을 열 이유가 없으므로 접고, 요약 줄도 흐리게 한다.
-  const fold = document.querySelector('.sg-fold');
-  if (fold) {
-    if (all) fold.open = false;
-    fold.classList.toggle('locked', all);
-  }
-}
-/* 수동 전체 토글 — 자동의 onScopeAll 과 같은 규칙.
-   전체를 켜면 개별 3개를 잠그고 접는다(열어도 고를 수 없으므로). */
-function onExtAll() {
-  const all = document.getElementById('f-ext-all').checked;
-  document.querySelectorAll('.ext-chk').forEach(c => {
-    c.disabled = all; if (all) c.checked = false;
-    c.closest('.chk').classList.toggle('dim', all);
-  });
-  const fold = document.querySelector('.sg-fold-m');
-  if (fold) { if (all) fold.open = false; fold.classList.toggle('locked', all); }
+  const pick = document.querySelector('.sc-pick');
+  if (pick) { if (all) pick.open = false; pick.classList.toggle('locked', all); }
+  renderApprPreview();
 }
 function onScopeOne() { /* 개별 선택 시 별도 처리 없음 — 제출 시 검증 */ }
 function clearFilePick() {
@@ -1606,14 +1590,17 @@ function clearFilePick() {
        'GW,IT,CONCUR'   GW·IT·Concur
    GW·IT 의 판정도 목록에 'ALL' 이 있으면 통과하도록 함께 맞췄다. */
 function getScope() {
-  const parts = [];
-  if (document.getElementById('f-all').checked) parts.push('ALL');
-  else parts.push(...[...document.querySelectorAll('.sys-chk')].filter(c => c.checked).map(c => c.value));
-  // 수동 전체가 켜져 있으면 세 키를 모두 넣는다(자동의 'ALL' 과 달리 별도 토큰을
-  // 두지 않는다 — GW·IT 등 소비 측이 'ALL' 만 특별 취급하기 때문이다).
-  if (document.getElementById('f-ext-all')?.checked) parts.push(...EXT_KEYS);
-  else parts.push(...[...document.querySelectorAll('.ext-chk')].filter(c => c.checked).map(c => c.value));
-  return parts.join(',');
+  /* 마스터가 켜져 있으면 'ALL' + 수동 3키를 넣는다. 수동은 'ALL' 에 포함되지
+     않는다 — GW·IT 등 소비 측이 'ALL' 만 특별 취급하므로 별도 토큰을 만들면
+     그쪽도 함께 고쳐야 한다. 저장 형식은 예전과 같다. */
+  if (document.getElementById('f-all').checked) return ['ALL', ...EXT_KEYS].join(',');
+  const picked = [...document.querySelectorAll('.sys-chk, .ext-chk')]
+    .filter(c => c.checked).map(c => c.value);
+  // 자동 14개를 모두 고르면 'ALL' 로 줄여 저장한다(소비 측 판정이 단순해진다).
+  const autoKeys = SYSTEMS.filter(x => !x.ext).map(x => x.key);
+  if (autoKeys.every(k => picked.includes(k)))
+    return ['ALL', ...picked.filter(k => EXT_KEYS.includes(k))].join(',');
+  return picked.join(',');
 }
 // 이 신청에 외부(수동 처리) 시스템이 들어 있는지
 function hasExtScope(v) {
@@ -1752,7 +1739,6 @@ function resetForm() {
   document.getElementById('f-dept').value = '';
   onDeptChange();
   document.getElementById('f-all').checked = true; onScopeAll();
-  if (document.getElementById('f-ext-all')) { document.getElementById('f-ext-all').checked = true; onExtAll(); }
   clearFilePick();
   const sf = document.querySelector('input[name="pv-mode"][value="self"]');
   if (sf) { sf.checked = true; onProxyMode(); }
