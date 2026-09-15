@@ -389,16 +389,13 @@ button.is-busy:hover{opacity:.72}
    마스터 체크박스를 크게 두고, 개별 선택은 필요할 때만 펼치게 한다.
    예전에는 자동/수동 두 칸으로 갈라 각각 전체 토글과 접기를 뒀는데 절반 폭에
    4열이 들어가 시스템 이름이 잘렸고 무엇을 해야 하는지도 읽히지 않았다. */
-.sc-all{display:grid;grid-template-columns:auto 1fr;gap:2px 11px;align-items:center;
+.sc-all{display:flex;align-items:center;gap:11px;
   border:1px solid #c7e0f4;border-radius:8px;background:#f0f6ff;
-  padding:12px 15px;cursor:pointer;transition:all .12s}
+  padding:11px 15px;cursor:pointer;transition:all .12s}
 .sc-all:hover{border-color:#0078d4}
-.sc-all input{width:18px;height:18px;margin:0;accent-color:#0078d4;cursor:pointer;
-  grid-row:1 / span 2}
+.sc-all input{width:18px;height:18px;margin:0;accent-color:#0078d4;cursor:pointer;flex-shrink:0}
 .sc-all-t{font-size:13.5px;font-weight:700;color:#004578}
 .sc-all-t .en{font-size:.74em;font-weight:400;color:#7aa7d4;margin-left:5px}
-.sc-all-d{font-size:11.5px;color:#5f7d99;line-height:1.5}
-.sc-all-d b{color:#0b5fa5;font-weight:700}
 
 /* 일부만 맡기기 — 기본은 접힘. 전체가 켜져 있으면 열어도 고를 수 없으므로
    자동으로 접고 색을 낮춘다. */
@@ -417,10 +414,12 @@ button.is-busy:hover{opacity:.72}
 
 .sc-body{margin-top:9px;border:1px solid #e1dfdd;border-radius:8px;
   background:#fafafa;padding:12px 14px}
-.sc-legend{font-size:10.5px;color:#8a8886;margin-bottom:9px;
-  display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-.sc-legend .sg-badge{margin-left:6px}
-.sc-legend .sg-badge:first-child{margin-left:0}
+/* 수동 선택 안내 — 고른 순간 목록 아래에 한 줄로 뜬다. 모달로 막지 않는다. */
+.sc-noti{font-size:11px;line-height:1.55;color:#5c4200;margin-top:10px;
+  padding:8px 12px;background:#fffaf0;border:1px solid #f0dcae;border-radius:6px}
+.sc-noti:empty{display:none}
+.sc-noti b{color:#8a5a00;font-weight:700;margin-right:3px}
+.sc-noti i{font-style:normal;color:#8a6f3a;font-size:10px}
 
 /* 전체 폭을 쓰는 3열. 이름이 잘리지 않을 만큼 넓고, 좁은 화면에서는 줄어든다. */
 .sc-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
@@ -434,11 +433,13 @@ button.is-busy:hover{opacity:.72}
   cursor:pointer;flex-shrink:0}
 .sc-item:has(input:checked){border-color:#0078d4;background:#eef6fd}
 .sc-nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.sc-own{font-size:10px;color:#8a8886;flex-shrink:0}
+/* 수동 항목은 목록 앞쪽에 모여 있다. 테두리만 살짝 달리해 묶여 보이게 한다. */
+.sc-item.man{border-color:#ead9b0}
+.sc-item.man:hover{border-color:#d9a419;background:#fffdf6}
+.sc-item.man:has(input:checked){border-color:#d9a419;background:#fff8e8}
 .sc-item.dim{background:#f7f7f7;border-color:#ececec;color:#b3b0ad;cursor:default}
 .sc-item.dim:hover{border-color:#ececec;background:#f7f7f7}
 .sc-item.dim .sg-badge{opacity:.45}
-.sc-item.dim .sc-own{color:#c8c6c4}
 .sg-badge{flex-shrink:0;font-size:10px;font-weight:700;letter-spacing:.04em;
   border-radius:9px;padding:2px 9px;line-height:1.5;color:#fff}
 .sg-b-auto{background:#0078d4}
@@ -711,17 +712,17 @@ tr:hover .reqno{text-decoration:underline}
            읽히지 않았다. 마스터 체크박스 하나 + 필요할 때만 펼치는 목록으로 줄인다.
            자동/수동 구분은 분류가 아니라 「언제 반영되는가」의 차이이므로
            설명 한 줄과 항목별 배지로만 전한다. -->
+      <!-- 마스터는 한 줄로만 둔다. 반영 방식(자동/수동)까지 여기 적으면 문장이
+           길어져 「무엇을 해야 하는지」가 묻힌다. 그 구분은 목록에서 항목별
+           배지로 보여주고, 수동을 고를 때만 안내를 띄운다. -->
       <label class="sc-all"><input type="checkbox" id="f-all" checked onchange="onScopeAll()">
-        <span class="sc-all-t">전체 시스템에 맡기기<span class="en">Delegate all systems</span></span>
-        <span class="sc-all-d">자동 14개는 <b>승인 완료 후 즉시 반영</b> &middot;
-          Flex &middot; Concur &middot; SAP-Be1 은 <b>담당팀이 수동 반영</b></span></label>
+        <span class="sc-all-t">전체 시스템에 맡기기<span class="en">Delegate all systems</span></span></label>
 
       <details class="sc-pick">
-        <summary class="sc-pick-h">일부만 맡기기<span class="sc-cnt">17개 중 선택</span></summary>
+        <summary class="sc-pick-h">일부만 맡기기<span class="sc-cnt">직접 선택</span></summary>
         <div class="sc-body">
-          <div class="sc-legend"><span class="sg-badge sg-b-auto">자동</span> 승인 완료 후 즉시 반영
-            <span class="sg-badge sg-b-man">수동</span> 담당팀이 직접 반영</div>
           <div class="sc-grid" id="f-syslist"></div>
+          <div class="sc-noti" id="sc-noti"></div>
         </div>
       </details>
 
@@ -1559,12 +1560,14 @@ function renderSystems() {
   /* 17개를 한 목록으로 그린다. 자동·수동을 항목별 배지로 구분하므로 목록을
      둘로 쪼갤 필요가 없고, 전체 폭을 쓰니 시스템 이름이 잘리지 않는다.
      개별 체크박스는 꺼진 상태로 두고 마스터(f-all)가 잠근다. */
-  document.getElementById('f-syslist').innerHTML = SYSTEMS.map(sx =>
-    '<label class="sc-item"><input type="checkbox" class="' + (sx.ext ? 'ext-chk' : 'sys-chk') +
-      '" value="' + esc(sx.key) + '" onchange="onScopeOne()">' +
+  /* 수동 3개를 앞에 둔다 — 고를 때 확인이 필요한 쪽이라 먼저 눈에 들어와야 한다.
+     자동 14개는 그 뒤로. 저장값 순서와는 무관하다(getScope 가 따로 만든다). */
+  const ordered = [...SYSTEMS.filter(x => x.ext), ...SYSTEMS.filter(x => !x.ext)];
+  document.getElementById('f-syslist').innerHTML = ordered.map(sx =>
+    '<label class="sc-item' + (sx.ext ? ' man' : '') + '"><input type="checkbox" class="' +
+      (sx.ext ? 'ext-chk' : 'sys-chk') + '" value="' + esc(sx.key) + '" onchange="onScopeOne()">' +
     '<span class="sc-nm">' + esc(sx.label) + '</span>' +
     '<span class="sg-badge ' + (sx.ext ? 'sg-b-man' : 'sg-b-auto') + '">' + (sx.ext ? '수동' : '자동') + '</span>' +
-    (sx.ext ? '<span class="sc-own">' + esc(sx.owner) + '</span>' : '') +
     '</label>').join('');
   onScopeAll();   // 초기 잠금
 }
@@ -1578,9 +1581,22 @@ function onScopeAll() {
   });
   const pick = document.querySelector('.sc-pick');
   if (pick) { if (all) pick.open = false; pick.classList.toggle('locked', all); }
+  onScopeOne();          // 개별이 모두 해제됐으므로 수동 안내도 지운다
   renderApprPreview();
 }
-function onScopeOne() { /* 개별 선택 시 별도 처리 없음 — 제출 시 검증 */ }
+/* 개별 선택 — 수동 시스템을 고르면 그 자리에서 안내를 띄운다.
+   모달로 막지 않는다(고를 때마다 확인을 누르게 하면 번거롭다). 목록 아래
+   한 줄로 「누가 언제 반영하는지」만 알려 준다. */
+function onScopeOne() {
+  const box = document.getElementById('sc-noti');
+  if (!box) return;
+  const picked = EXT_SYS.filter(sx =>
+    [...document.querySelectorAll('.ext-chk')].some(c => c.value === sx.key && c.checked));
+  if (!picked.length) { box.innerHTML = ''; return; }
+  box.innerHTML = '<b>수동 반영</b> ' +
+    picked.map(sx => esc(sx.label) + ' <i>' + esc(sx.owner) + '</i>').join(' &middot; ') +
+    ' &mdash; 승인 완료 후 담당팀이 각 시스템에서 직접 반영합니다. 자동으로 넘어가지 않습니다.';
+}
 function clearFilePick() {
   aacFiles = [];
   const el = document.getElementById('f-file1');
