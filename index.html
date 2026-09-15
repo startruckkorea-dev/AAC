@@ -382,6 +382,32 @@ button.is-busy:hover{opacity:.72}
 .ext-grid .chk:hover{border-color:#d9a419;background:#fffaf0}
 .ext-grid .chk .sub{color:#8a5a00;font-weight:600;margin-left:auto;font-size:10.5px}
 .ext-grid .chk:has(input:checked){border-color:#d9a419;background:#fff8e8}
+/* 대신 신청 잠금 안내 — 명단이 들어가므로 한 줄 경고띠가 아니라 상자로 둔다. */
+/* 첨부파일 — 선택 목록(칩)과 상세의 내려받기 링크 */
+.file-pick{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:8px}
+.file-chip{display:inline-flex;align-items:center;gap:6px;background:#f7fbff;
+  border:1px solid #cfe3f5;border-radius:5px;padding:3px 9px;font-size:11.5px;color:#0b5fa5}
+.file-chip i{font-style:normal;font-size:10.5px;color:#7aa7d4}
+.file-box{background:#f9f9f9;border:1px solid #edebe9;border-radius:4px;
+  padding:8px 12px;margin-top:8px;display:flex;flex-direction:column;gap:5px}
+.file-dl{font-size:12px;color:#0078d4;text-decoration:none;word-break:break-all}
+.file-dl:hover{text-decoration:underline}
+.file-dl.off{color:#a19f9d;cursor:default}
+.file-none{background:#f9f9f9;border:1px solid #edebe9;border-radius:4px;
+  padding:12px;margin-top:8px;text-align:center;color:#a19f9d;font-size:.78rem}
+.pv-lock{background:#fffaf0;border:1px solid #f2d68c;border-left:3px solid #d9a419;
+  border-radius:6px;padding:11px 14px;margin:6px 0 2px}
+.pv-lock-t{font-size:12px;font-weight:700;color:#8a5a00;margin-bottom:9px}
+.pv-lock-t .en{display:block;margin-top:1px;font-size:.72rem;font-weight:400;color:#b3a07a}
+.pv-lock-grid{display:flex;flex-wrap:wrap;gap:6px}
+.pv-who{display:inline-flex;flex-direction:column;background:#fff;border:1px solid #f0dcae;
+  border-radius:5px;padding:4px 10px;font-size:11.5px;color:#5c4200;line-height:1.35}
+.pv-who b{font-weight:700;color:#8a5a00}
+.pv-who .mini{margin:0;font-size:10.5px;color:#a08a5a}
+.pv-lock-none{font-size:11.5px;color:#a4262c}
+.pv-lock-f{margin-top:9px;padding-top:8px;border-top:1px dashed #edd3a8;
+  font-size:11px;line-height:1.6;color:#8a6f3a}
+.pv-lock-f b{color:#8a5a00;font-weight:700}
 .pgbar{display:flex;gap:4px;justify-content:center;flex-wrap:wrap;margin-top:12px}
 .pgbar:empty{display:none;margin:0}
 .ext-tag{display:inline-block;margin-left:5px;background:#fff4ce;border:1px solid #f2d68c;
@@ -526,9 +552,9 @@ button.is-busy:hover{opacity:.72}
           <label class="seg-i" id="pv-opt-other"><input type="radio" name="pv-mode" value="other" onchange="onProxyMode()"><span>대신 신청<span class="en">On behalf of</span></span></label>
         </div>
       </div>
-      <div id="pv-locked" class="msg-w" style="display:none">
-        대신 신청은 사전에 지정된 담당자만 할 수 있습니다. 필요하시면 IT팀으로 요청해 주세요.
-      </div>
+      <!-- 「사전에 지정된 담당자만」 이라고만 하면 누구에게 부탁해야 할지 알 수 없다.
+           설정 파일(AAC_PROXY_1~10)에 등록된 명단을 그대로 보여준다. -->
+      <div id="pv-locked" class="pv-lock" style="display:none"></div>
 
       <div class="row-lbl" id="pv-row" style="display:none">
         <span class="rl">위임자<span class="en">Delegator</span></span>
@@ -612,7 +638,18 @@ button.is-busy:hover{opacity:.72}
         </div>
       </div>
 
-      <div class="section-title">5. 결재자 지정 (Approvers)</div>
+      <div class="section-title">5. 첨부파일 (Attachment)</div>
+      <div class="form-row full">
+        <div class="form-group">
+          <label>첨부파일<span class="en">Attachment</span></label>
+          <div class="fld-hint" style="margin:0 0 8px">출장 명령서 &middot; 휴가 신청서 등 근거 자료를 올려 주세요. 선택 항목입니다.
+            파일 1개당 최대 20MB, 전체 합계 최대 20MB.</div>
+          <input type="file" id="f-file1" multiple onchange="onFilePick()">
+          <div id="file-msg"></div>
+        </div>
+      </div>
+
+      <div class="section-title">6. 결재자 지정 (Approvers)</div>
 
       <div id="appr-guide" class="appr-guide">
         <div class="ag-t">위임자와 대리인을 선택하면</div>
@@ -906,7 +943,8 @@ let employeeData = [], adminEmails = [], contactEmail = 'stk_it@hyosung.com';
 let myData = [], aprData = [], adminData = [];
 let _selDeputy = null, _curDetail = null, _cfAction = null;
 let _selDelegator = null;      // 대신 신청 시 결재 권한을 위임하는 사람
-let proxyEmails = [];          // 대신 신청이 허용된 담당자 (설정 파일)
+let proxyEmails = [];          // 대신 신청이 허용된 담당자 이메일 (설정 파일)
+let proxyPeople = [];          // 같은 담당자의 이름+이메일 — 화면 안내에 쓴다
 let _loadSeq = { my: 0, apr: 0, admin: 0 };   // 탭마다 따로 — 하나를 공유하면 서로 취소된다
 
 /* ── 공통 헬퍼 ──────────────────────────────────────────── */
@@ -1117,9 +1155,14 @@ async function loadSystemConfig() {
     contactEmail = (cfg['AAC_CONTACT']?.email || cfg['CONTACT_EMAIL']?.email || contactEmail).trim();
     // 대신 신청 담당자 — 비서실 등. 등록되지 않으면 관리자만 대신 신청할 수 있다.
     // 남의 결재 권한을 위임하는 일이라 아무나 할 수 있게 두면 통제가 무너진다.
+    // 화면에 명단을 보여주려면 이름도 필요하다. 예전에는 이메일만 담아
+    // 「사전에 지정된 담당자만」 이라고만 안내할 수 있었다.
     for (let i = 1; i <= 10; i++) {
-      const e = (cfg['AAC_PROXY_' + i]?.email || '').trim().toLowerCase();
-      if (e && e.includes('@') && !proxyEmails.includes(e)) proxyEmails.push(e);
+      const row = cfg['AAC_PROXY_' + i] || {};
+      const e = (row.email || '').trim().toLowerCase();
+      if (!e || !e.includes('@') || proxyEmails.includes(e)) continue;
+      proxyEmails.push(e);
+      proxyPeople.push({ name: (row.name || '').trim(), email: e });
     }
     console.log('[Config] 대신 신청 담당자', proxyEmails.length, '명');
     console.log('[Config] 로드', Object.keys(cfg).length, '건 · 관리자', adminEmails.length, '명');
@@ -1314,6 +1357,7 @@ function initProxy(){
   const radio = opt.querySelector('input');
   radio.disabled = !allowed;
   opt.classList.toggle('off', !allowed);
+  if (!allowed) renderProxyLock();   // 명단은 잠겼을 때만 그린다
   document.getElementById('pv-locked').style.display = allowed ? 'none' : 'block';
   onProxyMode();   // 본인 신청 상태로 표 왼쪽을 채운다
 }
@@ -1423,6 +1467,12 @@ function onScopeAll() {
   });
 }
 function onScopeOne() { /* 개별 선택 시 별도 처리 없음 — 제출 시 검증 */ }
+function clearFilePick() {
+  const el = document.getElementById('f-file1');
+  if (el) el.value = '';
+  const box = document.getElementById('file-msg');
+  if (box) box.innerHTML = '';
+}
 /* 저장 형식 — 쉼표 구분 키 목록. 'ALL' 토큰은 「APS 전체」를 뜻한다.
    예) 'ALL'            APS 전체
        'ALL,FLEX'       APS 전체 + Flex
@@ -1537,6 +1587,8 @@ function resetForm() {
   document.getElementById('f-dept').value = '';
   onDeptChange();
   document.getElementById('f-all').checked = true; onScopeAll();
+  document.querySelectorAll('.ext-chk').forEach(c => { c.checked = false; });
+  clearFilePick();
   const sf = document.querySelector('input[name="pv-mode"][value="self"]');
   if (sf) { sf.checked = true; onProxyMode(); }
   document.getElementById('p-reason').value = '';
@@ -1682,6 +1734,7 @@ async function submitForm() {
   if (!scope)          { alert('대상 시스템을 하나 이상 선택하거나 전체를 선택하세요.'); return; }
   if (!reason)         { alert('대리 지정 사유를 입력하세요.'); return; }
   if (reason.length > 500) { alert('사유는 500자를 넘을 수 없습니다. (현재 ' + reason.length + '자)'); return; }
+  const _fe = fileError(); if (_fe) { alert(_fe); return; }
 
   // 같은 기간에 이미 신청한 건이 있으면 막는다. 중복 지정은 어느 쪽이 유효한지 판단할 수 없다.
   try {
@@ -1749,6 +1802,47 @@ async function submitForm() {
     }
     const created = await api('/sites/' + siteId + '/lists/' + LIST_REQ + '/items', 'POST', { fields: _reqMapped.fields });
     reqId = created.id;
+
+    /* 첨부 업로드 — GW(Goodwill-Approval 1345~1364행)와 같은 방식·같은 저장 형식.
+       경로   AttachedFiles 드라이브 / AAC_Requests_AttachedFiles/<reqId>/<파일명>
+       저장값 '파일명||ENC||base64(driveId###itemId)' 을 ';' 로 이어 AttachedFiles 열에 넣는다.
+       driveId·itemId 를 base64 로 싸는 이유는 값에 '|' 나 ';' 가 섞여도 파서가 깨지지 않게 하려는 것.
+       업로드가 실패해도 신청 자체는 이미 접수됐으므로 진행을 막지 않고 경고만 남긴다. */
+    const _picked = pickedFiles();
+    if (_picked.length) {
+      setBusy(btn, '첨부 올리는 중');
+      try {
+        const drives = await api('/sites/' + siteId + '/drives');
+        const drive = (drives.value || []).find(d => d.name === 'AttachedFiles') || (drives.value || [])[0];
+        if (!drive) throw new Error('AttachedFiles 문서 라이브러리를 찾지 못했습니다.');
+        const t = await token();
+        const links = [];
+        for (const file of _picked) {
+          try {
+            const buf = await file.arrayBuffer();
+            const res = await fetch(GRAPH + '/drives/' + drive.id + '/root:/AAC_Requests_AttachedFiles/'
+              + reqId + '/' + encodeURIComponent(file.name) + ':/content',
+              { method: 'PUT', headers: { Authorization: 'Bearer ' + t,
+                'Content-Type': file.type || 'application/octet-stream' }, body: buf });
+            if (!res.ok) throw new Error(res.status + ' ' + res.statusText);
+            const u = await res.json();
+            links.push(file.name + '||ENC||' + btoa(unescape(encodeURIComponent(drive.id + '###' + u.id))));
+          } catch (fe) { console.error('[AAC] 첨부 업로드 실패:', file.name, fe); }
+        }
+        if (links.length) {
+          await api('/sites/' + siteId + '/lists/' + LIST_REQ + '/items/' + reqId, 'PATCH',
+            { fields: { AttachedFiles: links.join(';') } });
+        }
+        if (links.length !== _picked.length) {
+          console.warn('[AAC] 첨부 일부 실패:', _picked.length - links.length, '건');
+        }
+      } catch (fe) {
+        console.error('[AAC] 첨부 처리 실패:', fe);
+        showAlert('신청은 접수되었으나 첨부를 올리지 못했습니다.',
+          title + '\n' + (fe.message || '') + '\n필요하시면 다시 신청해 주세요.', '\u26A0\uFE0F');
+      }
+      setBusy(btn, '신청 중');
+    }
     const title = 'AAC-' + kstToday() + '_ID-' + reqId;
     await api('/sites/' + siteId + '/lists/' + LIST_REQ + '/items/' + reqId, 'PATCH', { fields: { Title: title } });
 
@@ -1920,6 +2014,124 @@ function proxyCell(f) {
   if (!isProxyReq(f)) return '<td class="mini" style="color:#c8c6c4">-</td>';
   return '<td class="mini">' + esc(f.SubmittedByEmail || '') +
     '<span class="proxy-tag">대신</span></td>';
+}
+
+/* 대신 신청 잠금 안내 — 등록된 담당자 명단을 함께 보여준다.
+   관리자는 별도 등록 없이도 가능하므로 그 사실도 한 줄로 적는다. */
+function renderProxyLock() {
+  const box = document.getElementById('pv-locked');
+  if (!box) return;
+  const list = proxyPeople.length
+    ? '<div class="pv-lock-grid">' + proxyPeople.map(p =>
+        '<span class="pv-who"><b>' + esc(p.name || p.email) + '</b>' +
+        (p.name ? '<span class="mini">' + esc(p.email) + '</span>' : '') + '</span>').join('') + '</div>'
+    : '<div class="pv-lock-none">등록된 담당자가 없습니다. 설정 파일(AAC_PROXY_1~10)에 추가가 필요합니다.</div>';
+  box.innerHTML =
+    '<div class="pv-lock-t">대신 신청은 아래 담당자만 할 수 있습니다' +
+      '<span class="en">Only the people below can submit on behalf of others</span></div>' +
+    list +
+    '<div class="pv-lock-f">관리자도 별도 등록 없이 대신 신청할 수 있습니다. ' +
+      '추가·변경이 필요하시면 <b>' + esc(contactEmail) + '</b> 으로 요청해 주세요.</div>';
+}
+
+/* ── 첨부파일 ───────────────────────────────────────────────────────
+   저장 형식은 GW 와 같다: '파일명||ENC||base64(driveId###itemId)' 를 ';' 로 이음.
+   다른 APS 시스템과 형식을 맞춰 뒀으므로 통합 결재함에서도 같은 파서로 읽힌다. */
+const AAC_FILE_MAX = 20 * 1024 * 1024;   // 파일 1개 · 전체 합계 상한
+function pickedFiles() {
+  const el = document.getElementById('f-file1');
+  return el && el.files ? Array.from(el.files) : [];
+}
+function onFilePick() {
+  const box = document.getElementById('file-msg');
+  const files = pickedFiles();
+  if (!box) return;
+  if (!files.length) { box.innerHTML = ''; return; }
+  const over = files.filter(f => f.size > AAC_FILE_MAX);
+  const total = files.reduce((a, f) => a + f.size, 0);
+  const mb = n => (n / 1024 / 1024).toFixed(1) + 'MB';
+  if (over.length) {
+    box.innerHTML = '<div class="msg-e">파일 1개당 20MB를 넘을 수 없습니다 &mdash; '
+      + over.map(f => esc(f.name) + ' (' + mb(f.size) + ')').join(', ') + '</div>';
+    return;
+  }
+  if (total > AAC_FILE_MAX) {
+    box.innerHTML = '<div class="msg-e">전체 합계가 20MB를 넘습니다 (현재 ' + mb(total) + ').</div>';
+    return;
+  }
+  box.innerHTML = '<div class="file-pick">' + files.map(f =>
+    '<span class="file-chip">' + esc(f.name) + '<i>' + mb(f.size) + '</i></span>').join('')
+    + '<span class="mini">합계 ' + mb(total) + '</span></div>';
+}
+// 제출 전 검증 — onFilePick 과 같은 기준을 한 곳에서 본다
+function fileError() {
+  const files = pickedFiles();
+  if (!files.length) return '';
+  if (files.some(f => f.size > AAC_FILE_MAX)) return '첨부파일 1개당 20MB를 넘을 수 없습니다.';
+  if (files.reduce((a, f) => a + f.size, 0) > AAC_FILE_MAX) return '첨부파일 전체 합계가 20MB를 넘습니다.';
+  return '';
+}
+/* 저장된 AttachedFiles 값을 화면용 목록으로 바꾼다.
+   SharePoint 가 여러 줄 텍스트를 div 로 감싸 돌려주므로 먼저 태그·엔티티를 걷어낸다. */
+function aacFileList(v) {
+  if (!v) return [];
+  // 태그를 그냥 지우면 닫는 div 와 여는 div 사이가 사라져 두 항목이 한 줄로 합쳐진다.
+  // 줄 경계(닫는 div·p, br)를 먼저 줄바꿈으로 바꾼 뒤 나머지 태그를 걷어낸다.
+  let t = String(v)
+    .replace(/<\/(div|p)>/gi, '\n').replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<[^>]*>/g, '')
+    .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+    .replace(/&nbsp;/g, ' ').replace(/&#58;/g, ':')
+    .replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim();
+  return t.split(/[;\n]+/).map(x => x.trim()).filter(Boolean).map(entry => {
+    const i = entry.indexOf('||');
+    if (i < 0) return { name: entry, drive: '', item: '' };
+    const name = entry.slice(0, i), rest = entry.slice(i + 2);
+    if (!rest.startsWith('ENC||')) return { name, drive: '', item: '' };
+    try {
+      const dec = decodeURIComponent(escape(atob(rest.slice(5))));
+      const k = dec.indexOf('###');
+      if (k < 0) return { name, drive: '', item: '' };
+      return { name, drive: dec.slice(0, k), item: dec.slice(k + 3) };
+    } catch (e) { return { name, drive: '', item: '' }; }
+  });
+}
+function aacFilesHtml(v) {
+  const list = aacFileList(v);
+  if (!list.length) return '<div class="file-none">첨부파일이 없습니다.</div>';
+  return '<div class="file-box">' + list.map(f => f.drive && f.item
+    ? '<a href="#" class="file-dl" data-drive="' + encodeURIComponent(f.drive) +
+      '" data-id="' + encodeURIComponent(f.item) + '" data-name="' + encodeURIComponent(f.name) +
+      '">&#128206; ' + esc(f.name) + '</a>'
+    : '<span class="file-dl off">&#128206; ' + esc(f.name) + '</span>').join('') + '</div>';
+}
+/* 다운로드 — @microsoft.graph.downloadUrl 을 받아 내려받는다(파일명이 보존된다).
+   GW 와 같은 방식이고, 링크는 상세 모달을 그린 뒤 위임으로 붙인다. */
+async function bindFileLinks(root) {
+  const links = (root || document).querySelectorAll('.file-dl[data-id]');
+  links.forEach(a => {
+    if (a.dataset.bound) return;
+    a.dataset.bound = '1';
+    a.addEventListener('click', async ev => {
+      ev.preventDefault();
+      const name = decodeURIComponent(a.dataset.name || '');
+      const old = a.innerHTML;
+      a.innerHTML = '&#8635; ' + esc(name);
+      try {
+        const t = await token();
+        const r = await fetch(GRAPH + '/drives/' + decodeURIComponent(a.dataset.drive) +
+          '/items/' + decodeURIComponent(a.dataset.id) +
+          '?select=id,name,%40microsoft.graph.downloadUrl', { headers: { Authorization: 'Bearer ' + t } });
+        const j = await r.json();
+        const url = j['@microsoft.graph.downloadUrl'];
+        if (!url) throw new Error(j.error?.message || '다운로드 주소를 받지 못했습니다.');
+        const el = document.createElement('a');
+        el.href = url; el.download = name; document.body.appendChild(el); el.click(); el.remove();
+      } catch (e) {
+        showAlert('첨부를 내려받지 못했습니다.', name + '\n' + (e.message || ''), '\u274C');
+      } finally { a.innerHTML = old; }
+    });
+  });
 }
 
 function showNoAuth() { document.getElementById('aac-noauth-modal').classList.add('show'); }
@@ -2149,7 +2361,8 @@ async function openDetail(id) {
            (f.DeputyDept ? '<div class="mini">' + esc(f.DeputyDept) + '</div>' : '')) +
       drow('기간', fmtDay(f.StartDate) + ' ~ ' + fmtDay(f.EndDate) + ' <span class="dayspan">' + dayCount(f) + '</span>') +
       drow('대상 시스템', esc(scopeLabel(f.Scope))) +
-      drow('사유', '<span style="white-space:pre-wrap">' + safeText(f.Reason) + '</span>');
+      drow('사유', '<span style="white-space:pre-wrap">' + safeText(f.Reason) + '</span>') +
+      '<div class="section-title">첨부파일</div>' + aacFilesHtml(f.AttachedFiles);
 
     if (isActive(f)) {
       html += '<div class="msg-o" style="margin-top:12px"><b>현재 효력이 있습니다.</b><br>' +
@@ -2192,6 +2405,7 @@ async function openDetail(id) {
     if (btns) html += btns;
 
     document.getElementById('detail-body').innerHTML = html;
+    bindFileLinks(document.getElementById('detail-body'));
     document.getElementById('detail-modal').classList.add('open');
   } catch (e) {
     showAlert('상세를 불러오지 못했습니다.', e.message, '\u274C');
