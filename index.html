@@ -123,14 +123,17 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
 /* 본문 — 한글·영문 같은 크기(12px). 예전에는 영문만 .86em 이라 잔글씨로 보였다.
    word-break:keep-all 로 한글 단어가 중간에서 잘리지 않게 한다. */
 .aac-note b{color:#004578;font-weight:700}
-/* 네 가지를 한 줄씩. 라벨(b)을 앞에 세워 훑어 읽을 수 있게 한다. */
-.nt-list{margin:0;padding:0;list-style:none}
-.nt-list li{font-size:12px;line-height:1.6;color:#0b5fa5;
-  word-break:keep-all;overflow-wrap:break-word;padding:5px 0}
-.nt-list li + li{border-top:1px dashed #e3eef9}
-.nt-list b{display:inline-block;min-width:62px;color:#004578}
-.nt-list i{display:block;font-style:normal;font-size:10.5px;color:#7aa7d4;
-  margin-top:2px;margin-left:62px}
+/* 네 줄을 촘촘히. 구분선은 두지 않는다 — 네 줄뿐이라 선이 있으면 표처럼 무거워진다.
+   라벨은 고정 폭으로 세워 국문 문장의 시작이 한 줄로 맞는다. */
+.nt-list{margin:0;padding:0;list-style:none;
+  display:grid;grid-template-columns:auto 1fr;gap:4px 10px}
+.nt-list li{display:contents}
+.nt-list b{font-size:11px;color:#5f7d99;font-weight:700;white-space:nowrap;
+  text-align:right;padding-top:1px}
+.nt-list span{font-size:12.5px;line-height:1.55;color:#124e78;
+  word-break:keep-all;overflow-wrap:break-word}
+.nt-en{margin:10px 0 0;padding-top:9px;border-top:1px dashed #dcebf8;
+  font-size:10.5px;line-height:1.55;color:#8fa9bd}
 /* 한/영 병기 — 영문은 한 단계 작은 회색 보조 글자. 버튼·세그먼트 안에서는 줄을 바꾸지 않는다. */
 .en{font-size:.76em;color:#8a8886;font-weight:400;margin-left:5px;letter-spacing:.01em;white-space:nowrap}
 .tab-btn .en{margin-left:4px}
@@ -625,18 +628,18 @@ tr:hover .reqno{text-decoration:underline}
            길게 차지한다. details 를 쓰면 상태 기억이나 토글 코드가 필요 없다. -->
       <details class="aac-note">
         <summary class="aac-note-h">결재 대리 지정이란<span>What is Approval Delegation?</span></summary>
-        <!-- 두 문단을 길게 늘어놓으면 펼쳐도 읽지 않는다. 알아야 할 네 가지만
-             한 줄씩 끊어 두고, 영문은 각 줄 아래 작은 글씨로 붙인다. -->
+        <!-- 줄마다 영문을 붙였더니 높이가 두 배가 되고 눈이 어디를 봐야 할지
+             흐려졌다. 국문은 네 줄로 짧게, 영문은 맨 아래 한 문장으로 요약한다. -->
+        <!-- 라벨과 본문을 각각 요소로 감싼다. display:contents 로 grid 에 펼칠 때
+             맨 텍스트 노드는 브라우저마다 익명 항목 처리가 달라 줄이 어긋난다. -->
         <ul class="nt-list">
-          <li><b>언제 쓰나</b> 출장 &middot; 휴가로 자리를 비울 때, 내 결재를 다른 직원이 대신 보게 합니다.
-            <i>Assign a deputy while you are away.</i></li>
-          <li><b>언제까지</b> 지정한 기간에만 적용되고, 기간이 지나면 자동으로 해제됩니다.
-            <i>Applies only for the period you set and expires automatically.</i></li>
-          <li><b>기록</b> 원래 결재자 기록은 그대로 남고, 대리인이 처리한 건은 대리 처리로 표시됩니다.
-            <i>Your approval history is kept; delegated items are marked.</i></li>
-          <li><b>제한</b> 대리인은 그 기간에 자기 결재를 다시 다른 사람에게 넘길 수 없습니다.
-            <i>The deputy cannot re-delegate during the period.</i></li>
+          <li><b>언제</b><span>출장 &middot; 휴가로 자리를 비울 때 내 결재를 다른 직원이 대신 봅니다</span></li>
+          <li><b>기간</b><span>지정한 기간에만 적용되고 끝나면 자동 해제됩니다</span></li>
+          <li><b>기록</b><span>원래 결재자 기록은 남고, 대리인이 처리한 건은 대리 처리로 표시됩니다</span></li>
+          <li><b>제한</b><span>대리인은 그 기간에 결재를 또 다른 사람에게 넘길 수 없습니다</span></li>
         </ul>
+        <p class="nt-en">A deputy handles your approvals for the period you set. It expires
+          automatically, your approval history is kept, and the deputy cannot re-delegate.</p>
       </details>
 
       <div class="section-title">1. 위임 (Delegation)</div>
