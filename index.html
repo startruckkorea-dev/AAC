@@ -413,6 +413,18 @@ button.is-busy:hover{opacity:.72}
 .sg-manual .sg-t{color:#8a5a00}
 .sg-manual .sg-d{color:#8a6f3a}
 .sg-manual .sg-d b{color:#8a5a00}
+/* 수동 그룹의 전체 토글·접기 — 자동과 같은 모양, 색만 노란 계열로 */
+.chk-all-m{border-color:#f0dcae;background:#fffaf0;color:#8a5a00}
+.chk-all-m input{accent-color:#d9a419}
+.chk-all-m .sub{color:#a08a5a}
+.sg-fold-m > .sg-fold-h{color:#8a5a00}
+.sg-fold-m > .sg-fold-h::before{color:#c8a75a}
+.sg-fold-m > .sg-fold-h:hover{color:#6d4700}
+.sg-fold-m .sg-cnt{background:#f7e8c4;color:#8a5a00}
+.sg-fold-m .sg-fold-h .en{color:#c4a878}
+.sg-fold-m.locked > .sg-fold-h{color:#a89878}
+.sg-fold-m.locked > .sg-fold-h::before{color:#d8cdb4}
+.sg-fold-m.locked .sg-cnt{background:#f3f0e8;color:#a89878}
 .ext-grid{grid-template-columns:repeat(3,1fr)}
 .ext-grid .chk{background:#fffdf7;border-color:#f0dcae;color:#5c4200}
 .ext-grid .chk:hover{border-color:#d9a419;background:#fffaf0}
@@ -657,7 +669,7 @@ tr:hover .reqno{text-decoration:underline}
         <div class="sg-hd">
           <span class="sg-badge">자동</span>
           <span class="sg-t">자동 적용<span class="en">Automatic</span></span>
-          <span class="sg-d">대리인이 수락하면 <b>즉시 자동 반영</b>됩니다</span>
+          <span class="sg-d">승인 완료 후 <b>즉시 자동 반영</b>됩니다</span>
         </div>
         <label class="chk-all"><input type="checkbox" id="f-all" checked onchange="onScopeAll()">
           APS 전체 시스템<span class="sub">All APS systems</span></label>
@@ -675,9 +687,17 @@ tr:hover .reqno{text-decoration:underline}
         <div class="sg-hd">
           <span class="sg-badge">수동</span>
           <span class="sg-t">수동 적용<span class="en">Manual</span></span>
-          <span class="sg-d">신청은 여기서 접수되고, <b>각 담당자가 확인해 직접 이관</b>합니다</span>
+          <span class="sg-d">승인 완료 후 <b>담당자가 수동 변경해 반영</b>합니다</span>
         </div>
-        <div class="sysgrid sg-grid ext-grid" id="f-extlist"></div>
+        <!-- 자동 그룹과 같은 구조(전체 체크박스 + 개별 선택 접기)로 맞춘다.
+             한쪽만 전체 토글이 있으면 두 그룹이 다른 규칙처럼 읽힌다. -->
+        <label class="chk-all chk-all-m"><input type="checkbox" id="f-ext-all" checked onchange="onExtAll()">
+          수동 전체 시스템<span class="sub">All manual systems</span></label>
+        <details class="sg-fold sg-fold-m">
+          <summary class="sg-fold-h">개별 선택<span class="sg-cnt">3</span>
+            <span class="en">Pick individual systems</span></summary>
+          <div class="sysgrid sg-grid ext-grid" id="f-extlist"></div>
+        </details>
       </div>
 
       <div class="section-title">4. 사유 (Reason)</div>
@@ -1497,6 +1517,9 @@ function onPeriodChange() {
 }
 
 /* ── 대상 시스템 ────────────────────────────────────────── */
+/* 항목을 그린 뒤 반드시 두 전체 토글을 적용해야 초기 잠금(dim·disabled)이 걸린다.
+   예전에는 자동 쪽만 마크업의 checked 로 처리되고 개별 항목은 disabled 속성을
+   직접 달아 두었는데, 수동 쪽을 같은 구조로 맞추면서 한 곳에서 처리하도록 모았다. */
 function renderSystems() {
   // APS 는 「APS 전체 시스템」에 포함되므로 전체를 켜면 잠긴다(.sys-chk).
   // 외부 시스템은 전체와 무관하게 개별로 고르므로 잠그지 않는다(.ext-chk).
@@ -1511,12 +1534,13 @@ function renderSystems() {
       adSc.appendChild(o);
     });
   }
-  // 초기값은 전체 선택(APS 전체 + 연동 외 3개). 대리를 맡길 때 일부만 빼는 경우가
-  // 드물어, 전부 켜 두고 필요한 것만 해제하게 하는 편이 손이 덜 간다.
+  // 초기값은 양쪽 모두 「전체」 켜짐. 개별 체크박스는 꺼진 상태로 두고
+  // 전체 토글(onExtAll)이 잠근다 — 자동 그룹과 같은 규칙이다.
   document.getElementById('f-extlist').innerHTML = SYSTEMS.filter(s => s.ext).map(s =>
-    '<label class="chk"><input type="checkbox" class="ext-chk" value="' + esc(s.key) + '" checked onchange="onScopeOne()"> ' +
+    '<label class="chk"><input type="checkbox" class="ext-chk" value="' + esc(s.key) + '" onchange="onScopeOne()"> ' +
     esc(s.label) + '<span class="sub">' + esc(s.owner) + '</span></label>'
   ).join('');
+  onScopeAll(); onExtAll();   // 초기 잠금 적용
 }
 function onScopeAll() {
   // 전체를 켜면 개별 선택을 잠근다. 잠긴 항목은 흐리게 보여 상태를 알 수 있게 한다.
@@ -1534,6 +1558,17 @@ function onScopeAll() {
     fold.classList.toggle('locked', all);
   }
 }
+/* 수동 전체 토글 — 자동의 onScopeAll 과 같은 규칙.
+   전체를 켜면 개별 3개를 잠그고 접는다(열어도 고를 수 없으므로). */
+function onExtAll() {
+  const all = document.getElementById('f-ext-all').checked;
+  document.querySelectorAll('.ext-chk').forEach(c => {
+    c.disabled = all; if (all) c.checked = false;
+    c.closest('.chk').classList.toggle('dim', all);
+  });
+  const fold = document.querySelector('.sg-fold-m');
+  if (fold) { if (all) fold.open = false; fold.classList.toggle('locked', all); }
+}
 function onScopeOne() { /* 개별 선택 시 별도 처리 없음 — 제출 시 검증 */ }
 function clearFilePick() {
   aacFiles = [];
@@ -1550,7 +1585,10 @@ function getScope() {
   const parts = [];
   if (document.getElementById('f-all').checked) parts.push('ALL');
   else parts.push(...[...document.querySelectorAll('.sys-chk')].filter(c => c.checked).map(c => c.value));
-  parts.push(...[...document.querySelectorAll('.ext-chk')].filter(c => c.checked).map(c => c.value));
+  // 수동 전체가 켜져 있으면 세 키를 모두 넣는다(자동의 'ALL' 과 달리 별도 토큰을
+  // 두지 않는다 — GW·IT 등 소비 측이 'ALL' 만 특별 취급하기 때문이다).
+  if (document.getElementById('f-ext-all')?.checked) parts.push(...EXT_KEYS);
+  else parts.push(...[...document.querySelectorAll('.ext-chk')].filter(c => c.checked).map(c => c.value));
   return parts.join(',');
 }
 // 이 신청에 외부(수동 처리) 시스템이 들어 있는지
@@ -1670,7 +1708,7 @@ function resetForm() {
   document.getElementById('f-dept').value = '';
   onDeptChange();
   document.getElementById('f-all').checked = true; onScopeAll();
-  document.querySelectorAll('.ext-chk').forEach(c => { c.checked = true; });   // 초기값 = 전체 선택
+  if (document.getElementById('f-ext-all')) { document.getElementById('f-ext-all').checked = true; onExtAll(); }
   clearFilePick();
   const sf = document.querySelector('input[name="pv-mode"][value="self"]');
   if (sf) { sf.checked = true; onProxyMode(); }
