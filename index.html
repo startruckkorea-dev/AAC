@@ -387,10 +387,19 @@ button.is-busy:hover{opacity:.72}
 .ext-grid .chk:has(input:checked){border-color:#d9a419;background:#fff8e8}
 /* 대신 신청 잠금 안내 — 명단이 들어가므로 한 줄 경고띠가 아니라 상자로 둔다. */
 /* 첨부파일 — 선택 목록(칩)과 상세의 내려받기 링크 */
-.file-pick{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:8px}
-.file-chip{display:inline-flex;align-items:center;gap:6px;background:#f7fbff;
-  border:1px solid #cfe3f5;border-radius:5px;padding:3px 9px;font-size:11.5px;color:#0b5fa5}
-.file-chip i{font-style:normal;font-size:10.5px;color:#7aa7d4}
+.file-area{border:1.5px dashed #d2d0ce;border-radius:4px;padding:16px;text-align:center;
+  cursor:pointer;transition:all .2s}
+.file-area:hover{border-color:#0078d4;background:#f0f6ff}
+.file-area input{display:none}
+.file-area .hint{font-size:13px;color:#605e5c}
+.file-list{margin-top:8px;display:flex;flex-direction:column;gap:5px}
+.file-item{display:flex;justify-content:space-between;align-items:center;
+  background:#f3f2f1;border-radius:4px;padding:5px 10px;font-size:12px}
+.file-item span span{color:#605e5c}
+.file-item button{background:none;border:none;color:#a4262c;cursor:pointer;
+  font-family:inherit;font-size:14px;line-height:1;padding:0 2px}
+.file-total{font-size:11px;color:#605e5c;text-align:right;margin-top:2px}
+.file-total.over{color:#a4262c;font-weight:600}
 .file-box{background:#f9f9f9;border:1px solid #edebe9;border-radius:4px;
   padding:8px 12px;margin-top:8px;display:flex;flex-direction:column;gap:5px}
 .file-dl{font-size:12px;color:#0078d4;text-decoration:none;word-break:break-all}
@@ -417,12 +426,14 @@ button.is-busy:hover{opacity:.72}
 .pv-lock.ok .pv-who{background:#f7f9fb;border-color:#e1dfdd;color:#605e5c}
 .pv-lock.ok .pv-who:hover{background:#f0f6ff;border-color:#0078d4;color:#0b5fa5}
 .pv-none{color:#a4262c;font-weight:600;font-size:10.5px}
-.pv-copy{margin-left:2px;font-family:inherit;font-size:10px;font-weight:600;cursor:pointer;
-  background:#fff;border:1px solid #d2d0ce;border-radius:9px;padding:1px 9px;color:#605e5c;
-  white-space:nowrap;transition:all .12s}
-.pv-copy:hover{border-color:#0078d4;color:#0b5fa5;background:#f0f6ff}
-.pv-copy:disabled{border-color:#bfe6bd;background:#dff6dd;color:#107c10;cursor:default}
-.pv-copy::before{content:'\1F4CB';margin-right:4px;font-weight:400}
+ /* 요청 양식 복사 — 눈에 걸려야 쓰이므로 명단 칩보다 강하게 둔다(파란 채움).
+    이모지는 쓰지 않는다. */
+.pv-copy{margin-left:4px;font-family:inherit;font-size:10.5px;font-weight:700;cursor:pointer;
+  background:#0078d4;border:1px solid #0078d4;border-radius:9px;padding:2px 12px;color:#fff;
+  white-space:nowrap;letter-spacing:.01em;transition:all .12s;
+  box-shadow:0 1px 3px rgba(0,120,212,.3)}
+.pv-copy:hover{background:#0062b1;border-color:#0062b1;box-shadow:0 2px 6px rgba(0,120,212,.38)}
+.pv-copy:disabled{background:#107c10;border-color:#107c10;color:#fff;cursor:default;box-shadow:none}
 .pgbar{display:flex;gap:4px;justify-content:center;flex-wrap:wrap;margin-top:12px}
 .pgbar:empty{display:none;margin:0}
 .ext-tag{display:inline-block;margin-left:5px;background:#fff4ce;border:1px solid #f2d68c;
@@ -663,15 +674,14 @@ tr:hover .reqno{text-decoration:underline}
       </div>
 
       <div class="section-title">5. 첨부파일 (Attachment)</div>
-      <div class="form-row full">
-        <div class="form-group">
-          <label>첨부파일<span class="en">Attachment</span></label>
-          <div class="fld-hint" style="margin:0 0 8px">출장 명령서 &middot; 휴가 신청서 등 근거 자료를 올려 주세요. 선택 항목입니다.
-            파일 1개당 최대 20MB, 전체 합계 최대 20MB.</div>
-          <input type="file" id="f-file1" multiple onchange="onFilePick()">
-          <div id="file-msg"></div>
-        </div>
+      <!-- IT-Ticket(426행)의 .file-area 방식. 숨긴 input 을 영역 클릭으로 연다.
+           파일은 aacFiles 배열에 모아 두므로 두 번에 나눠 고를 수 있고 개별 삭제도 된다
+           (기본 input 은 새로 고르면 앞서 고른 것이 사라진다). -->
+      <div class="file-area" onclick="document.getElementById('f-file1').click()">
+        <input type="file" id="f-file1" multiple onchange="onFilePick(event)">
+        <div class="hint">&#128206; 클릭하여 파일 첨부 (선택 &middot; 최대 20MB)</div>
       </div>
+      <div class="file-list" id="file-msg"></div>
 
       <div class="section-title">6. 결재자 지정 (Approvers)</div>
 
@@ -1507,10 +1517,10 @@ function onScopeAll() {
 }
 function onScopeOne() { /* 개별 선택 시 별도 처리 없음 — 제출 시 검증 */ }
 function clearFilePick() {
+  aacFiles = [];
   const el = document.getElementById('f-file1');
   if (el) el.value = '';
-  const box = document.getElementById('file-msg');
-  if (box) box.innerHTML = '';
+  renderFileList();
 }
 /* 저장 형식 — 쉼표 구분 키 목록. 'ALL' 토큰은 「APS 전체」를 뜻한다.
    예) 'ALL'            APS 전체
@@ -2100,43 +2110,46 @@ function renderProxyLock(allowed) {
     '<span class="pv-lock-l">' + names + '</span>' +
     (proxyPeople.length ? '<button type="button" class="pv-copy" onclick="copyProxyTemplate(this)"' +
       ' title="요청 양식을 복사합니다. 메일 본문에 붙여넣기(Ctrl+V) 하세요.">Copy request form</button>' : '');
+
 }
 
 /* ── 첨부파일 ───────────────────────────────────────────────────────
    저장 형식은 GW 와 같다: '파일명||ENC||base64(driveId###itemId)' 를 ';' 로 이음.
    다른 APS 시스템과 형식을 맞춰 뒀으므로 통합 결재함에서도 같은 파서로 읽힌다. */
-const AAC_FILE_MAX = 20 * 1024 * 1024;   // 파일 1개 · 전체 합계 상한
-function pickedFiles() {
-  const el = document.getElementById('f-file1');
-  return el && el.files ? Array.from(el.files) : [];
+const AAC_FILE_MAX = 20 * 1024 * 1024;   // 전체 합계 상한
+/* 고른 파일을 배열에 모아 둔다 — input.files 를 그대로 쓰면 두 번째로 고를 때
+   앞서 고른 것이 사라진다. IT-Ticket 의 incFiles/chgFiles 와 같은 방식. */
+let aacFiles = [];
+function pickedFiles() { return aacFiles; }
+function onFilePick(e) {
+  if (e && e.target && e.target.files) {
+    for (const f of Array.from(e.target.files)) {
+      if (!aacFiles.find(x => x.name === f.name && x.size === f.size)) aacFiles.push(f);
+    }
+    e.target.value = '';   // 같은 파일을 다시 고를 수 있게 비운다
+  }
+  renderFileList();
 }
-function onFilePick() {
+function removeAacFile(i) { aacFiles.splice(i, 1); renderFileList(); }
+function renderFileList() {
   const box = document.getElementById('file-msg');
-  const files = pickedFiles();
   if (!box) return;
-  if (!files.length) { box.innerHTML = ''; return; }
-  const over = files.filter(f => f.size > AAC_FILE_MAX);
-  const total = files.reduce((a, f) => a + f.size, 0);
-  const mb = n => (n / 1024 / 1024).toFixed(1) + 'MB';
-  if (over.length) {
-    box.innerHTML = '<div class="msg-e">파일 1개당 20MB를 넘을 수 없습니다 &mdash; '
-      + over.map(f => esc(f.name) + ' (' + mb(f.size) + ')').join(', ') + '</div>';
-    return;
-  }
-  if (total > AAC_FILE_MAX) {
-    box.innerHTML = '<div class="msg-e">전체 합계가 20MB를 넘습니다 (현재 ' + mb(total) + ').</div>';
-    return;
-  }
-  box.innerHTML = '<div class="file-pick">' + files.map(f =>
-    '<span class="file-chip">' + esc(f.name) + '<i>' + mb(f.size) + '</i></span>').join('')
-    + '<span class="mini">합계 ' + mb(total) + '</span></div>';
+  if (!aacFiles.length) { box.innerHTML = ''; return; }
+  const total = aacFiles.reduce((a, f) => a + f.size, 0);
+  const over = total > AAC_FILE_MAX;
+  box.innerHTML = aacFiles.map((f, i) =>
+      '<div class="file-item"><span>' + esc(f.name) +
+      ' <span>(' + (f.size / 1024).toFixed(1) + ' KB)</span></span>' +
+      '<button type="button" onclick="removeAacFile(' + i + ')" title="제거">&times;</button></div>').join('')
+    + '<div class="file-total' + (over ? ' over' : '') + '">총 '
+    + (total / 1024 / 1024).toFixed(1) + ' MB / 20 MB'
+    + (over ? ' — 20MB 이하로 줄여 주세요' : '') + '</div>';
 }
-// 제출 전 검증 — onFilePick 과 같은 기준을 한 곳에서 본다
+// 제출 전 검증 — renderFileList 와 같은 기준을 한 곳에서 본다
 function fileError() {
-  const files = pickedFiles();
-  if (!files.length) return '';
-  if (files.some(f => f.size > AAC_FILE_MAX)) return '첨부파일 1개당 20MB를 넘을 수 없습니다.';
-  if (files.reduce((a, f) => a + f.size, 0) > AAC_FILE_MAX) return '첨부파일 전체 합계가 20MB를 넘습니다.';
+  if (!aacFiles.length) return '';
+  if (aacFiles.reduce((a, f) => a + f.size, 0) > AAC_FILE_MAX)
+    return '첨부파일 총 용량이 20MB를 넘습니다. 20MB 이하로 줄여 주세요.';
   return '';
 }
 /* 저장된 AttachedFiles 값을 화면용 목록으로 바꾼다.
