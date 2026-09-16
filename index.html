@@ -876,7 +876,9 @@ tr:hover .reqno{text-decoration:underline}
   </div>
 </div>
 
-<div id="aac-scope-modal" onclick="if(event.target===this)closeScopeNotice()">
+<!-- 바깥을 눌러도 닫히지 않는다. 처음 들어온 사람이 읽어야 하는 안내라
+     「확인 · OK」를 누르는 것만 닫는 경로로 남긴다. -->
+<div id="aac-scope-modal">
   <div class="scope-box">
     <div class="scope-hd">
       <h3>적용 범위 안내<span class="en">Scope of this system</span></h3>
