@@ -396,6 +396,27 @@ button.is-busy:hover{opacity:.72}
    (대상 시스템 CSS 를 정규식으로 교체할 때 함께 지워졌던 규칙을 복원했다.) */
 .pnote{font-size:11.5px;line-height:1.6;color:#a4262c;margin:2px 0 0 94px}
 .pnote::before{content:'* ';font-weight:700}
+/* 수동 전환 시스템 선택 시 — 시간 고정 안내. .pnote(빨간 주의)와 성격이 달라
+   (오류가 아니라 규칙 안내) 대상 시스템 목록의 수동 항목과 같은 노란 계열로 둔다. */
+.plock{display:flex;align-items:flex-start;gap:10px;margin:8px 0 0 94px;padding:9px 16px 9px 13px;
+  width:fit-content;max-width:calc(100% - 94px);box-sizing:border-box;
+  background:#fffaf0;border:1px solid #f0dcae;border-left:3px solid #d9a419;border-radius:6px;
+  font-size:11.5px;line-height:1.55;color:#5c4200}
+.plock:empty{display:none}
+.plock-ic{flex-shrink:0;width:22px;height:22px;border-radius:50%;background:#fbeccb;
+  display:flex;align-items:center;justify-content:center;margin-top:1px}
+.plock-ic svg{width:12px;height:12px;stroke:#8a5a00}
+.plock-t{font-weight:700;color:#8a5a00}
+.plock-sys{display:inline-flex;flex-wrap:wrap;gap:4px;margin-left:6px;vertical-align:1px}
+.plock-sys span{background:#fff;border:1px solid #ead9b0;border-radius:9px;padding:0 7px;
+  font-size:10.5px;font-weight:600;color:#8a5a00;line-height:1.6}
+.plock-d b{color:#5c4200;font-weight:700}
+.plock-en{display:block;margin-top:2px;font-size:10.5px;color:#a8894f}
+@media(max-width:520px){.plock{margin-left:0}}
+/* 시간이 고정된 동안의 입력칸 — 값은 보이되 바꿀 수 없음을 톤으로 알린다 */
+.pr input[type=time]:disabled{background:#faf6ee;border-color:#ead9b0;color:#8a6f3a;
+  cursor:not-allowed;opacity:1;-webkit-text-fill-color:#8a6f3a}
+.pr input[type=time]:disabled::-webkit-calendar-picker-indicator{opacity:.35;cursor:not-allowed}
 .scope-note{font-size:11.5px;line-height:1.6;color:#605e5c;margin:0 0 2px}
 .scope-note b{color:#0b5fa5;font-weight:700}
 .scope-note .en{color:#a19f9d;margin-left:4px}
@@ -719,6 +740,7 @@ tr:hover .reqno{text-decoration:underline}
         </div>
       </div>
       <div id="period-msg"></div>
+      <div class="plock" id="period-lock"></div>
 
       <div class="section-title">3. 대상 시스템 (Scope)</div>
 
@@ -1546,13 +1568,51 @@ function delegator(){
 // 날짜 + 시간을 하나의 문자열로. 저장·비교 모두 이 값을 쓴다.
 function periodStart(){
   const d = document.getElementById('f-start').value;
-  const t = document.getElementById('f-start-t').value || '00:00';
+  const t = timeLocked() ? '00:00' : (document.getElementById('f-start-t').value || '00:00');
   return d ? d + ' ' + t : '';
 }
 function periodEnd(){
   const d = document.getElementById('f-end').value;
-  const t = document.getElementById('f-end-t').value || '23:59';
+  const t = timeLocked() ? '23:59' : (document.getElementById('f-end-t').value || '23:59');
   return d ? d + ' ' + t : '';
+}
+/* 수동 전환 시스템(Flex · Concur · SAP-Be1)은 담당팀이 각 시스템에서 날짜 단위로
+   권한을 바꾸므로 시각을 지정할 수 없다. 하나라도 고르면 시작 00:00 · 종료 23:59 로
+   고정하고 시간 칸을 잠근다. 저장값도 periodStart/periodEnd 에서 같은 기준으로 만든다
+   (화면 칸만 막으면 콘솔로 바꾼 값이 그대로 저장된다).
+   해제하면 잠그기 전에 사용자가 넣어 둔 시각으로 되돌린다. */
+function lockedExtSystems() {
+  return EXT_SYS.filter(sx =>
+    [...document.querySelectorAll('.ext-chk')].some(c => c.value === sx.key && c.checked));
+}
+function timeLocked() { return lockedExtSystems().length > 0; }
+function applyTimeLock() {
+  const st = document.getElementById('f-start-t'), et = document.getElementById('f-end-t');
+  const box = document.getElementById('period-lock');
+  if (!st || !et || !box) return;
+  const picked = lockedExtSystems();
+  if (picked.length) {
+    if (!st.disabled) { st.dataset.prev = st.value; et.dataset.prev = et.value; }
+    st.value = '00:00'; et.value = '23:59';
+    st.disabled = et.disabled = true;
+    st.title = et.title = '수동 전환 시스템이 선택되어 시간이 하루 단위로 고정됩니다';
+    box.innerHTML =
+      '<span class="plock-ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">'
+      + '<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span>'
+      + '<span><span class="plock-t">하루 단위로 적용됩니다</span>'
+      + '<span class="plock-sys">' + picked.map(sx => '<span>' + esc(sx.label) + '</span>').join('') + '</span><br>'
+      + '<span class="plock-d">수동 전환 시스템은 시간 단위 설정이 불가능하여, '
+      + '<b>시작일 00:00 ~ 종료일 23:59</b> 로 자동 설정됩니다.</span>'
+      + '<span class="plock-en">Manual systems are switched by full day, so the time is fixed to 00:00 – 23:59.</span></span>';
+  } else {
+    if (st.disabled) {
+      st.value = st.dataset.prev || '00:00'; et.value = et.dataset.prev || '23:59';
+    }
+    st.disabled = et.disabled = false;
+    st.title = et.title = '';
+    box.innerHTML = '';
+  }
+  onPeriodChange();
 }
 function onPeriodChange() {
   const s = periodStart(), e = periodEnd();
@@ -1630,6 +1690,7 @@ function onScopeOne() {
         + ' &mdash; 승인 완료 후 담당팀이 각 시스템에서 직접 반영합니다. 자동으로 넘어가지 않습니다.'
       : '';
   }
+  applyTimeLock();
   renderApprPreview();
 }
 function clearFilePick() {
@@ -1790,6 +1851,7 @@ function resetForm() {
   ['f-start', 'f-end', 'f-reason'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   document.getElementById('f-start-t').value = '00:00';
   document.getElementById('f-end-t').value = '23:59';
+  ['f-start-t', 'f-end-t'].forEach(id => { delete document.getElementById(id).dataset.prev; });
   document.getElementById('f-dept').value = '';
   onDeptChange();
   document.getElementById('f-all').checked = true; onScopeAll();   // 전부 체크로 되돌림
