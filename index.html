@@ -408,6 +408,7 @@ button.is-busy:hover{opacity:.72}
 .plock-ic svg{width:12px;height:12px;stroke:#8a5a00}
 .plock-t{font-weight:700;color:#8a5a00}
 .plock-sys{display:inline-flex;flex-wrap:wrap;gap:4px;margin-left:6px;vertical-align:1px}
+.plock-d .plock-sys{margin:0 2px}
 .plock-sys span{background:#fff;border:1px solid #ead9b0;border-radius:9px;padding:0 7px;
   font-size:10.5px;font-weight:600;color:#8a5a00;line-height:1.6}
 .plock-d b{color:#5c4200;font-weight:700}
@@ -599,7 +600,7 @@ tr:hover .reqno{text-decoration:underline}
   <div class="login-card">
     <div class="login-logo">&#128101;</div>
     <div class="login-title">STK Approval Delegation</div>
-    <div class="login-co">STK 결재 대리 지정 시스템</div>
+    <div class="login-co">STK 결재 대리 지정 시스템(APS, Flex, Concur, SAP-Be1)</div>
     <div class="login-guide">Hyosung M365 계정으로 로그인하세요</div>
     <button class="btn-login" id="btn-login" onclick="signIn()" disabled><span class="aac-spin"></span>로딩 중</button>
     <div id="login-err"></div>
@@ -616,7 +617,7 @@ tr:hover .reqno{text-decoration:underline}
   <div class="app-header" id="app-header" style="display:none">
     <div>
       <div class="app-title">STK Approval Delegation</div>
-      <div class="app-sub">STK 결재 대리 지정 시스템</div>
+      <div class="app-sub">STK 결재 대리 지정 시스템(APS, Flex, Concur, SAP-Be1)</div>
       <div style="font-size:11px;color:#605e5c;margin-top:4px">
               <div class="hdr-contact">
           <div class="hdr-contact-row">
@@ -1599,9 +1600,12 @@ function applyTimeLock() {
     box.innerHTML =
       '<span class="plock-ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">'
       + '<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span>'
-      + '<span><span class="plock-t">하루 단위로 적용됩니다</span>'
-      + '<span class="plock-sys">' + picked.map(sx => '<span>' + esc(sx.label) + '</span>').join('') + '</span><br>'
-      + '<span class="plock-d">수동 전환 시스템은 시간 단위 설정이 불가능하여, '
+      /* 고른 수동 전환 시스템은 제목 옆이 아니라 「수동 전환 시스템(…)」 괄호 안에 둔다(09-21).
+         어떤 시스템 때문에 하루 단위가 되는지가 설명 문장과 한 덩어리로 읽힌다. */
+      + '<span><span class="plock-t">하루 단위로 적용됩니다</span><br>'
+      + '<span class="plock-d">수동 전환 시스템('
+      + '<span class="plock-sys">' + picked.map(sx => '<span>' + esc(sx.label) + '</span>').join('') + '</span>'
+      + ')은 시간 단위 설정이 불가능하여, '
       + '<b>시작일 00:00 ~ 종료일 23:59</b> 로 자동 설정됩니다.</span>'
       + '<span class="plock-en">Manual systems are switched by full day, so the time is fixed to 00:00 – 23:59.</span></span>';
   } else {
