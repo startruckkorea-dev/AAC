@@ -1885,6 +1885,21 @@ async function activeDeputyOf(email) {
   // 이미 「만료」로 표시하고 있었으므로 화면과 잠금이 서로 다른 말을 했다.
   return (res.value || []).map(x => x.fields).filter(isActive);
 }
+/* 신청하려는 기간과 겹치는 대리인 지정(승인완료) — 제출 시 잠금에 쓴다(09-23).
+   activeDeputyOf 는 「지금」 유효한 건만 보므로, 다음 주에 X 의 대리인인 A 가 다음 주 기간으로
+   자기 결재를 B 에게 넘기는 신청은 통과했다. 규칙은 「지정된 기간 동안」 이므로 기간 겹침으로 본다.
+   날짜만 저장된 값은 isActive · 각 시스템과 같은 규칙(시작 00:00 · 종료 23:59)으로 보정한다. */
+async function deputyOfOverlapping(email, start, end) {
+  const e = (email || '').trim().toLowerCase(); if (!e || !start || !end) return [];
+  const res = await apiAll('/sites/' + siteId + '/lists/' + LIST_REQ + '/items?$expand=fields&$top=500'
+    + "&$filter=fields/Status eq '승인완료' and fields/DeputyEmail eq '" + e.replace(/'/g, "''") + "'");
+  return (res.value || []).map(x => x.fields).filter(f => {
+    const st = kstStr(f.StartDate), en = kstStr(f.EndDate);
+    if (!st || !en) return false;
+    const s2 = st.length <= 10 ? st + ' 00:00' : st, e2 = en.length <= 10 ? en + ' 23:59' : en;
+    return !(e2 < start || s2 > end);
+  });
+}
 function lockText(f) {
   return '지금 <b>' + esc(f.RequesterName || f.RequesterEmail || '') + '</b> 님의 대리인으로 지정되어 있습니다 '
     + '(<b>' + esc(fmtDay(f.StartDate)) + ' ~ ' + esc(fmtDay(f.EndDate)) + '</b> · ' + esc(f.Title || '') + '). '
@@ -1983,22 +1998,23 @@ async function submitForm() {
   }
   const dg = delegator();
 
-  // 잠금 규칙 — 위임자(본인 또는 대신 신청의 위임자)가 지금 누군가의 대리인이면 신청 불가. 제출 직전 서버 값으로 다시 확인한다.
+  if (!start || !end)  { alert('대리 기간을 입력하세요.'); return; }
+  if (end <= start)    { alert('종료가 시작보다 빠르거나 같습니다.'); return; }
+  if (end < kstNow().toISOString().slice(0,16).replace('T',' ')) {
+    alert('이미 지난 기간입니다. 종료를 지금 이후로 지정해 주세요.'); return; }
+
+  // 잠금 규칙 — 위임자(본인 또는 대신 신청의 위임자)가 신청 기간 안에 누군가의 대리인이면 신청 불가.
+  // 「지금」 만 보던 것을 기간 겹침으로 바꿨다(09-23). 제출 직전 서버 값으로 확인한다.
   try {
-    const locked = await activeDeputyOf(dg?.email || '');
+    const locked = await deputyOfOverlapping(dg?.email || '', start, end);
     if (locked.length) {
       const f = locked[0];
-      alert((proxy ? (dg?.name || '위임자') + ' 님은' : '') + ' 지금 ' + (f.RequesterName || f.RequesterEmail || '') + ' 님의 대리인으로 지정되어 있습니다 ('
+      alert((proxy ? (dg?.name || '위임자') + ' 님은' : '') + ' 신청한 기간에 ' + (f.RequesterName || f.RequesterEmail || '') + ' 님의 대리인으로 지정되어 있습니다 ('
         + kstStr(f.StartDate).slice(0, 10) + ' ~ ' + kstStr(f.EndDate).slice(0, 10) + ').\n\n대리인으로 지정된 기간에는 결재를 다른 사람에게 다시 넘길 수 없어 신청할 수 없습니다.\n'
         + 'A deputy cannot delegate their own approvals during the delegation period.');
       await refreshDelegationLock(); return;
     }
   } catch (e) { console.warn('[AAC] 제출 전 잠금 확인 실패(진행):', e && e.message); }
-
-  if (!start || !end)  { alert('대리 기간을 입력하세요.'); return; }
-  if (end <= start)    { alert('종료가 시작보다 빠르거나 같습니다.'); return; }
-  if (end < kstNow().toISOString().slice(0,16).replace('T',' ')) {
-    alert('이미 지난 기간입니다. 종료를 지금 이후로 지정해 주세요.'); return; }
   if (!_selDeputy)     { alert('대리인을 선택하세요.'); return; }
   if ((_selDeputy.email || '').trim().toLowerCase() === (dg.email || '').trim().toLowerCase()) {
     alert(dg.name + ' 님 본인을 대리인으로 지정할 수 없습니다.'); return;
