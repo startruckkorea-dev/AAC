@@ -657,7 +657,7 @@ tr:hover .reqno{text-decoration:underline}
     <button class="tab-btn" data-tab="apr" onclick="switchTab('apr')">결재함<span class="en">Approvals</span><span class="tab-badge" id="apr-badge" style="display:none">0</span></button>
     <!-- 대리 지정 현황(09-26) — 모든 직원이 「지금 누가 누구 대신 결재하는지」 를 참고하는 탭. 관리자 탭 왼쪽.
          관리자 탭의 「진행중 · 예정 대리 지정」 과 같은 판정(delegatedEffect)이지만 사유 · 상세는 열지 않는다. -->
-    <button class="tab-btn" data-tab="act" onclick="switchTab('act')">대리 지정 현황<span class="en">Active Deputies</span></button>
+    <button class="tab-btn tab-admin-btn" data-tab="act" id="tab-act" onclick="switchTab('act')"><span class="adm-pill">대리 지정 현황<span class="en">Active Deputies</span></span></button>
     <!-- 관리자 탭은 GW(Goodwill-Approval 300행)와 같이 파란 알약으로 구분한다 — 권한자만 보이는 탭이라 다른 탭과 같은 모양이면 구분이 안 된다. -->
         <button class="tab-btn tab-admin-btn" data-tab="admin" id="tab-admin" onclick="switchTab('admin')"><span class="adm-pill">관리자<span class="en">Admin</span></span></button>
   </div>
@@ -1129,6 +1129,33 @@ const SYSTEMS = [
 ];
 const EXT_KEYS = SYSTEMS.filter(s => s.ext).map(s => s.key);
 const APS_KEYS = SYSTEMS.filter(s => !s.ext).map(s => s.key);
+
+/* 딥링크(?tab=active 등) — APS 상단 AAC 아이콘은 「대리 지정 현황」 으로 바로 온다(09-26).
+   로그인이 필요하면 MSAL 이 주소를 origin+pathname 으로 되돌려 쿼리가 사라지므로, SCC · BP · FA 와 같이
+   먼저 sessionStorage 에 옮겨 두고 주소창에서는 지운다(새로고침해도 다시 열리지 않게). 10분만 유효. */
+const AAC_DEEPLINK_KEY = 'aac_deeplink';
+const AAC_DEEPLINK_TTL_MS = 10 * 60 * 1000;
+(function captureDeepLink() {
+  try {
+    const q = new URLSearchParams(window.location.search);
+    const tab = q.get('tab');
+    if (tab) {
+      sessionStorage.setItem(AAC_DEEPLINK_KEY, JSON.stringify({ tab, at: Date.now() }));
+      q.delete('tab');
+      const rest = q.toString();
+      history.replaceState(null, '', window.location.pathname + (rest ? '?' + rest : '') + window.location.hash);
+    }
+  } catch (e) { /* 저장소를 못 쓰면 첫 화면으로 연다 */ }
+})();
+// 보관된 딥링크 탭 키를 꺼내고 지운다. 'active' · 'act' · 'status' → 대리 지정 현황, 그 외는 탭 키 그대로(new · my · apr · admin).
+function consumeDeepLink() {
+  let d = null;
+  try { d = JSON.parse(sessionStorage.getItem(AAC_DEEPLINK_KEY) || 'null'); sessionStorage.removeItem(AAC_DEEPLINK_KEY); } catch (e) { return ''; }
+  if (!d || !d.tab || (Date.now() - (d.at || 0)) > AAC_DEEPLINK_TTL_MS) return '';
+  const t = String(d.tab).toLowerCase();
+  if (['active', 'act', 'status'].includes(t)) return 'act';
+  return ['new', 'my', 'apr', 'admin'].includes(t) ? t : '';
+}
 
 const MSAL_CONFIG = {
   auth: { clientId: CLIENT_ID, authority: 'https://login.microsoftonline.com/' + TENANT_ID,
@@ -3200,6 +3227,9 @@ async function boot(account) {
     document.getElementById('aac-tabs').style.display = 'flex';
     document.getElementById('pane-new').style.display = '';
     setHdrUser(account.name || '', account.username);
+    // 딥링크로 온 경우 — 신청 폼이 1~2초 보였다가 바뀌지 않게 여기서 바로 탭을 옮긴다(loadActive 는 ensureSite 를 스스로 기다린다).
+    const _dlTab = consumeDeepLink();
+    if (_dlTab && _dlTab !== 'new') switchTab(_dlTab);
     showScopeNotice();
 
     await ensureSite();
