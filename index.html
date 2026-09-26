@@ -382,7 +382,8 @@ button.is-busy:hover{opacity:.72}
 .sl-none{background:#fdf7f7;border:1px solid #e8c9c9;border-left:3px solid #a4262c}
 .sl-none .sys{color:#8a3028}
 .sl-none .own{color:#a4262c;font-weight:700}
-.sl-none .sl-note{color:#8a5a56;border-top-color:#eddada}
+/* 점선은 border-top 전체를 써야 그어진다 — 예전엔 색만 적어 이 블록에만 점선이 없었다(09-26). */
+.sl-none .sl-note{border-top:1px dashed #eddada;color:#8a5a56}
 .sl-manual .t{color:#8a5a00}
 .sl-manual .scope-row{color:#5c4200}
 .sl-manual .scope-row+.scope-row{border-top:1px dotted #f0dcae}
