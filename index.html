@@ -1141,20 +1141,25 @@ const AAC_DEEPLINK_TTL_MS = 10 * 60 * 1000;
     const q = new URLSearchParams(window.location.search);
     const tab = q.get('tab');
     if (tab) {
-      sessionStorage.setItem(AAC_DEEPLINK_KEY, JSON.stringify({ tab, at: Date.now() }));
-      q.delete('tab');
+      // APS 결재함(09-30)은 ?tab=approval&id=<신청 ID> 로 보낸다 — 결재함을 열고 그 건 상세를 띄운다.
+      const id = (q.get('id') || '').replace(/[^0-9]/g, '');
+      sessionStorage.setItem(AAC_DEEPLINK_KEY, JSON.stringify({ tab, id, at: Date.now() }));
+      q.delete('tab'); q.delete('id');
       const rest = q.toString();
       history.replaceState(null, '', window.location.pathname + (rest ? '?' + rest : '') + window.location.hash);
     }
   } catch (e) { /* 저장소를 못 쓰면 첫 화면으로 연다 */ }
 })();
 // 보관된 딥링크 탭 키를 꺼내고 지운다. 'active' · 'act' · 'status' → 대리 지정 현황, 그 외는 탭 키 그대로(new · my · apr · admin).
+let _dlOpenId = '';   // 딥링크로 받은 신청 ID — 결재함을 읽은 뒤 상세를 연다
 function consumeDeepLink() {
   let d = null;
   try { d = JSON.parse(sessionStorage.getItem(AAC_DEEPLINK_KEY) || 'null'); sessionStorage.removeItem(AAC_DEEPLINK_KEY); } catch (e) { return ''; }
   if (!d || !d.tab || (Date.now() - (d.at || 0)) > AAC_DEEPLINK_TTL_MS) return '';
   const t = String(d.tab).toLowerCase();
+  _dlOpenId = d.id || '';
   if (['active', 'act', 'status'].includes(t)) return 'act';
+  if (['approval', 'approvals'].includes(t)) return 'apr';   // APS 결재함에서 온 링크
   return ['new', 'my', 'apr', 'admin'].includes(t) ? t : '';
 }
 
@@ -3250,6 +3255,7 @@ async function boot(account) {
     onPeriodChange();
 
     await loadMy();
+    if (_dlOpenId) { const _id = _dlOpenId; _dlOpenId = ''; try { await openDetail(Number(_id)); } catch (e) { console.warn('[AAC] 딥링크 상세 열기 실패:', e && e.message); } }
     refreshDelegationLock();   // 신청 화면 잠금(현재 대리인 여부) — 로그인 직후 한 번
     refreshBadge();
     setInterval(refreshBadge, 60000);
