@@ -3065,9 +3065,8 @@ function askSubmitConfirm(o) {
       '<div>· 대리인으로 지정된 <b>' + esc(o.deputy.name) + '</b> 님은 이 기간에 <b>자기 결재를 다시 다른 사람에게 넘길 수 없습니다</b> (재위임 불가 · 신청 자체가 막힙니다).</div>'
     /* 자동 반영이 실제로 동작하는 시스템만 적는다. 예전에는 「대리인에게 바로 가고」
        라고만 해서, 기본값이 전체 선택인 지금은 모든 신청자가 Flex·Concur·SAP-Be1 까지
-       자동인 줄로 읽었다. 12개 시스템으로 확대가 끝나면 둘째 문장을 지우면 된다. */
-    + '<div>· 기간 중 결재는 <b>APS 통합 결재함</b>에서 대리인이 처리합니다. 이미 대기 중이던 건도 포함됩니다.</div>'
-    + '<div>· 개별 시스템 화면에서는 현재 <b>Goodwill Approval · IT Ticket</b> 만 대리가 표시되며, 나머지는 순차 적용 중입니다.</div>'
+       자동인 줄로 읽었다. (09-29: APS 연동 시스템 전체에 이식이 끝나 「Goodwill · IT 만」 문장을 뺐다 — LTR-PC 가 09-23 마지막) */
+    + '<div>· 기간 중 결재는 <b>APS 통합 결재함</b>에서 대리인이 처리합니다. 이미 대기 중이던 건도 포함되며, 각 시스템의 결재함에서도 같은 건이 보입니다.</div>'
     + (hasExtScope(o.scope)
         ? '<div>· <b>Flex &middot; Concur &middot; SAP-Be1</b> 은 자동 반영이 아니라 <b>승인 완료 후 담당팀(HR &middot; Accounting &middot; IT)이 수동으로 반영</b>합니다.</div>'
         : '')
@@ -3076,7 +3075,7 @@ function askSubmitConfirm(o) {
        이 안내가 이제 실제 동작과 맞는다. 대리인 쪽 경로도 함께 적는다. */
     + '<div>· 기간이 끝나면 <b>자동으로 해제</b>됩니다. 먼저 끝내려면 위임자는 [내 신청 내역]에서 <b>철회</b>, 대리인은 [결재함]에서 <b>대리 반납</b>을 할 수 있습니다.</div>'
     + '<div>· 같은 기간에 두 건을 지정할 수 없습니다. 기간이 겹치면 신청이 막힙니다.</div>'
-    + '<div class="en-line" style="color:#9a6f2a;margin-top:8px;padding-top:8px;border-top:1px dashed #edd3a8">The deputy cannot re-delegate during this period. Approvals are handled by the deputy in the APS portal, including items already pending; individual systems currently show delegation for Goodwill Approval and IT Ticket only.'
+    + '<div class="en-line" style="color:#9a6f2a;margin-top:8px;padding-top:8px;border-top:1px dashed #edd3a8">The deputy cannot re-delegate during this period. Approvals are handled by the deputy in the APS portal, including items already pending, and the same items also appear in each system\'s own inbox.'
       + (hasExtScope(o.scope) ? ' Flex, Concur and SAP-Be1 are applied manually by each owner team after approval.' : '')
       + ' Items handled by the deputy are recorded as the deputy\'s own approval, with the original approver kept. The delegation expires automatically, and it can be ended early by the delegator (withdraw) or the deputy (return).</div>';
   document.getElementById('submit-modal').classList.add('open');
