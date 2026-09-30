@@ -1915,10 +1915,67 @@ function renderApprPreview() {
 }
 
 /* ── 화면 전환 ──────────────────────────────────────────── */
+
+// ══ 감사 로깅(09-30) — STK-DB "Logging_data/{시스템}/{날짜}/" 에 행위마다 JSON 한 개. IT-Ticket 과 같은 규칙. fire-and-forget: 실패해도 원 기능에 영향 없음 ══
+let _logDriveId = null;
+async function _getLogDriveId() {
+  if (_logDriveId) return _logDriveId;
+  try {
+    if (!siteId && typeof ensureSite === 'function') await ensureSite();
+    const drivesRes = await api('/sites/' + siteId + '/drives');
+    let docDrive = (drivesRes.value || []).find(d => ['Documents','문서','Shared Documents'].includes(d.name));
+    if (!docDrive && drivesRes.value && drivesRes.value.length) docDrive = drivesRes.value[0];
+    _logDriveId = docDrive ? docDrive.id : null;
+  } catch(e) { console.warn('[Log] drive 조회 실패:', e.message); }
+  return _logDriveId;
+}
+const _ensuredLogFolders = new Set();
+async function _ensureLogFolder(driveId, folderPath, t) {
+  if (_ensuredLogFolders.has(folderPath)) return true;
+  const parts = folderPath.split('/').filter(Boolean);
+  let cur = '';
+  try {
+    for (const part of parts) {
+      const nextPath = cur ? cur + '/' + part : part;
+      const checkRes = await fetch(GRAPH + '/drives/' + driveId + '/root:/' + nextPath, { headers: { Authorization: 'Bearer ' + t } });
+      if (checkRes.ok) { cur = nextPath; continue; }
+      const parentUrl = cur ? GRAPH + '/drives/' + driveId + '/root:/' + cur + ':/children' : GRAPH + '/drives/' + driveId + '/root/children';
+      const res = await fetch(parentUrl, { method: 'POST', headers: { Authorization: 'Bearer ' + t, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: part, folder: {}, '@microsoft.graph.conflictBehavior': 'fail' }) });
+      if (!res.ok && res.status !== 409) { console.warn('[Log] 폴더 생성 실패:', nextPath, res.status); return false; }
+      cur = nextPath;
+    }
+    _ensuredLogFolders.add(folderPath);
+    return true;
+  } catch(e) { console.warn('[Log] 폴더 생성 오류:', e.message); return false; }
+}
+function logAction(systemName, action, detail) {
+  (async () => {
+    try {
+      const driveId = await _getLogDriveId();
+      if (!driveId) return;
+      const t = await token();
+      const now = new Date(new Date().getTime() + 9*3600*1000);   // KST
+      const p = n => String(n).padStart(2,'0');
+      const dateStr = now.getUTCFullYear() + '-' + p(now.getUTCMonth()+1) + '-' + p(now.getUTCDate());
+      const timeStr = p(now.getUTCHours()) + p(now.getUTCMinutes()) + p(now.getUTCSeconds());
+      const rawUser = (user && (user.email || user.username)) || 'unknown';
+      const userTag = rawUser.split('@')[0].replace(/[^a-zA-Z0-9._-]/g, '_');
+      const rand = Math.random().toString(36).slice(2, 6);
+      const folderPath = 'Logging_data/' + systemName + '/' + dateStr;
+      if (!(await _ensureLogFolder(driveId, folderPath, t))) return;
+      await fetch(GRAPH + '/drives/' + driveId + '/root:/' + folderPath + '/' + timeStr + '_' + userTag + '_' + rand + '.json:/content', {
+        method: 'PUT', headers: { Authorization: 'Bearer ' + t, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ timestampKST: dateStr + ' ' + p(now.getUTCHours()) + ':' + p(now.getUTCMinutes()) + ':' + p(now.getUTCSeconds()), user: rawUser, system: systemName, action, detail: detail || {} })
+      });
+    } catch(e) { console.warn('[Log] 기록 실패(무시됨):', e.message); }
+  })();
+}
 function switchTab(t) {
   // 관리자 탭은 누구에게나 보이되 진입은 막는다 — 권한이 없으면 신청 방법을 띄우고
   // 탭을 바꾸지 않는다(GW 1012행과 같은 방식).
-  if (t === 'admin' && !isAdmin()) { showNoAuth(); return; }
+  if (t === 'admin' && !isAdmin()) { logAction('AAC', '관리자 탭 접근 차단', { reason: '관리자 명단에 없음', admins: adminEmails.length }); showNoAuth(); return; }   // 권한이 없어 막혀도 이력은 남긴다(09-30)
+  if (t === 'admin') logAction('AAC', '관리자 탭 열기', {});
   // 목록 세 탭은 열이 7~8개이고 「기간」 이 'YYYY-MM-DD HH:mm ~ YYYY-MM-DD HH:mm' 로
   // 길어서 960px(여유 920px)로는 표가 넘쳐 가로 스크롤이 났다. 이 탭에서만 1280px 로 넓힌다.
   // 신청 폼은 입력란이 지나치게 늘어나므로 960px 를 유지한다 — GW(1025행)·IT(1600행)와 같은 규칙.
