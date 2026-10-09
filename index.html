@@ -785,9 +785,18 @@ html, * { scrollbar-width: thin; scrollbar-color: #CBD5E1 transparent; }
 ::-webkit-scrollbar-thumb:hover { background: #94A3B8; background-clip: padding-box; }
 </style>
 <style id="aps-mobile">
-/* APS 모바일(10-09 · aps-mobile) — 767px 이하 전용. 웹 화면 무변경 */
+/* APS 모바일(10-09 · aps-mobile · 10-10 2차 점검) — 767px 이하 전용. 웹 화면 무변경 */
 /* AAC: '대리 지정 현황' 제목 줄(검색칸 min-width 190px 인라인)이 줄바꿈되지 않아 생기던 가로 넘침 해소 · 탭 한 줄 스크롤 · 기간 입력 2×2 격자 · 641~767px 도 ≤640 헤더 배치를 그대로 씀 */
-@media (max-width: 767px) {
+@media screen and (max-width: 767px) {
+  /* ── iPhone(Safari) · Galaxy 방어(10-10) — 가로 돌림 글자 확대 · 날짜 칸 폭 · iOS 날짜/시각 칸 높이(일반 입력칸 42px) ── */
+  html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+  input:not([type=checkbox]):not([type=radio]), select, textarea, button { max-width: 100%; box-sizing: border-box; }
+  input[type=date], input[type=time], input[type=month], input[type=datetime-local] { min-width: 0; }
+  @supports (-webkit-touch-callout: none) {
+    input[type=date], input[type=time], input[type=month], input[type=datetime-local] { -webkit-appearance: none; appearance: none; display: block; min-height: 42px; line-height: normal; text-align: left; }
+    input::-webkit-date-and-time-value { text-align: left; min-height: 1.2em; }
+  }
+
   /* ── 바깥 여백 · 카드 ── */
   #app { padding: 12px 12px 32px; }
   .card { padding: 16px 14px; }
@@ -797,6 +806,7 @@ html, * { scrollbar-width: thin; scrollbar-color: #CBD5E1 transparent; }
   .app-header.aps-hdr { flex-direction: column; align-items: stretch; gap: 12px; padding: 0 16px 14px; margin-bottom: 14px; }
   .aps-hdr > *:not(.aps-band):not(.aps-hdr-r) { flex: none; }
   .aps-band { flex: none; height: 28px; margin: 0 -16px 0; padding: 0 16px; }
+  .aps-hdr > .aps-band { align-self: stretch; }   /* 641~767px 는 기존 규칙(align-items:flex-start !important)에 띠가 글자 폭(301px)으로 줄어 왼쪽에만 붙던 것(10-10) */
   .aps-band-crumb { flex: 1 1 auto; }
   .app-title { font-size: 1rem; }
   .app-sub { font-size: .7rem; line-height: 1.45; }
@@ -868,6 +878,10 @@ html, * { scrollbar-width: thin; scrollbar-color: #CBD5E1 transparent; }
   .sc-all { padding: 12px 14px; }
   .sc-body { padding: 10px; }
   .sc-item { min-height: 40px; }
+  /* 첨부 목록 — 띄어쓰기 없는 긴 파일 이름(영문 · 밑줄)이 줄바꿈되지 않아 × 단추가 화면 밖으로 밀리고 문서가 448px 로 넘치던 것(10-10) */
+  .file-item { gap: 8px; }
+  .file-item > span { min-width: 0; overflow-wrap: anywhere; }
+  .file-item > button { flex: none; min-width: 32px; min-height: 32px; }
   .nt-list { gap: 4px 8px; }
   /* 초기화 · 신청 — 폭을 반씩 꽉 채운다 */
   #pane-new div[style*="text-align:right"] { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
@@ -882,6 +896,10 @@ html, * { scrollbar-width: thin; scrollbar-color: #CBD5E1 transparent; }
   .det-value { min-width: 0; overflow-wrap: anywhere; }
   .appr-item { flex-wrap: wrap; }
   .xd-row { flex-wrap: wrap; }
+  /* 팝업 머리 — 제목 옆 영문(.en 기본 nowrap)이 한 줄로 뻗어 오른쪽 위 닫기(×, absolute) 단추 밑으로 들어가던 것(10-10) */
+  .modal-box h3 .en { white-space: normal; }
+  #detail-modal .modal-box > div:first-child, #confirm-modal .modal-box > div:first-child, #submit-modal .modal-box > div:first-child { padding-right: 40px !important; }
+  .modal-box .modal-close { top: 10px; right: 8px; width: 32px; height: 32px; }
   /* 신청 확인 — 라벨 위 · 값 아래, 단추 반씩 */
   #submit-modal .modal-box > div { padding-left: 16px !important; padding-right: 16px !important; }
   #sc-rows tr { display: flex; flex-direction: column; border-bottom: 1px solid #f3f2f1; }
