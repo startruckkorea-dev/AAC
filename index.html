@@ -2381,13 +2381,26 @@ function logAction(systemName, action, detail) {
       const rand = Math.random().toString(36).slice(2, 6);
       const folderPath = 'Logging_data/' + systemName + '/' + dateStr;
       if (!(await _ensureLogFolder(driveId, folderPath, t))) return;
-      await fetch(GRAPH + '/drives/' + driveId + '/root:/' + folderPath + '/' + timeStr + '_' + userTag + '_' + rand + '.json:/content', {
+      const _lr = await fetch(GRAPH + '/drives/' + driveId + '/root:/' + folderPath + '/' + timeStr + '_' + userTag + '_' + rand + '.json:/content', {
         method: 'PUT', headers: { Authorization: 'Bearer ' + t, 'Content-Type': 'application/json' },
         body: JSON.stringify({ timestampKST: dateStr + ' ' + p(now.getUTCHours()) + ':' + p(now.getUTCMinutes()) + ':' + p(now.getUTCSeconds()), user: rawUser, system: systemName, action, detail: detail || {} })
       });
+      // 응답을 보지 않아 저장이 거부돼도(403 · 429 · 500) 흔적이 없었다(10-15, APS 10-10 과 같게) — 콘솔 경고만, 원 기능엔 영향 없음
+      if (!_lr.ok) console.warn('[Log] 기록 실패(무시됨, 원 기능엔 영향 없음): HTTP ' + _lr.status + ' —', systemName, action);
     } catch(e) { console.warn('[Log] 기록 실패(무시됨):', e.message); }
   })();
 }
+/* ══ 결재 · 데이터 변경 기록(10-15) ══
+   결재 대리 지정(다른 사람의 결재 권한 위임)의 상신 · 수락/승인 · 거절/반려 · 철회 · 대리 반납과 관리자 「수동 이관 완료」 를
+   Logging_data/AAC 에 남긴다 — 예전에는 APS 통합 결재함에서 처리한 결재만 Logging_data/APS 에 남고 이 화면에서 한 것은 전혀 남지 않았다.
+   action 이름 · detail 모양은 APS 감사 기록(「결재 승인」 · 「결재 반려」 · 신청번호 · 차수 · 역할 · 결과)에 맞춘다. 사유 · 의견은 글자 수만.
+   Graph 쓰기가 끝난 뒤에 남기고, 실패하면 「…실패」(한 행위에 한 번). logAction 은 fire-and-forget — 기록이 실패 · 지연돼도 원 기능은 그대로.
+   10-01 제외 규칙(IT Manager · IT system service)도 그대로 적용된다. */
+function aacAudit(action, detail) {
+  try { logAction('AAC', action, detail); } catch (e) { console.warn('[Log] 기록 호출 실패(무시됨):', e && e.message); }
+}
+function aacErr(e) { return String((e && e.message) || e || '').slice(0, 200); }
+function aacLen(s) { const n = String(s || '').trim().length; return n ? n + '자' : ''; }
 // 탭 전환 폭 애니메이션(APS 공통 · 10-07) — 사용자가 처음 누르거나 키를 칠 때부터 html.aps-wtx 를 켠다.
 // 로그인 직후 첫 탭을 고르며 폭을 정할 때(바로가기 주소로 결재함 · 관리자를 바로 여는 경우 포함)는 움직이지 않게 하려는 것.
 // 넓어지는 0.2초 동안은 틀이 아직 좁아 표가 넘치므로 가로 스크롤 막대가 잠깐 생겼다 사라지며 아래 내용이 출렁인다(Windows 기본 스크롤 막대).
@@ -2718,6 +2731,7 @@ async function submitForm() {
 
   setBusy(btn, '신청 중');
   let reqId = null;
+  let _aacLogged = false;   // 상신 기록(10-15) — 한 번만
   try {
     await ensureSite();
     // 목록이 없으면 Graph 는 「The specified list was not found」 만 돌려준다. 어느 목록인지 먼저 알려 준다.
@@ -2850,6 +2864,10 @@ async function submitForm() {
         await patchFields(LIST_REQ, reqId, { ClosedComment: '[자동 기록] ' + selfNote });
       } catch (e) { console.warn('[AAC] 생략 사유 기록 실패:', e.message); }
     }
+    _aacLogged = true;
+    aacAudit('상신', { 신청번호: title, id: String(reqId), 구분: '결재 대리 지정', 대신신청: proxy ? '예 — ' + meEmail : '',
+      위임자: dg.email || '', 대리인: _selDeputy.email || '', 기간: start + ' ~ ' + end, 범위: scope, 결재단계: line.length, 사유: aacLen(reason),
+      첨부: _picked.length || '' });
     showAlert('신청이 접수되었습니다.',
       title + '\n' + _selDeputy.name + ' 님의 수락을 기다립니다.'
       + (selfNote ? '\n\n※ ' + selfNote : ''));
@@ -2857,6 +2875,7 @@ async function submitForm() {
     myData = []; switchTab('my');
   } catch (e) {
     console.error('[AAC] 신청 실패:', e);
+    if (!_aacLogged) aacAudit('상신 실패', { id: reqId ? String(reqId) : '', 구분: '결재 대리 지정', 위임자: (dg && dg.email) || '', 대리인: (_selDeputy && _selDeputy.email) || '', 오류: aacErr(e) });
     showAlert('신청에 실패했습니다.', e.message + (reqId ? '\n신청번호 참고: ' + reqId : ''), '\u274C');
   } finally {
     setBusy(btn, null);
@@ -3489,11 +3508,15 @@ async function markExtDone(reqId, key, btn) {
   if (!sysx) return;
   if (!confirm(sysx.label + ' 반영을 완료로 기록합니다.\n(' + sysx.owner + ')\n\n되돌리려면 IT팀에 요청해야 합니다. 계속할까요?')) return;
   const idle = btn.textContent; btn.disabled = true; btn.textContent = '기록 중…';
+  let _xdLogged = false;   // 감사 기록(10-15) — 한 번만
+  const _xdTitle = () => { const d = (_curDetail && String(_curDetail.id) === String(reqId)) ? (_curDetail.f || {}) : (((adminData || []).find(r => String(r.id) === String(reqId)) || {}).fields || {}); return d.Title || ''; };
   try {
     await ensureSite();
     const who = (myInfo()?.name || user?.name || user?.email || '');
     const patch = {}; patch[sysx.doneCol] = new Date().toISOString(); patch[sysx.byCol] = who;
     await patchFields(LIST_REQ, reqId, patch);
+    _xdLogged = true;
+    aacAudit('수동 이관 완료 기록', { 신청번호: _xdTitle(), id: String(reqId), 시스템: sysx.label, 담당: sysx.owner });   // 10-15
     /* 캐시를 비운 뒤 반드시 다시 읽어야 한다. 예전에는 adminData 를 비우고 바로
        renderAdmin() 을 불러, 빈 배열을 그려 관리자 표가 「해당하는 신청이 없습니다」
        로 비어 버렸다(진행중·예정 표도 함께). 다른 경로(철회·결재 처리)는 비운 뒤
@@ -3508,6 +3531,7 @@ async function markExtDone(reqId, key, btn) {
     refreshBadge();
   } catch (e) {
     console.error('[AAC] 수동 이관 기록 실패:', e);
+    if (!_xdLogged) aacAudit('수동 이관 완료 기록 실패', { 신청번호: _xdTitle(), id: String(reqId), 시스템: sysx.label, 오류: aacErr(e) });   // 10-15
     btn.disabled = false; btn.textContent = idle;
     showAlert('기록하지 못했습니다.', (e.message || '') +
       '\n\nAAC_Requests 목록에 ' + sysx.doneCol + ' 열이 있는지 확인해 주세요.', '\u274C');
@@ -3625,6 +3649,15 @@ async function doConfirm() {
 
   const ok = document.getElementById('cf-ok');
   setBusy(ok, '처리 중');
+  // 감사 기록(10-15) — 첫 쓰기 뒤의 오류도 남기고, 성공을 남긴 뒤에는 다시 남기지 않는다.
+  let _aacW = false, _aacLogged = false, _aacRes = '', _aacApr = null;
+  const _aacName = { '승인': '결재 승인', '반려': '결재 반려', '철회': '철회', '반납': '대리 반납' }[action] || action;
+  const _aacLog = (what, more) => {
+    _aacLogged = true;
+    const d = (_curDetail && String(_curDetail.id) === String(reqId)) ? (_curDetail.f || {}) : {}, a = (_aacApr && _aacApr.fields) || {};
+    aacAudit(what, Object.assign({ 신청번호: d.Title || '', id: String(reqId), 구분: '결재 대리 지정', 위임자: d.RequesterEmail || '', 대리인: d.DeputyEmail || '',
+      차수: a.ApprovalOrder == null ? '' : a.ApprovalOrder, 역할: a.ApproverRole || '', 의견: aacLen(cm) }, more));
+  };
   try {
     await ensureSite();
 
@@ -3644,6 +3677,7 @@ async function doConfirm() {
       const _tag = _isRet ? '[대리인 반납] ' : '[위임자 철회] ';
       await patchFields(LIST_REQ, reqId, { Status: '철회',
         ClosedComment: _tag + _who + ' — ' + cm, ClosedDate: new Date().toISOString() });
+      _aacW = true; _aacRes = (_isRet ? '대리 반납' : '위임자 철회') + ' — 신청 철회(이전 상태: ' + _rs + ')';
       // 남은 결재선을 잠근다. 그대로 두면 다른 사람 결재함에 계속 뜬다.
       const rest = (await apiAll('/sites/' + siteId + '/lists/' + LIST_APR +
         "/items?$expand=fields&$filter=fields/RequestID eq '" + reqId + "'")).value
@@ -3662,7 +3696,9 @@ async function doConfirm() {
         return;
       }
       // 내 결재 행을 먼저 갱신한다
+      _aacApr = _cur;
       await patchFields(LIST_APR, aprId, { Status: action, Comment: cm, ApprovalDate: new Date().toISOString() });
+      _aacW = true; _aacRes = action === '반려' ? '반려 — 신청 반려' : '승인';
       const all = (await apiAll('/sites/' + siteId + '/lists/' + LIST_APR +
         "/items?$expand=fields&$filter=fields/RequestID eq '" + reqId + "'")).value
         .sort((a, b) => Number(a.fields.ApprovalOrder) - Number(b.fields.ApprovalOrder));
@@ -3680,10 +3716,12 @@ async function doConfirm() {
         if (next) {
           await api('/sites/' + siteId + '/lists/' + LIST_APR + '/items/' + next.id, 'PATCH',
             { fields: { Status: '대기' } });
+          _aacRes = '승인 — ' + (next.fields.ApprovalOrder || '') + '차 결재자에게 넘김';
         } else {
           const pending = all.filter(a => (a.fields.Status || '').trim() === '대기');
           if (pending.length === 0 && all.length > 0) {
             await patchFields(LIST_REQ, reqId, { Status: '승인완료', ClosedDate: new Date().toISOString() });
+            _aacRes = '승인 — 최종 승인(대리 지정 효력 발생)';
           } else if (all.length === 0) {
             // 방금 이 건의 행 하나를 바꿨으므로 최소 1건은 나와야 한다. 0건이면 조회 실패로 본다.
             throw new Error('결재 행 조회 결과가 비어 있어 상태를 바꾸지 않았습니다.\n승인은 기록되었습니다. 잠시 후 결재함에서 다시 확인해 주세요.');
@@ -3692,6 +3730,7 @@ async function doConfirm() {
       }
     }
 
+    _aacLog(_aacName, { 결과: _aacRes });
     closeConfirm(); closeDetail();
     showAlert(action + ' 처리되었습니다.', '', action === '반려' ? '\u274C' : '\u2705');
     myData = []; aprData = []; adminData = [];
@@ -3700,6 +3739,7 @@ async function doConfirm() {
     refreshBadge();
   } catch (e) {
     console.error('[AAC] 처리 실패:', e);
+    if (!_aacLogged) { if (_aacW) _aacLog(_aacName, { 결과: (_aacRes ? _aacRes + ' · ' : '') + '기록됨 · 이후 단계 오류 — ' + aacErr(e) }); else _aacLog(_aacName + ' 실패', { 오류: aacErr(e) }); }
     showAlert('처리에 실패했습니다.', e.message, '\u274C');
   } finally {
     setBusy(ok, null);
@@ -3728,7 +3768,8 @@ function exportExcel() {
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, '결재대리');
     XLSX.writeFile(wb, 'AAC_결재대리_' + kstToday() + '.xlsx');
-  } catch (e) { showAlert('Excel 내보내기에 실패했습니다.', e.message, '\u274C'); }
+    aacAudit('Excel 내보내기', { 건수: rows.length - 1 });   // 10-15 — 위임자 · 대리인 메일 · 사유 전체가 나가는데 기록이 없었다
+  } catch (e) { aacAudit('Excel 내보내기 실패', { 오류: aacErr(e) }); showAlert('Excel 내보내기에 실패했습니다.', e.message, '\u274C'); }
 }
 
 /* ── 배지 ───────────────────────────────────────────────── */
