@@ -1555,6 +1555,49 @@ const AAC_DEEPLINK_TTL_MS = 10 * 60 * 1000;
 })();
 // 보관된 딥링크 탭 키를 꺼내고 지운다. 'active' · 'act' · 'status' → 대리 지정 현황, 그 외는 탭 키 그대로(new · my · apr · admin).
 let _dlOpenId = '';   // 딥링크로 받은 신청 ID — 결재함을 읽은 뒤 상세를 연다
+/* ── 딥링크 상세 권한 확인(10-15) ──
+   예전엔 주소의 id 만 바꾸면 누구나 남의 대리 지정 신청 상세(사유 · 첨부 · 결재 이력)를 열 수 있었다(ACC Voucher ?openId= 와 같은 결함).
+   APS ?id= 딥링크 · FA/BP/SCC 딥링크와 같은 원칙으로, 이 건을 화면에서 원래 볼 수 있는 사람에게만 연다 —
+   위임자(신청자) · 대신 신청한 사람 · 대리인(내 신청 · 위임받은 권한) · 그 건의 결재자(결재함) · 관리자(adminEmails = AAC_ADMIN_1~3 · ADMIN_SP_1~2) ·
+   「대리 지정 현황」 탭이 누구에게나 보여 주는 건(승인완료 중 진행중 · 예정 — renderActive 와 같은 기준). AAC 에는 IT · PKF 명단이 없다.
+   설정을 못 읽으면(_sysConfig 없음) 관리자 명단이 비어 나머지 조건만 본다(fail-closed). 확인이 안 되면 열지 않는다.
+   돌려주는 값: true(허용) · 'notfound'(없는 건) · false(권한 없음 · 확인 실패) */
+async function aacDeepLinkAllowed(id) {
+  let f;
+  try {
+    await ensureSite();
+    f = (await api('/sites/' + siteId + '/lists/' + LIST_REQ + '/items/' + id + '?$expand=fields')).fields || {};
+  } catch (e) {
+    console.warn('[AAC] 딥링크 건 조회 실패:', e && e.message);
+    return /not\s*found|404/i.test(String(e && e.message)) ? 'notfound' : false;
+  }
+  try {
+    if (isAdmin()) return true;
+    if (isMe(f.RequesterEmail) || isMe(f.SubmittedByEmail) || isMe(f.DeputyEmail)) return true;
+    if ((f.Status || '').trim() === '승인완료' && delegatedEffect(f).rank <= 1) return true;
+    const a = await apiAll('/sites/' + siteId + '/lists/' + LIST_APR + "/items?$expand=fields&$filter=fields/RequestID eq '" + id + "'");
+    return (a.value || []).some(x => String(x.fields.RequestID) === String(id) && isMe(x.fields.ApproverEmail));
+  } catch (e) {
+    console.warn('[AAC] 딥링크 권한 확인 실패:', e && e.message);
+    return false;
+  }
+}
+/* 통과면 true. 차단이면 ?id= 딥링크(FA · BP · SCC)와 같은 문구로 알리고 Logging_data 에 「딥링크 상세 접근 차단」(id · 사유) 을 남긴다. */
+async function aacDeepLinkGate(raw) {
+  const s = String(raw == null ? '' : raw).trim();
+  const id = /^\d{1,9}$/.test(s) ? Number(s) : 0;
+  let allow = false;
+  try { allow = id > 0 ? await aacDeepLinkAllowed(id) : 'notfound'; } catch (e) { allow = false; }
+  if (allow === true) return true;
+  const nf = allow === 'notfound', cfgFail = !_sysConfig;
+  const reason = nf ? '없는 건' : (cfgFail ? '설정 읽기 실패 — 위임자 · 대리인 · 결재자 아님' : '위임자 · 대리인 · 결재자 · 관리자 아님(또는 확인 실패)');
+  try { logAction('AAC', '딥링크 상세 접근 차단', { id: s.slice(0, 40), 사유: reason }); } catch (e) { console.warn('[Log] 차단 기록 생략:', e && e.message); }
+  alert(nf
+    ? '해당 신청 건을 찾을 수 없습니다. 삭제되었거나 번호가 잘못되었습니다.\n결재함에서 내 결재 건을 확인해 주세요.'
+    : '이 신청 건을 볼 수 있는 권한이 없습니다.\n결재함에서 내 결재 건을 확인해 주세요.'
+      + (cfgFail ? '\n\n설정 파일(system_config_final.xlsx)을 읽지 못해 관리자 권한을 확인할 수 없습니다. 새로고침 후 다시 시도해 주세요.' : ''));
+  return false;
+}
 function consumeDeepLink() {
   let d = null;
   try { d = JSON.parse(sessionStorage.getItem(AAC_DEEPLINK_KEY) || 'null'); sessionStorage.removeItem(AAC_DEEPLINK_KEY); } catch (e) { return ''; }
@@ -3817,7 +3860,8 @@ async function boot(account) {
     onPeriodChange();
 
     await loadMy();
-    if (_dlOpenId) { const _id = _dlOpenId; _dlOpenId = ''; try { await openDetail(Number(_id)); } catch (e) { console.warn('[AAC] 딥링크 상세 열기 실패:', e && e.message); } }
+    // 10-15: 딥링크 상세는 볼 자격(aacDeepLinkAllowed)을 확인한 뒤에만 연다. 차단이면 상세를 부르지 않는다.
+    if (_dlOpenId) { const _id = _dlOpenId; _dlOpenId = ''; try { if (await aacDeepLinkGate(_id)) await openDetail(Number(_id)); } catch (e) { console.warn('[AAC] 딥링크 상세 열기 실패:', e && e.message); } }
     refreshDelegationLock();   // 신청 화면 잠금(현재 대리인 여부) — 로그인 직후 한 번
     refreshBadge();
     setInterval(refreshBadge, 60000);
