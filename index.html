@@ -1617,7 +1617,7 @@ const MSAL_CONFIG = {
 const msalApp = new msal.PublicClientApplication(MSAL_CONFIG);
 
 let user = null, siteId = null, _docDriveId = null, _sysConfig = null;
-let employeeData = [], adminEmails = [], contactEmail = 'stk_it@hyosung.com';
+let employeeData = [], adminEmails = [], contactEmail = '';   // 메일은 설정 파일에서만(10-17) — AAC_CONTACT → CONTACT_EMAIL
 let myData = [], aprData = [], adminData = [];
 let _selDeputy = null, _curDetail = null, _cfAction = null;
 let _selDelegator = null;      // 대신 신청 시 결재 권한을 위임하는 사람
@@ -1857,6 +1857,33 @@ async function loadSystemConfig() {
     return null;
   }
 }
+/* IT 문의 메일(10-17) — 코드에 메일 주소를 두지 않는다. system_config_final.xlsx 의 AAC_IT_CONTACT(C열) → 없으면 CONTACT_EMAIL 순으로 채우고,
+   설정을 못 읽었으면(로그인 전 · 읽기 실패) 메일 없이 「IT팀」 만 보인다. 형식이 맞는 메일만 받으므로 HTML 에 그대로 넣어도 안전하다.
+   data-it-contact 가 붙은 화면 칸은 설정을 읽은 뒤 메일 링크로 바뀐다. */
+var IT_CONTACT_KEY = 'AAC_IT_CONTACT', __itMail = '';
+function itTeam(label) { label = label || 'IT팀'; return __itMail ? label + '(' + __itMail + ')' : label; }
+function itApplyDom() {
+  try {
+    document.querySelectorAll('[data-it-contact]').forEach(function (el) {
+      el.textContent = '';
+      if (!__itMail) { el.textContent = el.getAttribute('data-it-contact') || 'IT팀'; return; }
+      var a = document.createElement('a'); a.href = 'mailto:' + __itMail; a.textContent = __itMail;
+      a.style.color = '#0078d4'; a.style.textDecoration = 'none'; el.appendChild(a);
+    });
+  } catch (e) {}
+}
+function itSetFromCfg(cfg) {
+  try {
+    if (!cfg || typeof cfg !== 'object') return;
+    var keys = Object.keys(cfg);
+    var pick = function (k) { var kk = keys.find(function (x) { return String(x).trim().toUpperCase() === k.toUpperCase(); }); return kk && cfg[kk] ? String(cfg[kk].email || '').trim().toLowerCase() : ''; };
+    var ok = function (v) { return /^[a-z0-9._%+-]+@[a-z0-9-]+(\.[a-z0-9-]+)+$/.test(v); };
+    var mail = [pick(IT_CONTACT_KEY), pick('CONTACT_EMAIL')].find(ok);
+    if (mail) __itMail = mail;
+    itApplyDom();
+  } catch (e) {}
+}
+loadSystemConfig = (function (orig) { return async function () { var c = await orig.apply(this, arguments); itSetFromCfg(c || (typeof _sysConfig !== 'undefined' ? _sysConfig : null)); return c; }; })(loadSystemConfig);
 async function loadEmployees() {
   try {
     const t = await token();
@@ -2341,7 +2368,7 @@ function renderApprPreview() {
     '<input type="text" value="' + esc(x.p.name || '') + '" readonly placeholder="이름">' +
     '<input type="email" value="' + esc(x.p.email || '') + '" readonly placeholder="이메일">' +
     '</div>' +
-    (x.p.email ? '' : '<div class="appr-miss">담당자 정보를 찾을 수 없습니다. IT팀(' + esc(contactEmail) + ')에 알려주세요.</div>') +
+    (x.p.email ? '' : '<div class="appr-miss">담당자 정보를 찾을 수 없습니다. ' + esc(itTeam('IT팀')) + '에 알려주세요.</div>') +
     '</div>').join('')
     + (notes.length
         ? '<div class="appr-skip"><div class="as-t">생략된 단계 ' + notes.length + '건</div>' +
@@ -2691,7 +2718,7 @@ async function preflightLists() {
   const near = [...new Set(names.filter(n => norm(n).includes('aac')))].slice(0, 5);   // 표시 이름과 내부 이름이 같으면 중복되므로 한 번만
   alert('SharePoint 사이트에 필요한 목록이 없습니다.\n\n없는 목록: ' + missing.join(', ')
     + (near.length ? '\n사이트에 있는 비슷한 목록: ' + near.join(', ') : '')
-    + '\n\n목록 이름을 영문 그대로 만들어 주세요.\n사이트: /sites/STK-DB\nIT팀(stk_it@hyosung.com)에 문의해 주세요.');
+    + '\n\n목록 이름을 영문 그대로 만들어 주세요.\n사이트: /sites/STK-DB\n'+itTeam('IT팀')+'에 문의해 주세요.');
   return false;
 }
 
@@ -2811,7 +2838,7 @@ async function submitForm() {
     const _lack = _must.filter(k => _reqMapped.missing.includes(k));
     if (_lack.length) {
       alert('신청 목록(' + LIST_REQ + ')에 필요한 열이 없습니다.\n\n없는 열: ' + _lack.join(', ')
-        + '\n\n한 줄 텍스트로 만들어 주세요(이름은 영문 그대로).\nIT팀(stk_it@hyosung.com)에 문의해 주세요.');
+        + '\n\n한 줄 텍스트로 만들어 주세요(이름은 영문 그대로).\n'+itTeam('IT팀')+'에 문의해 주세요.');
       throw new Error('목록 열 누락: ' + _lack.join(', '));
     }
     const created = await api('/sites/' + siteId + '/lists/' + LIST_REQ + '/items', 'POST', { fields: _reqMapped.fields });
