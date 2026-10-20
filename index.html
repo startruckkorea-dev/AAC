@@ -1604,7 +1604,9 @@ const LIST_APR = 'AAC_Approvals';
    예전에는 CTR(→CTR_PR), GA 하나(→GA_STN/GA_BC/GA_IDC 셋)로 어긋나 있었고
    RR 은 항목 자체가 없어 'ALL' 일 때만 동작했다.
    SSC(Shared Service Center)는 aps 연동 시스템이 아니라 제외한다.
-   ACO 는 배포 전이지만 aps 에 등록될 예정이라 미리 넣어 둔다. */
+   ACO 는 배포 전이지만 aps 에 등록될 예정이라 미리 넣어 둔다.
+   PROC(10-21) — Procurement(procu · AAC_SYS_KEY 'PROC' · aps 의 PROC_SSL aac 'PROC'). 10-15 에 APS 에 들어왔는데 여기 빠져 있어
+   「전체(ALL)」 위임만 적용되고 시스템을 골라 신청하면 Procurement 가 조용히 빠졌다(procurement 쪽 주석이 이 추가를 요구). */
 const SYSTEMS = [
   { key: 'ACC',    label: 'ACC Voucher' },
   { key: 'GW',     label: 'Goodwill Approval' },
@@ -1620,6 +1622,7 @@ const SYSTEMS = [
   { key: 'LTR',    label: 'LTR-PC' },
   { key: 'CTR_PR', label: 'Purchase Requisition' },
   { key: 'ACO',    label: 'Accounting Others' },
+  { key: 'PROC',   label: 'Procurement' },
   /* 아래 셋은 APS 가 아니라 자동 연동이 되지 않는다(ext:true).
      신청은 여기서 받되 실제 권한 이관은 각 시스템 담당자가 수동으로 처리한다.
      관리자 화면에서 담당자가 골라 볼 수 있도록 같은 목록에 둔다. */
@@ -1660,8 +1663,9 @@ let _dlOpenId = '';   // 딥링크로 받은 신청 ID — 결재함을 읽은 �
 /* ── 딥링크 상세 권한 확인(10-15) ──
    예전엔 주소의 id 만 바꾸면 누구나 남의 대리 지정 신청 상세(사유 · 첨부 · 결재 이력)를 열 수 있었다(ACC Voucher ?openId= 와 같은 결함).
    APS ?id= 딥링크 · FA/BP/SCC 딥링크와 같은 원칙으로, 이 건을 화면에서 원래 볼 수 있는 사람에게만 연다 —
-   위임자(신청자) · 대신 신청한 사람 · 대리인(내 신청 · 위임받은 권한) · 그 건의 결재자(결재함) · 관리자(adminEmails = AAC_ADMIN_1~3 · ADMIN_SP_1~2) ·
-   「대리 지정 현황」 탭이 누구에게나 보여 주는 건(승인완료 중 진행중 · 예정 — renderActive 와 같은 기준). AAC 에는 IT · PKF 명단이 없다.
+   위임자(신청자) · 대신 신청한 사람 · 대리인(내 신청 · 위임받은 권한) · 그 건의 결재자(결재함) · 관리자(adminEmails = AAC_ADMIN_1~3 · ADMIN_SP_1~2). AAC 에는 IT · PKF 명단이 없다.
+   10-21: 「대리 지정 현황」 에 보이는 건(승인완료 · 진행중 · 예정)을 누구에게나 열던 조건을 뺐다 — 현황 탭은 이름 · 부서 · 기간 · 시스템만 보여 주고
+   사유 · 첨부 · 결재선은 비공개인데, 딥링크로는 그 건의 사유(병가 등) · 첨부까지 전 직원에게 열렸다. 현황 탭과 같은 기준으로 당사자 · 결재자 · 관리자만.
    설정을 못 읽으면(_sysConfig 없음) 관리자 명단이 비어 나머지 조건만 본다(fail-closed). 확인이 안 되면 열지 않는다.
    돌려주는 값: true(허용) · 'notfound'(없는 건) · false(권한 없음 · 확인 실패) */
 async function aacDeepLinkAllowed(id) {
@@ -1676,7 +1680,6 @@ async function aacDeepLinkAllowed(id) {
   try {
     if (isAdmin()) return true;
     if (isMe(f.RequesterEmail) || isMe(f.SubmittedByEmail) || isMe(f.DeputyEmail)) return true;
-    if ((f.Status || '').trim() === '승인완료' && delegatedEffect(f).rank <= 1) return true;
     const a = await apiAll('/sites/' + siteId + '/lists/' + LIST_APR + "/items?$expand=fields&$filter=fields/RequestID eq '" + id + "'");
     return (a.value || []).some(x => String(x.fields.RequestID) === String(id) && isMe(x.fields.ApproverEmail));
   } catch (e) {
@@ -2297,11 +2300,11 @@ function onPeriodChange() {
    예전에는 자동 쪽만 마크업의 checked 로 처리되고 개별 항목은 disabled 속성을
    직접 달아 두었는데, 수동 쪽을 같은 구조로 맞추면서 한 곳에서 처리하도록 모았다. */
 function renderSystems() {
-  /* 17개를 한 목록으로 그린다. 자동·수동을 항목별 배지로 구분하므로 목록을
+  /* 18개(자동 15 · 수동 3 — 10-21 Procurement 추가)를 한 목록으로 그린다. 자동·수동을 항목별 배지로 구분하므로 목록을
      둘로 쪼갤 필요가 없고, 전체 폭을 쓰니 시스템 이름이 잘리지 않는다.
      개별 체크박스는 꺼진 상태로 두고 마스터(f-all)가 잠근다. */
   /* 수동 3개를 앞에 둔다 — 고를 때 확인이 필요한 쪽이라 먼저 눈에 들어와야 한다.
-     자동 14개는 그 뒤로. 저장값 순서와는 무관하다(getScope 가 따로 만든다).
+     자동 15개는 그 뒤로. 저장값 순서와는 무관하다(getScope 가 따로 만든다).
      처음부터 전부 체크된 상태로 그린다 — 예전에는 마스터가 켜져 있으면 개별을
      잠가 버려서, 「하나만 빼고 싶다」는 가장 흔한 경우에 먼저 마스터를 끄고
      16개를 다시 고르게 만들었다. 이제 빼고 싶은 것만 해제하면 된다. */
@@ -2315,13 +2318,13 @@ function renderSystems() {
   syncScopeMaster();
 }
 /* 마스터는 「전체 선택 / 전체 해제」 도구다. 개별을 잠그지 않는다 —
-   잠그면 하나만 빼려는 사람이 마스터를 끄고 16개를 다시 골라야 했다. */
+   잠그면 하나만 빼려는 사람이 마스터를 끄고 나머지 전부를 다시 골라야 했다. */
 function onScopeAll() {
   const all = document.getElementById('f-all').checked;
   document.querySelectorAll('.sys-chk, .ext-chk').forEach(c => { c.checked = all; });
   onScopeOne();
 }
-/* 개별 상태에서 마스터를 되맞춘다 — 17개가 모두 켜지면 마스터도 켜진다.
+/* 개별 상태에서 마스터를 되맞춘다 — 전부(18개)가 켜지면 마스터도 켜진다.
    하나라도 빠지면 꺼진다. 사용자가 개별로 다 채운 경우를 자동으로 알아본다. */
 function syncScopeMaster() {
   const boxes = [...document.querySelectorAll('.sys-chk, .ext-chk')];
@@ -2367,7 +2370,7 @@ function getScope() {
   if (document.getElementById('f-all').checked) return ['ALL', ...EXT_KEYS].join(',');
   const picked = [...document.querySelectorAll('.sys-chk, .ext-chk')]
     .filter(c => c.checked).map(c => c.value);
-  // 자동 14개를 모두 고르면 'ALL' 로 줄여 저장한다(소비 측 판정이 단순해진다).
+  // 자동 시스템(APS_KEYS)을 모두 고르면 'ALL' 로 줄여 저장한다(소비 측 판정이 단순해진다).
   const autoKeys = SYSTEMS.filter(x => !x.ext).map(x => x.key);
   if (autoKeys.every(k => picked.includes(k)))
     return ['ALL', ...picked.filter(k => EXT_KEYS.includes(k))].join(',');
@@ -2764,6 +2767,41 @@ async function refreshDelegationLock() {
     if (hits.length) { box.innerHTML = '&#9888;&#65039; ' + lockText(hits[0]); box.style.display = 'block'; btn.disabled = true; btn.title = '현재 대리인으로 지정된 기간에는 신청할 수 없습니다'; }
     else { box.style.display = 'none'; btn.disabled = false; btn.title = ''; }
   } catch (e) { console.warn('[AAC] 대리인 잠금 확인 실패(신청은 허용):', e && e.message); box.style.display = 'none'; btn.disabled = false; }
+}
+
+/* ── 수락 시점 사슬 재검증(10-21) ────────────────────────────────────
+   잠금 규칙 ①②는 신청할 때만 봤다. 순서를 바꾸면 사슬이 생겼다:
+     A→B 신청(대기) → B 가 같은 기간으로 B→C 신청 — ① 은 「승인완료」 대리인만 보므로 통과 → C 수락 → B 수락
+     → A→B · B→C 가 같은 기간에 모두 승인완료. 대리는 한 단계만이라 A 의 결재는 자리를 비운 B 에서 멈춘다.
+   그래서 효력이 생기는 마지막 단계(남은 대기 · 대기(잠김) 행이 이 행뿐)를 승인하기 직전에 서버 값으로 두 규칙을 다시 본다.
+   먼저 수락된 쪽이 남고 나중 건이 막힌다. APS 결재함의 AAC 분기(aacChainBlock)도 같은 규칙.
+   조회 실패는 막지 않는다(신청 때와 같은 정책 — 잠금이 통제라 실패로 결재를 멈추지 않는다). 돌려주는 값: 막는 사유(빈 문자열이면 통과). */
+async function aacAcceptBlock(f) {
+  const st = kstStr(f.StartDate), en = kstStr(f.EndDate);
+  if (!st || !en) return '';
+  const start = st.length <= 10 ? st + ' 00:00' : st, end = en.length <= 10 ? en + ' 23:59' : en;
+  const dgE = (f.RequesterEmail || '').trim(), dpE = (f.DeputyEmail || '').trim();
+  const dgN = f.RequesterName || dgE, dpN = f.DeputyName || dpE;
+  // ① 위임자가 이 기간에 누군가의 대리인(승인완료)이면 — 대리인은 자기 결재를 다시 넘길 수 없다
+  const locked = await deputyOfOverlapping(dgE, start, end);
+  if (locked.length) {
+    const x = locked[0];
+    return '위임자 ' + dgN + ' 님이 이 기간에 ' + (x.RequesterName || x.RequesterEmail || '') + ' 님의 대리인으로 지정되어 있습니다 ('
+      + (x.Title || '') + ' · ' + fmtDay(x.StartDate) + ' ~ ' + fmtDay(x.EndDate) + ').\n'
+      + '대리인으로 지정된 기간에는 결재를 다른 사람에게 다시 넘길 수 없어 이 건을 수락할 수 없습니다. 그 지정이 끝나거나 철회된 뒤 다시 신청해 주세요.\n'
+      + 'A deputy cannot delegate their own approvals during the delegation period.';
+  }
+  // ② 대리인이 기간 · 대상 시스템이 겹치는 자기 위임(대기 · 승인완료)을 걸어 두었으면 — 대리는 한 단계만이라 막다른 길
+  const own = await deputyOwnDelegations(dpE, start, end, f.Scope, true);
+  if (own.length) {
+    const o = own[0], x = o.f, to = x.DeputyName || x.DeputyEmail || '';
+    const sysTxt = APS_KEYS.every(k => o.keys.includes(k)) ? 'APS 전체 시스템' : o.keys.map(k => (SYSTEMS.find(y => y.key === k) || {}).label || k).join(' · ');
+    return '대리인 ' + dpN + ' 님은 ' + fmtDay(x.StartDate) + ' ~ ' + fmtDay(x.EndDate) + ' 자기 결재(' + sysTxt + ')를 ' + to + ' 님에게 '
+      + ((x.Status || '').trim() === '대기' ? '넘기는 중이라' : '넘겨 두어') + ' 이 건을 수락할 수 없습니다 (' + (x.Title || '') + ').\n'
+      + '대리는 한 단계만 적용되어 ' + to + ' 님에게 이어지지 않습니다. 그 신청을 철회하거나 이 건을 거절해 주세요.\n'
+      + 'The deputy has already delegated their own approvals for an overlapping period and systems.';
+  }
+  return '';
 }
 
 /* ── SharePoint 열 이름 해석 ─────────────────────────────────────────
@@ -3866,6 +3904,27 @@ async function doConfirm() {
         showAlert('이미 처리된 결재 항목입니다.', '다른 창에서 처리되었거나 이미 완료된 항목입니다.', '\u26A0\uFE0F');
         myData = []; aprData = []; adminData = []; switchTab(document.querySelector('.tab-btn.active')?.dataset.tab || 'my'); refreshBadge();
         return;
+      }
+      // 수락 시점 사슬 재검증(10-21) — 마지막 단계의 승인만. 막히면 아무것도 쓰지 않는다.
+      if (action === '승인') {
+        const _rows0 = (await apiAll('/sites/' + siteId + '/lists/' + LIST_APR +
+          "/items?$expand=fields&$filter=fields/RequestID eq '" + reqId + "'")).value || [];
+        const _last = !_rows0.some(x => String(x.id) !== String(aprId) && ['대기', '대기(잠김)'].includes((x.fields.Status || '').trim()));
+        if (_last) {
+          let _why = '';
+          try {
+            const _rq = await api('/sites/' + siteId + '/lists/' + LIST_REQ + '/items/' + reqId + '?$expand=fields');
+            _why = await aacAcceptBlock(_rq.fields || {});
+          } catch (e) { console.warn('[AAC] 수락 시점 재검증 실패(진행):', e && e.message); }
+          if (_why) {
+            _aacApr = _cur;
+            _aacLog('결재 승인 차단', { 결과: '수락 차단 — 대리 사슬(수락 시점 재검증)', 차단사유: _why.split('\n')[0] });
+            closeConfirm(); closeDetail();
+            showAlert('이 대리 지정을 수락할 수 없습니다.', _why, '\u26A0\uFE0F');
+            myData = []; aprData = []; adminData = []; switchTab(document.querySelector('.tab-btn.active')?.dataset.tab || 'my'); refreshBadge();
+            return;
+          }
+        }
       }
       // 내 결재 행을 먼저 갱신한다
       _aacApr = _cur;
