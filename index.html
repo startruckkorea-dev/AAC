@@ -1931,7 +1931,8 @@ async function loadSystemConfig() {
     rows.forEach(row => {
       const key = (row[0] || '').toString().trim();
       if (!key || key.startsWith('■') || key.startsWith('[') || key.startsWith('STK') || key.startsWith('※')) return;
-      cfg[key] = { name: (row[1] || '').toString().trim(), email: (row[2] || '').toString().trim() };
+      cfg[key] = { name: (row[1] || '').toString().trim(), email: (row[2] || '').toString().trim(),
+                   note: (row[5] || '').toString().trim() };   // 비고(F열) — AAC_ADMIN_n 은 담당 수동 시스템(SAP-Be1·Concur·Flex)
       logSkipCollect(row);   // Role(D열) IT Manager · IT system service → 이력 제외(10-01)
     });
     _sysConfig = cfg; try { if (window.apsGateApply) apsGateApply(cfg); } catch (e) {}   /* 10-21 점검(작업중) 게이트 */
@@ -2375,6 +2376,26 @@ function getScope() {
   if (autoKeys.every(k => picked.includes(k)))
     return ['ALL', ...picked.filter(k => EXT_KEYS.includes(k))].join(',');
   return picked.join(',');
+}
+/* 수동 이관 담당자 CC(10-28) — 최종 승인 메일과 위임 시작·종료 메일에 담당자를 참조로 넣는다.
+   설정 AAC_ADMIN_n 의 비고(F열)에 담당 시스템 이름을 적어 두었다(SAP-Be1 · Concur · Flex).
+   담당자는 업무 규칙이라 코드가 아니라 설정 파일에서 읽고, 신청 시점의 명단을 ManualCcEmails 에 남긴다.
+   메일은 흐름이 이 열을 읽어 보낸다. 열이 없으면 mapFields 가 빼고 저장하므로 신청은 막히지 않는다. */
+function manualCcFor(scope) {
+  const keys = String(scope || '').split(',').map(x => x.trim()).filter(Boolean);
+  const want = SYSTEMS.filter(s => s.ext && keys.includes(s.key));
+  if (!want.length || !_sysConfig) return '';
+  const norm = v => String(v || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  const out = [];
+  for (let i = 1; i <= 10; i++) {
+    const row = _sysConfig['AAC_ADMIN_' + i];
+    if (!row) continue;
+    const e = (row.email || '').trim().toLowerCase();
+    if (!e || !e.includes('@') || out.includes(e)) continue;
+    const tags = String(row.note || '').split(/[,\/;·]+/).map(norm).filter(Boolean);
+    if (want.some(s => tags.includes(s.key) || tags.includes(norm(s.label)))) out.push(e);
+  }
+  return out.join(';');
 }
 // 이 신청에 외부(수동 처리) 시스템이 들어 있는지
 function hasExtScope(v) {
@@ -2968,6 +2989,7 @@ async function submitForm() {
         StartDate: kstToIso(start),
         EndDate: kstToIso(end),
         Scope: scope,
+        ManualCcEmails: manualCcFor(scope),
         Reason: reason,
         Status: '대기',
         RequestDate: new Date().toISOString()
